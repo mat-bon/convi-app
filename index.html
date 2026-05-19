@@ -161,6 +161,18 @@
     .carrito-total strong { color:#1a1a1a; font-size:16px; }
     .carrito-dino-note { background:#FFF8E1; border:1px solid #FFD600; border-radius:10px;
       padding:10px 14px; font-size:12px; color:#92400e; margin-bottom:16px; }
+    .confirm-modal { background:#fff; border-radius:20px; width:100%; max-width:440px;
+      padding:28px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .confirm-modal-title { font-size:17px; font-weight:900; color:#1a1a1a; margin-bottom:8px; }
+    .confirm-modal-warning { background:#FFF8E1; border:1px solid #FFD600; border-radius:10px;
+      padding:12px 14px; font-size:12.5px; color:#92400e; margin:14px 0; line-height:1.6; }
+    .confirm-modal-btns { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+    .confirm-btn { padding:12px 18px; border-radius:12px; font-size:14px; font-weight:700;
+      cursor:pointer; border:none; font-family:inherit; transition:all .15s; text-align:center; }
+    .confirm-btn:hover { opacity:.85; transform:translateY(-1px); }
+    .confirm-btn.primary { background:#111827; color:#FFD600; }
+    .confirm-btn.secondary { background:#f3f4f6; color:#374151; }
+    .confirm-btn.danger { background:#FCE4EC; color:#C62828; }
   </style>
 </head>
 <body>
@@ -386,9 +398,68 @@ function AuthModal({ onClose, onLogin }) {
 }
 
 // ---------------------------------------------------------------------------
+// ConfirmCompraModal
+// ---------------------------------------------------------------------------
+function ConfirmCompraModal({ superNombre, cartUrl, itemIds, onRemove, onClose }) {
+  const [paso, setPaso] = React.useState("ir"); // "ir" | "vaciar"
+
+  function handleIr() {
+    window.open(cartUrl, "_blank", "noopener,noreferrer");
+    setPaso("vaciar");
+  }
+
+  function handleVaciar() {
+    itemIds.forEach(id => onRemove(id));
+    onClose();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+        {paso === "ir" ? (
+          <>
+            <div className="confirm-modal-title">Comprar en {superNombre} 🛒</div>
+            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
+              Se va a abrir {superNombre} en una nueva pestaña con los productos ya cargados en el carrito.
+            </p>
+            <div className="confirm-modal-warning">
+              ⚠️ <strong>Importante:</strong> una vez que abras {superNombre}, verificá que todos los productos se hayan cargado correctamente antes de confirmar la compra. Algunos ítems pueden no estar disponibles o tener stock limitado.
+            </div>
+            <div className="confirm-modal-btns">
+              <button className="confirm-btn primary" onClick={handleIr}>
+                Abrir {superNombre} →
+              </button>
+              <button className="confirm-btn secondary" onClick={onClose}>
+                Cancelar
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
+            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
+              Ya abriste {superNombre}. ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
+            </p>
+            <div className="confirm-modal-btns">
+              <button className="confirm-btn secondary" onClick={onClose}>
+                Mantener el carrito aquí
+              </button>
+              <button className="confirm-btn danger" onClick={handleVaciar}>
+                Vaciar productos de {superNombre}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
 function CarritoView({ carritoItems, productosMap, onRemove }) {
+  const [confirmData, setConfirmData] = React.useState(null);
   if (carritoItems.length === 0) {
     return (
       <div className="carrito-empty">
@@ -412,6 +483,15 @@ function CarritoView({ carritoItems, productosMap, onRemove }) {
 
   return (
     <div>
+      {confirmData && (
+        <ConfirmCompraModal
+          superNombre={confirmData.superNombre}
+          cartUrl={confirmData.cartUrl}
+          itemIds={confirmData.itemIds}
+          onRemove={onRemove}
+          onClose={() => setConfirmData(null)}
+        />
+      )}
       {hayDino && (
         <div className="carrito-dino-note">
           ⚠️ <strong>Dino Online</strong> no soporta carrito directo. Usá el botón "Ver →" para ir a cada producto individualmente.
@@ -434,10 +514,16 @@ function CarritoView({ carritoItems, productosMap, onRemove }) {
                 <span style={{fontSize:13,color:"#6b7280"}}>{items.length} producto{items.length!==1?"s":""}</span>
               </div>
               {esVtex && cartUrl ? (
-                <a href={cartUrl} target="_blank" rel="noopener noreferrer"
-                  className="carrito-comprar-btn" style={{background:sc.bg,color:sc.text}}>
+                <button
+                  className="carrito-comprar-btn"
+                  style={{background:sc.bg,color:sc.text}}
+                  onClick={() => setConfirmData({
+                    superNombre,
+                    cartUrl,
+                    itemIds: items.map(i => i.producto_id)
+                  })}>
                   Comprar en {superNombre} →
-                </a>
+                </button>
               ) : esVtex && !todosTienenSku ? (
                 <span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic"}}>Actualizando SKUs...</span>
               ) : null}
