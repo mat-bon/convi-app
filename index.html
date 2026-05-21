@@ -156,6 +156,13 @@
     .carrito-item-remove { background:none; border:none; cursor:pointer;
       color:#d1d5db; font-size:18px; padding:4px; transition:color .15s; flex-shrink:0; }
     .carrito-item-remove:hover { color:#E91E63; }
+    .qty-control { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+    .qty-btn { width:28px; height:28px; border-radius:50%; border:1.5px solid #e0e0e0;
+      background:#fff; font-size:16px; font-weight:700; cursor:pointer; color:#374151;
+      display:flex; align-items:center; justify-content:center; transition:all .15s; line-height:1; }
+    .qty-btn:hover:not(:disabled) { background:#111827; color:#FFD600; border-color:#111827; }
+    .qty-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .qty-val { font-size:14px; font-weight:800; color:#1a1a1a; min-width:20px; text-align:center; }
     .carrito-total { display:flex; justify-content:space-between; align-items:center;
       padding:12px 18px; background:#f9fafb; font-size:13px; color:#6b7280; }
     .carrito-total strong { color:#1a1a1a; font-size:16px; }
@@ -458,7 +465,7 @@ function ConfirmCompraModal({ superNombre, cartUrl, itemIds, onRemove, onClose }
 // ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
-function CarritoView({ carritoItems, productosMap, onRemove }) {
+function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad }) {
   const [confirmData, setConfirmData] = React.useState(null);
   if (carritoItems.length === 0) {
     return (
@@ -499,11 +506,11 @@ function CarritoView({ carritoItems, productosMap, onRemove }) {
       )}
       {Object.entries(porSuper).map(([superNombre, items]) => {
         const sc = SUPER_COLORS[superNombre] || {bg:"#888",text:"#fff"};
-        const total = items.reduce((acc, i) => acc + (i.producto.precio || 0), 0);
+        const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
         const esVtex = SUPER_VTEX.includes(superNombre);
         const todosTienenSku = items.every(i => i.producto.sku_id);
         const cartUrl = esVtex && todosTienenSku
-          ? buildVtexCartUrl(superNombre, items.map(i => ({sku_id: i.producto.sku_id})))
+          ? buildVtexCartUrl(superNombre, items.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad || 1})))
           : null;
 
         return (
@@ -531,6 +538,7 @@ function CarritoView({ carritoItems, productosMap, onRemove }) {
 
             {items.map(item => {
               const p = item.producto;
+              const cantidad = item.cantidad || 1;
               return (
                 <div key={item.producto_id} className="carrito-item">
                   {p.imagen_url
@@ -538,11 +546,21 @@ function CarritoView({ carritoItems, productosMap, onRemove }) {
                     : <div className="carrito-item-img-placeholder">🛍️</div>}
                   <div className="carrito-item-info">
                     <div className="carrito-item-name" title={p.nombre}>{p.nombre}</div>
-                    <div className="carrito-item-precio">{fmt(p.precio)}</div>
+                    <div className="carrito-item-precio">
+                      {fmt(p.precio * cantidad)}
+                      {cantidad > 1 && <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>{fmt(p.precio)} c/u</span>}
+                    </div>
+                  </div>
+                  <div className="qty-control">
+                    <button className="qty-btn" disabled={cantidad <= 1}
+                      onClick={() => onUpdateCantidad(item.producto_id, cantidad - 1)}>−</button>
+                    <span className="qty-val">{cantidad}</span>
+                    <button className="qty-btn" disabled={cantidad >= 99}
+                      onClick={() => onUpdateCantidad(item.producto_id, cantidad + 1)}>+</button>
                   </div>
                   {!esVtex && (
                     <a href={p.url} target="_blank" rel="noopener noreferrer"
-                      style={{fontSize:11,color:"#0066CC",fontWeight:700,textDecoration:"none",marginRight:8,whiteSpace:"nowrap"}}>
+                      style={{fontSize:11,color:"#0066CC",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
                       Ver →
                     </a>
                   )}
@@ -718,6 +736,21 @@ function App() {
     } catch(err) {}
   }
 
+  async function updateCantidad(producto_id, cantidad) {
+    setCarritoItems(prev => prev.map(i => i.producto_id === producto_id ? {...i, cantidad} : i));
+    try {
+      await fetch(`${API}/carrito/${producto_id}`, {
+        method: "PUT",
+        headers: {Authorization:`Bearer ${token}`, "Content-Type":"application/json"},
+        body: JSON.stringify({cantidad})
+      });
+    } catch(err) {
+      // Revertir si falla — recargamos desde el backend
+      fetch(`${API}/carrito`, {headers:{Authorization:`Bearer ${token}`}})
+        .then(r => r.json()).then(data => { if (Array.isArray(data)) setCarritoItems(data); }).catch(()=>{});
+    }
+  }
+
   function cambiarPagina(p) { setPagina(p); cargar(p); window.scrollTo({top:0,behavior:"smooth"}); }
   function cambiarPorPagina(val) { setPorPagina(val); setPagina(1); }
   function handleCatFiltro(cat) { setCatFiltro(cat); setSubcatFiltro("Todas"); }
@@ -776,7 +809,7 @@ function App() {
         </div>
 
         {tab === "carrito" ? (
-          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito}/>
+          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad}/>
         ) : (
           <>
             <div className="search">
