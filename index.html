@@ -246,7 +246,13 @@ function promoColor(promo) {
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
-  const params = items.filter(i => i.sku_id).map(i => `sku=${i.sku_id}&qty=1&seller=1`).join("&");
+  const params = items
+    .filter(i => i.sku_id)
+    .map(i => {
+      const qty = Math.max(1, Math.min(99, parseInt(i.qty, 10) || 1));
+      return `sku=${encodeURIComponent(i.sku_id)}&qty=${qty}&seller=1`;
+    })
+    .join("&");
   if (!params) return null;
   return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
 }
@@ -407,10 +413,15 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
-function ConfirmCompraModal({ superNombre, cartUrl, itemIds, onRemove, onClose }) {
-  const [paso, setPaso] = React.useState("ir"); // "ir" | "vaciar"
+function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose }) {
+  const [paso, setPaso] = React.useState("login"); // "login" | "carrito" | "vaciar"
 
-  function handleIr() {
+  function handleLogin() {
+    window.open(loginUrl, "_blank", "noopener,noreferrer");
+    setPaso("carrito");
+  }
+
+  function handleCarrito() {
     window.open(cartUrl, "_blank", "noopener,noreferrer");
     setPaso("vaciar");
   }
@@ -423,21 +434,36 @@ function ConfirmCompraModal({ superNombre, cartUrl, itemIds, onRemove, onClose }
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-        {paso === "ir" ? (
+        {paso === "login" ? (
           <>
-            <div className="confirm-modal-title">Comprar en {superNombre} 🛒</div>
+            <div className="confirm-modal-title">Comprar en {superNombre} — Paso 1 de 2</div>
             <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
-              Se va a abrir {superNombre} en una nueva pestaña con los productos ya cargados en el carrito.
+              Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).
             </p>
-            <div className="confirm-modal-warning">
-              ⚠️ <strong>Importante:</strong> una vez que abras {superNombre}, verificá que todos los productos se hayan cargado correctamente antes de confirmar la compra. Algunos ítems pueden no estar disponibles o tener stock limitado.
-            </div>
             <div className="confirm-modal-btns">
-              <button className="confirm-btn primary" onClick={handleIr}>
-                Abrir {superNombre} →
+              <button className="confirm-btn primary" onClick={handleLogin}>
+                Abrir {superNombre} para ingresar →
               </button>
               <button className="confirm-btn secondary" onClick={onClose}>
                 Cancelar
+              </button>
+            </div>
+          </>
+        ) : paso === "carrito" ? (
+          <>
+            <div className="confirm-modal-title">Comprar en {superNombre} — Paso 2 de 2</div>
+            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
+              Cuando estés listo, cargá los productos de SuperPrecios en el carrito de {superNombre}.
+            </p>
+            <div className="confirm-modal-warning">
+              ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
+            </div>
+            <div className="confirm-modal-btns">
+              <button className="confirm-btn primary" onClick={handleCarrito}>
+                Cargar productos en el carrito →
+              </button>
+              <button className="confirm-btn secondary" onClick={() => setPaso("login")}>
+                ← Volver al paso 1
               </button>
             </div>
           </>
@@ -445,7 +471,7 @@ function ConfirmCompraModal({ superNombre, cartUrl, itemIds, onRemove, onClose }
           <>
             <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
             <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
-              Ya abriste {superNombre}. ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
+              ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
             </p>
             <div className="confirm-modal-btns">
               <button className="confirm-btn secondary" onClick={onClose}>
@@ -480,7 +506,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
   // Agrupar por supermercado
   const porSuper = {};
   carritoItems.forEach(item => {
-    const prod = productosMap[item.producto_id];
+    const prod = item.producto || productosMap[item.producto_id];
     if (!prod) return;
     if (!porSuper[prod.supermercado]) porSuper[prod.supermercado] = [];
     porSuper[prod.supermercado].push({...item, producto: prod});
@@ -493,6 +519,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
       {confirmData && (
         <ConfirmCompraModal
           superNombre={confirmData.superNombre}
+          loginUrl={confirmData.loginUrl}
           cartUrl={confirmData.cartUrl}
           itemIds={confirmData.itemIds}
           onRemove={onRemove}
@@ -508,10 +535,11 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
         const sc = SUPER_COLORS[superNombre] || {bg:"#888",text:"#fff"};
         const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
         const esVtex = SUPER_VTEX.includes(superNombre);
-        const todosTienenSku = items.every(i => i.producto.sku_id);
-        const cartUrl = esVtex && todosTienenSku
-          ? buildVtexCartUrl(superNombre, items.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad || 1})))
+        const conSku = items.filter(i => i.producto.sku_id);
+        const cartUrl = esVtex && conSku.length > 0
+          ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad || 1})))
           : null;
+        const loginUrl = BASE_URLS[superNombre] || null;
 
         return (
           <div key={superNombre} className="carrito-super-section">
@@ -520,19 +548,22 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
                 <span className="super-badge" style={{background:sc.bg,color:sc.text,fontSize:12,padding:"4px 10px"}}>{superNombre}</span>
                 <span style={{fontSize:13,color:"#6b7280"}}>{items.length} producto{items.length!==1?"s":""}</span>
               </div>
-              {esVtex && cartUrl ? (
+              {esVtex && cartUrl && loginUrl ? (
                 <button
                   className="carrito-comprar-btn"
                   style={{background:sc.bg,color:sc.text}}
                   onClick={() => setConfirmData({
                     superNombre,
+                    loginUrl,
                     cartUrl,
                     itemIds: items.map(i => i.producto_id)
                   })}>
                   Comprar en {superNombre} →
                 </button>
-              ) : esVtex && !todosTienenSku ? (
-                <span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic"}}>Actualizando SKUs...</span>
+              ) : esVtex && conSku.length < items.length ? (
+                <span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic"}}>
+                  {conSku.length === 0 ? "Sin SKUs — esperá el próximo scrape" : `${conSku.length}/${items.length} con SKU`}
+                </span>
               ) : null}
             </div>
 
@@ -641,14 +672,30 @@ function App() {
     } catch(e) { handleLogout(); }
   }
 
-  // Cargar carrito del backend al loguearse
-  React.useEffect(() => {
-    if (!token) { setCarritoItems([]); return; }
+  function cargarCarrito() {
+    if (!token) return;
     fetch(`${API}/carrito`, { headers:{Authorization:`Bearer ${token}`} })
       .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setCarritoItems(data); })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        setCarritoItems(data);
+        setProductosMap(prev => {
+          const next = {...prev};
+          data.forEach(i => { if (i.producto) next[i.producto_id] = i.producto; });
+          return next;
+        });
+      })
       .catch(() => {});
+  }
+
+  React.useEffect(() => {
+    if (!token) { setCarritoItems([]); return; }
+    cargarCarrito();
   }, [token]);
+
+  React.useEffect(() => {
+    if (token && tab === "carrito") cargarCarrito();
+  }, [tab]);
 
   // Enriquecer productosMap con productos cargados
   React.useEffect(() => {
