@@ -414,8 +414,8 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
-function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose }) {
-  const [paso, setPaso] = React.useState("login"); // "login" | "carrito" | "vaciar"
+function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose, token }) {
+  const [paso, setPaso] = React.useState("login");
 
   function handleLogin() {
     window.open(loginUrl, "_blank", "noopener,noreferrer");
@@ -424,17 +424,22 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
 
   function handleCarrito() {
     if (superNombre === "VEA") {
-  // Llamar al endpoint que crea el carrito en VEA
-    fetch(`${API}/carrito/enviar/vea`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(r => r.json())
-    .then(data => window.open(data.checkout_url, "_blank", "noopener,noreferrer"))
-    .catch(e => alert("Error: " + e));
-  } else {
-  // Para MasOnline y Carrefour, mantené lo que tenían
-    window.open(cartUrl, "_blank", "noopener,noreferrer");
+      fetch(`${API}/carrito/enviar/vea`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.checkout_url) {
+          window.open(data.checkout_url, "_blank", "noopener,noreferrer");
+        } else {
+          alert("Error del servidor: " + (data.detail || "Sin URL de checkout"));
+        }
+      })
+      .catch(e => alert("Error de red: " + e.message));
+    } else {
+      window.open(cartUrl, "_blank", "noopener,noreferrer");
+    }
   }
 
   function handleVaciar() {
