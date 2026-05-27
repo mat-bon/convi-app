@@ -249,8 +249,9 @@ function buildVtexCartUrl(superNombre, items) {
   const params = items
     .filter(i => i.sku_id)
     .map(i => {
-      const qty = Math.max(1, Math.min(99, parseInt(i.qty, 10) || 1));
-      return `sku=${encodeURIComponent(i.sku_id)}&qty=${qty}&seller=1`;
+      const qtyNum = Number(i.qty);
+      const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
+      return `sku=${i.sku_id}&qty=${qty}&seller=1`;
     })
     .join("&");
   if (!params) return null;
@@ -537,7 +538,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
         const esVtex = SUPER_VTEX.includes(superNombre);
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && conSku.length > 0
-          ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad || 1})))
+          ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
 
