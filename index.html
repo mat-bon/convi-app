@@ -414,7 +414,7 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
-function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose }) {
+function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
 
   function handleLogin() {
@@ -514,7 +514,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
 // ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
-function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad }) {
+function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
   if (carritoItems.length === 0) {
     return (
@@ -547,6 +547,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad })
           itemIds={confirmData.itemIds}
           onRemove={onRemove}
           onClose={() => setConfirmData(null)}
+          token={token}
         />
       )}
       {hayDino && (
@@ -879,7 +880,7 @@ function App() {
         </div>
 
         {tab === "carrito" ? (
-          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad}/>
+          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} token={token}/>
         ) : (
           <>
             <div className="search">
