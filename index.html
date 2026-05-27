@@ -423,8 +423,18 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
   }
 
   function handleCarrito() {
+    if (superNombre === "VEA") {
+  // Llamar al endpoint que crea el carrito en VEA
+    fetch(`${API}/carrito/enviar/vea`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(data => window.open(data.checkout_url, "_blank", "noopener,noreferrer"))
+    .catch(e => alert("Error: " + e));
+  } else {
+  // Para MasOnline y Carrefour, mantené lo que tenían
     window.open(cartUrl, "_blank", "noopener,noreferrer");
-    setPaso("vaciar");
   }
 
   function handleVaciar() {
