@@ -423,10 +423,32 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
   }
 
   function handleCarrito() {
-    // Para TODOS los supers (VEA, Carrefour, MasOnline), usar la URL directa
-    window.open(cartUrl, "_blank", "noopener,noreferrer");
+    if (superNombre === "VEA") {
+      // Llamar al endpoint para obtener los items, luego armar la URL
+      fetch(`${API}/carrito/enviar/vea`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(r => {
+        if (!r.ok) throw new Error("No autorizado");
+        return r.json();
+      })
+      .then(data => {
+        // Armar la URL de VEA con los items y el seller correcto
+        const params = data.items.map(i => 
+          `sku=${i.sku_id}&qty=${i.cantidad}&seller=${data.seller}`
+        ).join("&");
+        const url = `${data.base_url}/checkout/cart/add?sc=1&${params}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      })
+      .catch(e => {
+        alert("Error: " + e.message);
+      });
+    } else {
+      // Para Carrefour y MasOnline, usar la URL directa que ya funciona
+      window.open(cartUrl, "_blank", "noopener,noreferrer");
+    }
   }
-
   function handleVaciar() {
     itemIds.forEach(id => onRemove(id));
     onClose();
