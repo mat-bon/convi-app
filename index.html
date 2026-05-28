@@ -425,11 +425,21 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     ).join("\n");
 
     function copiarLista() {
-      navigator.clipboard.writeText(lista).then(() => {
-        setCopiado(true);
-        setTimeout(() => setCopiado(false), 2500);
-      });
+    try {
+      navigator.clipboard.writeText(lista).catch(() => fallback());
+    } catch { fallback(); }
+
+    function fallback() {
+      const el = document.createElement("textarea");
+      el.value = lista;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
     }
+  setCopiado(true);
+  setTimeout(() => setCopiado(false), 2500);
+}
 
     return (
       <div className="modal-overlay" onClick={onClose}>
