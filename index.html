@@ -507,6 +507,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
   const [selectedProducto, setSelectedProducto] = React.useState(null);
+
   if (carritoItems.length === 0) {
     return (
       <div className="carrito-empty">
@@ -528,36 +529,16 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
 
   const hayDino = porSuper["Dino"]?.length > 0;
 
-return (
-  <div>
-    {selectedProducto && <ProductoModal producto={selectedProducto} onClose={() => setSelectedProducto(null)} />}
-    {confirmData && (
-      <ConfirmCompraModal
-        superNombre={confirmData.superNombre}
-        loginUrl={confirmData.loginUrl}
-        cartUrl={confirmData.cartUrl}
-        itemIds={confirmData.itemIds}
-        items={confirmData.items}
-        onRemove={onRemove}
-        onClose={() => setConfirmData(null)}
-        token={token}
-      />
-    )}
-    {hayDino && (
-      <div className="carrito-dino-note">
-        ⚠️ <strong>Dino Online</strong> no soporta carrito directo. Usá el botón "Ver →" para ir a cada producto individualmente.
-      </div>
-    )}
-    {Object.entries(porSuper).map(([superNombre, items]) => {
-
   return (
     <div>
+      {selectedProducto && <Modal producto={selectedProducto} onClose={() => setSelectedProducto(null)} />}
       {confirmData && (
         <ConfirmCompraModal
           superNombre={confirmData.superNombre}
           loginUrl={confirmData.loginUrl}
           cartUrl={confirmData.cartUrl}
           itemIds={confirmData.itemIds}
+          items={confirmData.items}
           onRemove={onRemove}
           onClose={() => setConfirmData(null)}
           token={token}
@@ -614,11 +595,14 @@ return (
                     ? <img src={p.imagen_url} alt={p.nombre} className="carrito-item-img"/>
                     : <div className="carrito-item-img-placeholder">🛍️</div>}
                   <div className="carrito-item-info">
-                    <div className="carrito-item-name" title={p.nombre}>{p.nombre}</div>
-                    style={{cursor:"pointer", textDecoration:"underline dotted", textDecorationColor:"#d1d5db"}}
-                    onClick={() => setSelectedProducto(p)}>
-                    {p.nombre}
-                  </div>
+                    <div
+                      className="carrito-item-name"
+                      title={p.nombre}
+                      style={{cursor:"pointer", textDecoration:"underline dotted", textDecorationColor:"#d1d5db"}}
+                      onClick={() => setSelectedProducto(p)}
+                    >
+                      {p.nombre}
+                    </div>
                     <div className="carrito-item-precio">
                       {fmt(p.precio * cantidad)}
                       {cantidad > 1 && <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>{fmt(p.precio)} c/u</span>}
@@ -652,7 +636,6 @@ return (
     </div>
   );
 }
-
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
