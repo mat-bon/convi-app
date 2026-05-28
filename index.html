@@ -414,40 +414,62 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
-function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove, onClose, token }) {
-  const [paso, setPaso] = React.useState("login");
+function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
+  const [paso, setPaso] = React.useState(superNombre === "VEA" ? "vea" : "login");
+  const [copiado, setCopiado] = React.useState(false);
 
+  // --- Flujo VEA ---
+  if (superNombre === "VEA") {
+    const lista = items.map((i, idx) =>
+      `${idx + 1}. ${i.producto.nombre}${i.cantidad > 1 ? ` (x${i.cantidad})` : ""}`
+    ).join("\n");
+
+    function copiarLista() {
+      navigator.clipboard.writeText(lista).then(() => {
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 2500);
+      });
+    }
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+          <div className="confirm-modal-title">Comprar en VEA</div>
+          <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+            VEA no permite cargar el carrito desde apps externas. Copiá la lista y buscá cada producto en su web.
+          </p>
+          <div style={{
+            background:"#f3f4f6", borderRadius:8, padding:"10px 12px",
+            fontSize:12, color:"#374151", lineHeight:1.8,
+            maxHeight:180, overflowY:"auto", whiteSpace:"pre-line",
+            textAlign:"left", marginBottom:12
+          }}>
+            {lista}
+          </div>
+          <div className="confirm-modal-btns">
+            <button className="confirm-btn primary" onClick={copiarLista}>
+              {copiado ? "✅ ¡Lista copiada!" : "📋 Copiar lista"}
+            </button>
+            <button className="confirm-btn secondary"
+              onClick={() => window.open(loginUrl, "_blank", "noopener,noreferrer")}>
+              Ir a VEA →
+            </button>
+            <button className="confirm-btn danger" onClick={() => { itemIds.forEach(id => onRemove(id)); onClose(); }}>
+              Vaciar productos de VEA
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Flujo normal (Carrefour, MasOnline) ---
   function handleLogin() {
     window.open(loginUrl, "_blank", "noopener,noreferrer");
     setPaso("carrito");
   }
-
   function handleCarrito() {
-    if (superNombre === "VEA") {
-      // Llamar al endpoint para obtener los items, luego armar la URL
-      fetch(`${API}/carrito/enviar/vea`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(r => {
-        if (!r.ok) throw new Error("No autorizado");
-        return r.json();
-      })
-      .then(data => {
-        // Armar la URL de VEA con los items y el seller correcto
-        const params = data.items.map(i => 
-          `sku=${i.sku_id}&qty=${i.cantidad}&seller=${data.seller}`
-        ).join("&");
-        const url = `${data.base_url}/checkout/cart/add?sc=1&${params}`;
-        window.open(url, "_blank", "noopener,noreferrer");
-      })
-      .catch(e => {
-        alert("Error: " + e.message);
-      });
-    } else {
-      // Para Carrefour y MasOnline, usar la URL directa que ya funciona
-      window.open(cartUrl, "_blank", "noopener,noreferrer");
-    }
+    window.open(cartUrl, "_blank", "noopener,noreferrer");
   }
   function handleVaciar() {
     itemIds.forEach(id => onRemove(id));
@@ -460,23 +482,21 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
         {paso === "login" ? (
           <>
             <div className="confirm-modal-title">Comprar en {superNombre} — Paso 1 de 2</div>
-            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
               Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).
             </p>
             <div className="confirm-modal-btns">
               <button className="confirm-btn primary" onClick={handleLogin}>
                 Abrir {superNombre} para ingresar →
               </button>
-              <button className="confirm-btn secondary" onClick={onClose}>
-                Cancelar
-              </button>
+              <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
             </div>
           </>
         ) : paso === "carrito" ? (
           <>
             <div className="confirm-modal-title">Comprar en {superNombre} — Paso 2 de 2</div>
-            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
-              Cuando estés listo, cargá los productos de SuperPrecios en el carrito de {superNombre}.
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+              Cuando estés listo, cargá los productos en el carrito de {superNombre}.
             </p>
             <div className="confirm-modal-warning">
               ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
@@ -485,24 +505,18 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, onRemove,
               <button className="confirm-btn primary" onClick={handleCarrito}>
                 Cargar productos en el carrito →
               </button>
-              <button className="confirm-btn secondary" onClick={() => setPaso("login")}>
-                ← Volver al paso 1
-              </button>
+              <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
             </div>
           </>
         ) : (
           <>
             <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
-            <p style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
               ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
             </p>
             <div className="confirm-modal-btns">
-              <button className="confirm-btn secondary" onClick={onClose}>
-                Mantener el carrito aquí
-              </button>
-              <button className="confirm-btn danger" onClick={handleVaciar}>
-                Vaciar productos de {superNombre}
-              </button>
+              <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
+              <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
             </div>
           </>
         )}
@@ -580,7 +594,8 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                     superNombre,
                     loginUrl,
                     cartUrl,
-                    itemIds: items.map(i => i.producto_id)
+                    itemIds: items.map(i => i.producto_id),
+                    items
                   })}>
                   Comprar en {superNombre} →
                 </button>
