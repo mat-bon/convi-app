@@ -201,6 +201,7 @@ const BASE_URLS = {
   VEA:       "https://www.vea.com.ar",
   Carrefour: "https://www.carrefour.com.ar",
   MasOnline: "https://www.masonline.com.ar",
+  Dino:      "https://www.dinoonline.com.ar",
 };
  
 const CATEGORIAS = {
@@ -256,6 +257,16 @@ function buildVtexCartUrl(superNombre, items) {
     .join("&");
   if (!params) return null;
   return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
+}
+
+function buildDinoCartUrl(producto, cantidad) {
+  if (!producto.url || !producto.sku_id || !producto.product_id) return null;
+  const url = new URL(producto.url);
+  url.searchParams.set('dcs_action', 'additemtocart');
+  url.searchParams.set('url_catalog_ref_id', producto.sku_id);
+  url.searchParams.set('url_product_id', producto.product_id);
+  url.searchParams.set('url_quantity', cantidad);
+  return url.toString();
 }
  
 // ---------------------------------------------------------------------------
@@ -416,17 +427,17 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
- 
+
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
- 
-  // --- Flujo producto por producto (VEA y Dino) ---
-  if (superNombre === "VEA" || superNombre === "Dino") {
+
+  // --- Flujo VEA (producto por producto) ---
+  if (superNombre === "VEA") {
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-modal-title">Comprar en {superNombre}</div>
+          <div className="confirm-modal-title">Comprar en VEA</div>
           <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
-            Abrí cada producto en {superNombre} y agregalo al carrito desde ahí.
+            Abrí cada producto en VEA y agregalo al carrito desde ahí.
           </p>
           <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
             {items.map((i, idx) => (
@@ -437,20 +448,99 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                 <button className="confirm-btn secondary"
                   style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
                   onClick={() => window.open(i.producto.url, "_blank", "noopener,noreferrer")}>
-                  Ver en {superNombre} →
+                  Ver en VEA →
                 </button>
               </div>
             ))}
           </div>
           <div className="confirm-modal-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
+            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
             <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
           </div>
         </div>
       </div>
     );
   }
- 
+
+  // --- Flujo Dino (2 pasos con dcs_action) ---
+  if (superNombre === "Dino") {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+          {paso === "login" ? (
+            <>
+              <div className="confirm-modal-title">Comprar en Dino — Paso 1 de 2</div>
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+                Abrí Dino e iniciá sesión con tu usuario (o continuá como invitado).
+              </p>
+              <div className="confirm-modal-btns">
+                <button className="confirm-btn primary" onClick={() => { window.open(loginUrl, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
+                  Abrir Dino para ingresar →
+                </button>
+                <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
+              </div>
+            </>
+          ) : paso === "carrito" ? (
+            <>
+              <div className="confirm-modal-title">Comprar en Dino — Paso 2 de 2</div>
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+                Hacé clic en cada producto para agregarlo a tu carrito de Dino.
+              </p>
+              <div className="confirm-modal-warning">
+                ⚠️ Algunos navegadores bloquean pestañas automáticas. Si no se abren, usá los botones individuales.
+              </div>
+              <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
+                {items.map((i, idx) => {
+                  const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
+                  return (
+                    <div key={idx} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f3f4f6"}}>
+                      <span style={{fontSize:13, color:"#374151", flex:1, marginRight:8}}>
+                        {i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
+                      </span>
+                      <button className="confirm-btn secondary"
+                        style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
+                        onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")}
+                        disabled={!dinoUrl}>
+                        {dinoUrl ? "Agregar →" : "Sin datos"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="confirm-modal-btns">
+                <button className="confirm-btn primary" onClick={() => {
+                  items.forEach((i, idx) => {
+                    const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
+                    if (dinoUrl) {
+                      setTimeout(() => {
+                        window.open(dinoUrl, "_blank", "noopener,noreferrer");
+                      }, idx * 800);
+                    }
+                  });
+                  setPaso("listo");
+                }}>
+                  Abrir todos los productos →
+                </button>
+                <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+                ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
+              </p>
+              <div className="confirm-modal-btns">
+                <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
+                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // --- Flujo normal (Carrefour, MasOnline) ---
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -500,7 +590,6 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     </div>
   );
 }
- 
 // ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
@@ -549,11 +638,13 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
         const sc = SUPER_COLORS[superNombre] || {bg:"#888",text:"#fff"};
         const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
         const esVtex = SUPER_VTEX.includes(superNombre);
+        const esDino = superNombre === "Dino";
         const conSku = items.filter(i => i.producto.sku_id);
-        const cartUrl = esVtex && superNombre !== "Dino" && conSku.length > 0
+        const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
+        const puedeComprar = esVtex || esDino;
  
         return (
           <div key={superNombre} className="carrito-super-section">
@@ -562,7 +653,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                 <span className="super-badge" style={{background:sc.bg,color:sc.text,fontSize:12,padding:"4px 10px"}}>{superNombre}</span>
                 <span style={{fontSize:13,color:"#6b7280"}}>{items.length} producto{items.length!==1?"s":""}</span>
               </div>
-              {(esVtex && (cartUrl || superNombre === "Dino") && loginUrl) ? (
+              {(puedeComprar && loginUrl) ? (
                 <button
                   className="carrito-comprar-btn"
                   style={{background:sc.bg,color:sc.text}}
@@ -611,7 +702,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                     <button className="qty-btn" disabled={cantidad >= 99}
                       onClick={() => onUpdateCantidad(item.producto_id, cantidad + 1)}>+</button>
                   </div>
-                  {!esVtex && (
+                  {(!esVtex && !esDino) && (
                     <a href={p.url} target="_blank" rel="noopener noreferrer"
                       style={{fontSize:11,color:"#0066CC",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
                       Ver →
@@ -946,7 +1037,7 @@ function App() {
                           <button className="fav-btn" onClick={e=>toggleFav(e,p.id)} style={{filter:p.favorito?"none":"grayscale(1) opacity(.35)"}}>
                             {p.favorito?"❤️":"🤍"}
                           </button>
-                          {esVtex && (
+                          {(esVtex || p.supermercado === "Dino") && (
                             <button className={`cart-btn ${enCarrito?"en-carrito":""}`} onClick={e=>toggleCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
                               {enCarrito?"✓ Carrito":"+ Carrito"}
                             </button>
