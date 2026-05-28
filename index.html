@@ -10,7 +10,7 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { background:#F4F5F8; font-family:'Segoe UI',system-ui,sans-serif; }
-
+ 
     .header { background:#111827; color:#fff; padding:16px 24px;
       display:flex; align-items:center; justify-content:space-between;
       flex-wrap:wrap; gap:12px; position:sticky; top:0; z-index:50;
@@ -18,44 +18,44 @@
     .header h1 { font-size:20px; font-weight:900; letter-spacing:-.5px; }
     .header h1 span { color:#FFD600; }
     .header p { font-size:11px; color:#888; margin-top:2px; }
-
+ 
     .stats { display:flex; gap:10px; flex-wrap:wrap; }
     .stat { background:#2a2a2a; padding:10px 16px; border-radius:12px; text-align:center; }
     .stat-val { font-size:20px; font-weight:900; }
     .stat-lbl { color:#888; font-size:11px; }
-
+ 
     .container { max-width:1200px; margin:0 auto; padding:20px 16px; }
-
+ 
     .filters { background:#fff; border-radius:14px; padding:14px 18px;
       margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
     .filter-row { display:flex; flex-wrap:nowrap; gap:8px; align-items:center; margin-bottom:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
     .filter-row::-webkit-scrollbar { display:none; }
     .filter-row:last-child { margin-bottom:0; }
     .filter-label { font-size:11px; color:#9ca3af; width:90px; flex-shrink:0; }
-
+ 
     .pill { padding:6px 14px; border-radius:24px; font-size:12.5px; font-weight:700;
       border:1.5px solid #e0e0e0; background:#fff; color:#555;
       cursor:pointer; transition:all .15s; white-space:nowrap; }
     .pill.active { border:none; color:#fff; }
-
+ 
     .search { position:relative; margin-bottom:14px; }
     .search span { position:absolute; left:14px; top:50%; transform:translateY(-50%); }
     .search input { width:100%; padding:12px 14px 12px 40px; font-size:14px;
       border:1.5px solid #e5e7eb; border-radius:12px; background:#fff;
       outline:none; font-family:inherit; }
     .search input:focus { border-color:#FFD600; }
-
+ 
     .result-count { font-size:13px; color:#9ca3af; margin-bottom:12px; }
-
+ 
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
-
+ 
     .card { background:#fff; border-radius:16px; padding:16px 18px;
       border:1.5px solid #ebebeb; box-shadow:0 2px 10px rgba(0,0,0,.05);
       display:flex; flex-direction:column; gap:10px; position:relative;
       transition:all .18s; cursor:pointer; }
     .card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.12); }
     .card.oferta { border-color:#FFD600; box-shadow:0 4px 16px rgba(255,214,0,.15); }
-
+ 
     .card-actions { position:absolute; top:12px; right:12px; display:flex; gap:6px; align-items:center; z-index:2; }
     .fav-btn { background:none; border:none; cursor:pointer; font-size:18px; padding:2px; transition:all .15s; }
     .cart-btn { background:none; border:1.5px solid #e0e0e0; cursor:pointer; font-size:12px;
@@ -63,7 +63,7 @@
       color:#555; white-space:nowrap; }
     .cart-btn.en-carrito { background:#111827; border-color:#111827; color:#FFD600; }
     .cart-btn:hover { transform:scale(1.05); }
-
+ 
     .badges { display:flex; gap:5px; flex-wrap:wrap; padding-right:110px; }
     .super-badge { font-size:10px; font-weight:800; padding:2px 8px;
       border-radius:20px; letter-spacing:.5px; }
@@ -71,9 +71,9 @@
       background:#f5f5f5; border-radius:20px; }
     .time-badge { font-size:10px; color:#bbb; padding:2px 7px;
       background:#f9f9f9; border-radius:20px; margin-left:auto; }
-
+ 
     .product-name { font-size:13.5px; font-weight:600; color:#1a1a1a; line-height:1.4; }
-
+ 
     .prices { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
     .price { font-size:24px; font-weight:900; letter-spacing:-1px; }
     .price.normal { color:#1a1a1a; }
@@ -81,15 +81,15 @@
     .price-original { font-size:13px; color:#ccc; text-decoration:line-through; }
     .discount { font-size:12px; font-weight:800; color:#E91E63;
       background:#FCE4EC; padding:2px 7px; border-radius:10px; }
-
+ 
     .promo { display:inline-flex; align-items:center; gap:3px;
       color:#fff; font-size:10px; font-weight:800; padding:3px 8px;
       border-radius:20px; letter-spacing:.4px; text-transform:uppercase; }
-
+ 
     .empty { text-align:center; padding:60px 20px; color:#d1d5db;
       background:#fff; border-radius:16px; }
     .empty div { font-size:56px; }
-
+ 
     .tabs { display:flex; border-bottom:2px solid #e5e7eb;
       background:#fff; border-radius:12px 12px 0 0; overflow:hidden;
       box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:20px; }
@@ -98,11 +98,11 @@
       border-bottom:3px solid transparent; margin-bottom:-2px;
       transition:all .15s; flex:1; }
     .tab.active { color:#111827; border-bottom-color:#FFD600; }
-
+ 
     .footer { margin-top:36px; padding:18px 22px; background:#111827;
       border-radius:16px; color:#6b7280; font-size:12px; line-height:1.8; }
     .footer strong { color:#FFD600; }
-
+ 
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6);
       z-index:100; display:flex; align-items:center; justify-content:center; padding:16px; }
     .modal { background:#fff; border-radius:20px; width:100%; max-width:520px;
@@ -128,7 +128,7 @@
     .auth-btn:hover { background:#374151; }
     .auth-link { background:none; border:none; color:#6b7280; font-size:13px;
       cursor:pointer; text-decoration:underline; font-family:inherit; margin-top:8px; }
-
+ 
     /* Carrito */
     .carrito-empty { text-align:center; padding:60px 20px; background:#fff;
       border-radius:16px; color:#9ca3af; }
@@ -185,24 +185,24 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-
+ 
 const API = "https://web-production-32c3f.up.railway.app";
-
+ 
 const SUPER_COLORS = {
   VEA:       { bg:"#FFD600", text:"#000" },
   Carrefour: { bg:"#0066CC", text:"#fff" },
   MasOnline: { bg:"#E4002B", text:"#fff" },
   Dino:      { bg:"#2E7D32", text:"#fff" },
 };
-
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline"];
-
+ 
+const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino"];
+ 
 const BASE_URLS = {
   VEA:       "https://www.vea.com.ar",
   Carrefour: "https://www.carrefour.com.ar",
   MasOnline: "https://www.masonline.com.ar",
 };
-
+ 
 const CATEGORIAS = {
   "almacen": { label:"Almacén", subs:{ "aceites-y-vinagres":"Aceites y Vinagres","aderezos-salsas-y-especias":"Aderezos, Salsas y Especias","arroz-pastas-y-legumbres":"Arroz, Pastas y Legumbres","caldos-sopas-y-pure":"Caldos, Sopas y Puré","desayuno-y-merienda":"Desayuno y Merienda","enlatados-y-conservas":"Enlatados y Conservas","golosinas-y-chocolates":"Golosinas y Chocolates","harinas":"Harinas","panaderia":"Panadería","reposteria-y-postres":"Repostería y Postres","snacks":"Snacks" } },
   "carnes": { label:"Carnes", subs:{ "carne-vacuna":"Carne Vacuna","carne-cerdo":"Carne Cerdo","pollo":"Pollo","embutidos-y-achuras":"Embutidos y Achuras","carbon-y-lena":"Carbón y Leña" } },
@@ -215,12 +215,12 @@ const CATEGORIAS = {
   "mundo-bebe": { label:"Mundo Bebé", subs:{ "accesorios-para-bebe":"Accesorios para Bebé","alimentos-y-leches":"Alimentos y Leches","panales-e-higiene":"Pañales e Higiene" } },
   "mascotas": { label:"Mascotas", subs:{ "alimentos":"Alimentos","accesorios-e-higiene":"Accesorios e Higiene" } },
 };
-
+ 
 const CAT_LABELS = Object.fromEntries(Object.entries(CATEGORIAS).map(([k,v]) => [k, v.label]));
 const SUBCAT_LABELS = Object.fromEntries(Object.values(CATEGORIAS).flatMap(v => Object.entries(v.subs)));
-
+ 
 function fmt(n) { return n != null ? "$" + Math.round(n).toLocaleString("es-AR") : "—"; }
-
+ 
 function relTime(ts) {
   if (!ts) return null;
   const d = new Date(ts.replace(" ","T")), now = new Date();
@@ -229,20 +229,20 @@ function relTime(ts) {
   if (mins < 1440) return `hace ${Math.round(mins/60)}h`;
   return `hace ${Math.round(mins/1440)}d`;
 }
-
+ 
 function fmtFecha(ts) {
   if (!ts) return "";
   const d = new Date(ts.replace(" ","T"));
   return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit" });
 }
-
+ 
 function promoColor(promo) {
   if (!promo) return "#1565C0";
   if (/\dx\d/.test(promo)) return "#FF6B00";
   if (promo.includes("unidad")) return "#7B1FA2";
   return "#C62828";
 }
-
+ 
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
@@ -257,7 +257,7 @@ function buildVtexCartUrl(superNombre, items) {
   if (!params) return null;
   return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
 }
-
+ 
 // ---------------------------------------------------------------------------
 // MiniChart
 // ---------------------------------------------------------------------------
@@ -281,7 +281,7 @@ function MiniChart({ data }) {
     </svg>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // Modal de producto
 // ---------------------------------------------------------------------------
@@ -290,17 +290,17 @@ function Modal({ producto, onClose }) {
   const [loadingH, setLoadingH] = React.useState(true);
   const sc = SUPER_COLORS[producto.supermercado] || {bg:"#888",text:"#fff"};
   const hasOffer = producto.descuento_pct || producto.promocion;
-
+ 
   React.useEffect(() => {
     fetch(`${API}/productos/${producto.id}/historial`)
       .then(r => r.json())
       .then(data => { setHistorial([...data].sort((a,b) => new Date(a.scrapeado_en)-new Date(b.scrapeado_en))); setLoadingH(false); })
       .catch(() => setLoadingH(false));
   }, [producto.id]);
-
+ 
   const minP = historial.length ? Math.min(...historial.map(h=>h.precio)) : null;
   const maxP = historial.length ? Math.max(...historial.map(h=>h.precio)) : null;
-
+ 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -336,7 +336,7 @@ function Modal({ producto, onClose }) {
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // Paginacion
 // ---------------------------------------------------------------------------
@@ -367,7 +367,7 @@ function Paginacion({ paginaActual, totalPaginas, onCambiar }) {
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // AuthModal
 // ---------------------------------------------------------------------------
@@ -378,7 +378,7 @@ function AuthModal({ onClose, onLogin }) {
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [msg, setMsg] = React.useState("");
-
+ 
   async function handleSubmit() {
     setError(""); setMsg(""); setLoading(true);
     try {
@@ -390,7 +390,7 @@ function AuthModal({ onClose, onLogin }) {
     } catch(e) { setError(e.message); }
     setLoading(false);
   }
-
+ 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:400}} onClick={e=>e.stopPropagation()}>
@@ -410,23 +410,23 @@ function AuthModal({ onClose, onLogin }) {
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
-
+ 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
-
-  // --- Flujo VEA ---
-  if (superNombre === "VEA") {
+ 
+  // --- Flujo producto por producto (VEA y Dino) ---
+  if (superNombre === "VEA" || superNombre === "Dino") {
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-modal-title">Comprar en VEA</div>
+          <div className="confirm-modal-title">Comprar en {superNombre}</div>
           <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
-            Abrí cada producto en VEA y agregalo al carrito desde ahí.
+            Abrí cada producto en {superNombre} y agregalo al carrito desde ahí.
           </p>
           <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
             {items.map((i, idx) => (
@@ -437,20 +437,20 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                 <button className="confirm-btn secondary"
                   style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
                   onClick={() => window.open(i.producto.url, "_blank", "noopener,noreferrer")}>
-                  Ver en VEA →
+                  Ver en {superNombre} →
                 </button>
               </div>
             ))}
           </div>
           <div className="confirm-modal-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
+            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
             <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
           </div>
         </div>
       </div>
     );
   }
-
+ 
   // --- Flujo normal (Carrefour, MasOnline) ---
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -500,14 +500,14 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
 function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
   const [selectedProducto, setSelectedProducto] = React.useState(null);
-
+ 
   if (carritoItems.length === 0) {
     return (
       <div className="carrito-empty">
@@ -517,7 +517,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
       </div>
     );
   }
-
+ 
   // Agrupar por supermercado
   const porSuper = {};
   carritoItems.forEach(item => {
@@ -526,9 +526,9 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
     if (!porSuper[prod.supermercado]) porSuper[prod.supermercado] = [];
     porSuper[prod.supermercado].push({...item, producto: prod});
   });
-
+ 
   const hayDino = porSuper["Dino"]?.length > 0;
-
+ 
   return (
     <div>
       {selectedProducto && <Modal producto={selectedProducto} onClose={() => setSelectedProducto(null)} />}
@@ -544,21 +544,17 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
           token={token}
         />
       )}
-      {hayDino && (
-        <div className="carrito-dino-note">
-          ⚠️ <strong>Dino Online</strong> no soporta carrito directo. Usá el botón "Ver →" para ir a cada producto individualmente.
-        </div>
-      )}
+ 
       {Object.entries(porSuper).map(([superNombre, items]) => {
         const sc = SUPER_COLORS[superNombre] || {bg:"#888",text:"#fff"};
         const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
         const esVtex = SUPER_VTEX.includes(superNombre);
         const conSku = items.filter(i => i.producto.sku_id);
-        const cartUrl = esVtex && conSku.length > 0
+        const cartUrl = esVtex && superNombre !== "Dino" && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
-
+ 
         return (
           <div key={superNombre} className="carrito-super-section">
             <div className="carrito-super-header">
@@ -566,7 +562,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                 <span className="super-badge" style={{background:sc.bg,color:sc.text,fontSize:12,padding:"4px 10px"}}>{superNombre}</span>
                 <span style={{fontSize:13,color:"#6b7280"}}>{items.length} producto{items.length!==1?"s":""}</span>
               </div>
-              {esVtex && cartUrl && loginUrl ? (
+              {(esVtex && (cartUrl || superNombre === "Dino") && loginUrl) ? (
                 <button
                   className="carrito-comprar-btn"
                   style={{background:sc.bg,color:sc.text}}
@@ -585,7 +581,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                 </span>
               ) : null}
             </div>
-
+ 
             {items.map(item => {
               const p = item.producto;
               const cantidad = item.cantidad || 1;
@@ -625,7 +621,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                 </div>
               );
             })}
-
+ 
             <div className="carrito-total">
               <span>Total estimado {superNombre}</span>
               <strong>{fmt(total)}</strong>
@@ -660,7 +656,7 @@ function App() {
   const [showAuth, setShowAuth] = React.useState(false);
   const [carritoItems, setCarritoItems] = React.useState([]);
   const [productosMap, setProductosMap] = React.useState({});
-
+ 
   function handleLogin(access_token, refresh_token, user) {
     setToken(access_token); setUsuario(user);
     localStorage.setItem("sp_token", access_token);
@@ -671,7 +667,7 @@ function App() {
     setToken(null); setUsuario(null); setCarritoItems([]); setProductosMap({});
     localStorage.removeItem("sp_token"); localStorage.removeItem("sp_refresh"); localStorage.removeItem("sp_user");
   }
-
+ 
   // Auto-refresh token
   React.useEffect(() => {
     if (!token) return;
@@ -683,7 +679,7 @@ function App() {
       return () => clearTimeout(timer);
     } catch(e) {}
   }, [token]);
-
+ 
   async function refreshToken() {
     const refresh = localStorage.getItem("sp_refresh");
     if (!refresh) { handleLogout(); return; }
@@ -696,7 +692,7 @@ function App() {
       if (data.refresh_token) localStorage.setItem("sp_refresh", data.refresh_token);
     } catch(e) { handleLogout(); }
   }
-
+ 
   function cargarCarrito() {
     if (!token) return;
     fetch(`${API}/carrito`, { headers:{Authorization:`Bearer ${token}`} })
@@ -712,25 +708,25 @@ function App() {
       })
       .catch(() => {});
   }
-
+ 
   React.useEffect(() => {
     if (!token) { setCarritoItems([]); return; }
     cargarCarrito();
   }, [token]);
-
+ 
   React.useEffect(() => {
     if (token && tab === "carrito") cargarCarrito();
   }, [tab]);
-
+ 
   // Enriquecer productosMap con productos cargados
   React.useEffect(() => {
     if (productos.length > 0) {
       setProductosMap(prev => { const next={...prev}; productos.forEach(p => { next[p.id]=p; }); return next; });
     }
   }, [productos]);
-
+ 
   const cargarRef = React.useRef(null);
-
+ 
   async function cargar(paginaOverride) {
     if (cargarRef.current) cargarRef.current.abort();
     const controller = new AbortController();
@@ -763,14 +759,14 @@ function App() {
     } catch(e) { if (e.name==="AbortError") return; }
     setLoading(false);
   }
-
+ 
   React.useEffect(() => {
     if (tab === "carrito") return;
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
   }, [tab, superFiltro, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina]);
-
+ 
   async function toggleFav(e, id) {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
@@ -780,7 +776,7 @@ function App() {
     if (data.favorito !== undefined) setProductos(prev => prev.map(p => p.id===id ? {...p, favorito:data.favorito} : p));
     fetch(`${API}/stats`, {headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).then(st=>setStats(st)).catch(()=>{});
   }
-
+ 
   async function toggleCarrito(e, producto) {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
@@ -800,14 +796,14 @@ function App() {
       else setCarritoItems(prev => prev.filter(i => i.producto_id !== producto.id));
     }
   }
-
+ 
   async function removeDelCarrito(producto_id) {
     setCarritoItems(prev => prev.filter(i => i.producto_id !== producto_id));
     try {
       await fetch(`${API}/carrito/${producto_id}`, {method:"POST", headers:{Authorization:`Bearer ${token}`}});
     } catch(err) {}
   }
-
+ 
   async function updateCantidad(producto_id, cantidad) {
     setCarritoItems(prev => prev.map(i => i.producto_id === producto_id ? {...i, cantidad} : i));
     try {
@@ -822,21 +818,21 @@ function App() {
         .then(r => r.json()).then(data => { if (Array.isArray(data)) setCarritoItems(data); }).catch(()=>{});
     }
   }
-
+ 
   function cambiarPagina(p) { setPagina(p); cargar(p); window.scrollTo({top:0,behavior:"smooth"}); }
   function cambiarPorPagina(val) { setPorPagina(val); setPagina(1); }
   function handleCatFiltro(cat) { setCatFiltro(cat); setSubcatFiltro("Todas"); }
-
+ 
   const supers = ["Todos","VEA","Carrefour","MasOnline","Dino"];
   const cats = ["Todas", ...Object.keys(CATEGORIAS)];
   const subcats = catFiltro!=="Todas"&&CATEGORIAS[catFiltro] ? ["Todas",...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
   const totalCarrito = carritoItems.length;
-
+ 
   return (
     <div>
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onLogin={handleLogin}/>}
       {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)}/>}
-
+ 
       <div className="header">
         <div>
           <h1 style={{cursor:"pointer"}} onClick={()=>{setTab("todos");setSuperFiltro("Todos");setCatFiltro("Todas");setSubcatFiltro("Todas");setBusqueda("");setSoloOfertas(false);window.scrollTo({top:0,behavior:"smooth"});}}>🛒 <span>Super</span>Precios AR</h1>
@@ -867,7 +863,7 @@ function App() {
           </div>
         </div>
       </div>
-
+ 
       <div className="container">
         <div className="tabs">
           {[["todos","Todos los productos"],["favoritos","Mis favoritos"],["carrito","Mi carrito"]].map(([key,label]) => (
@@ -879,7 +875,7 @@ function App() {
             </button>
           ))}
         </div>
-
+ 
         {tab === "carrito" ? (
           <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} token={token}/>
         ) : (
@@ -888,7 +884,7 @@ function App() {
               <span>🔍</span>
               <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar producto en todos los supermercados..."/>
             </div>
-
+ 
             <div className="filters">
               <div className="filter-row">
                 <span className="filter-label">Supermercado</span>
@@ -923,7 +919,7 @@ function App() {
                 </div>
               </div>
             </div>
-
+ 
             <div className="result-count" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
               <span>{loading?"Cargando...":`${totalProductos} producto${totalProductos!==1?"s":""} · página ${pagina} de ${totalPaginas}`}</span>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
@@ -933,7 +929,7 @@ function App() {
                 ))}
               </div>
             </div>
-
+ 
             {productos.length===0&&!loading ? (
               <div className="empty"><div>🧐</div><p style={{fontSize:16,marginTop:12}}>No hay productos con esos filtros</p></div>
             ) : (
@@ -989,7 +985,7 @@ function App() {
                 <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiar={cambiarPagina}/>
               </>
             )}
-
+ 
             <div className="footer">
               <strong>Actualización automática:</strong> todos los días a las 08:00 y 20:00 hs.
               Tocá ❤️ para agregar a favoritos (te avisamos si baja el precio).
@@ -1001,7 +997,7 @@ function App() {
     </div>
   );
 }
-
+ 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
