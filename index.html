@@ -260,13 +260,19 @@ function buildVtexCartUrl(superNombre, items) {
 }
 
 function buildDinoCartUrl(producto, cantidad) {
-  if (!producto.url || !producto.sku_id || !producto.product_id) return null;
+  console.log("buildDinoCartUrl:", {url: producto.url, sku_id: producto.sku_id, product_id: producto.product_id, cantidad});
+  if (!producto.url || !producto.sku_id || !producto.product_id) {
+    console.warn("buildDinoCartUrl: faltan datos", {url: !!producto.url, sku_id: !!producto.sku_id, product_id: !!producto.product_id});
+    return null;
+  }
   const url = new URL(producto.url);
   url.searchParams.set('dcs_action', 'additemtocart');
   url.searchParams.set('url_catalog_ref_id', producto.sku_id);
   url.searchParams.set('url_product_id', producto.product_id);
   url.searchParams.set('url_quantity', cantidad);
-  return url.toString();
+  const result = url.toString();
+  console.log("buildDinoCartUrl result:", result);
+  return result;
 }
  
 // ---------------------------------------------------------------------------
@@ -509,13 +515,16 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               </div>
               <div className="confirm-modal-btns">
                 <button className="confirm-btn primary" onClick={() => {
-                  items.forEach((i, idx) => {
-                    const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
-                    if (dinoUrl) {
-                      setTimeout(() => {
-                        window.open(dinoUrl, "_blank", "noopener,noreferrer");
-                      }, idx * 800);
-                    }
+                  // Abrir la primera pestaña INMEDIATAMENTE (conserva user gesture)
+                  const urls = items.map(i => buildDinoCartUrl(i.producto, i.cantidad)).filter(Boolean);
+                  if (urls.length > 0) {
+                    window.open(urls[0], "_blank", "noopener,noreferrer");
+                  }
+                  // Las demás con delay (pueden ser bloqueadas por popup blocker)
+                  urls.slice(1).forEach((url, idx) => {
+                    setTimeout(() => {
+                      window.open(url, "_blank", "noopener,noreferrer");
+                    }, (idx + 1) * 1000);
                   });
                   setPaso("listo");
                 }}>
