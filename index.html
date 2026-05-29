@@ -260,15 +260,17 @@ function buildVtexCartUrl(superNombre, items) {
 }
 
 function buildDinoCartUrl(producto, cantidad) {
-  console.log("buildDinoCartUrl:", {url: producto.url, sku_id: producto.sku_id, product_id: producto.product_id, cantidad});
-  if (!producto.url || !producto.sku_id || !producto.product_id) {
-    console.warn("buildDinoCartUrl: faltan datos", {url: !!producto.url, sku_id: !!producto.sku_id, product_id: !!producto.product_id});
+  // En Dino, product_id y sku_id suelen ser el mismo valor
+  const productId = producto.product_id || producto.sku_id;
+  console.log("buildDinoCartUrl:", {url: producto.url, sku_id: producto.sku_id, product_id: productId, cantidad});
+  if (!producto.url || !producto.sku_id || !productId) {
+    console.warn("buildDinoCartUrl: faltan datos", {url: !!producto.url, sku_id: !!producto.sku_id, product_id: !!productId});
     return null;
   }
   const url = new URL(producto.url);
   url.searchParams.set('dcs_action', 'additemtocart');
   url.searchParams.set('url_catalog_ref_id', producto.sku_id);
-  url.searchParams.set('url_product_id', producto.product_id);
+  url.searchParams.set('url_product_id', productId);
   url.searchParams.set('url_quantity', cantidad);
   const result = url.toString();
   console.log("buildDinoCartUrl result:", result);
