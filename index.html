@@ -445,7 +445,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
           <div className="confirm-modal-title">Comprar en VEA</div>
           <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
-            Abrí cada producto en VEA y agregalo al carrito desde ahí.
+            Abrí el primer producto para iniciar sesión en VEA, luego añadí el resto.
           </p>
           <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
             {items.map((i, idx) => (
@@ -482,7 +482,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                 Abrí Dino e iniciá sesión con tu usuario (o continuá como invitado).
               </p>
               <div className="confirm-modal-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open(loginUrl, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
+                <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
                   Abrir Dino para ingresar →
                 </button>
                 <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
@@ -491,12 +491,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           ) : paso === "carrito" ? (
             <>
               <div className="confirm-modal-title">Comprar en Dino — Paso 2 de 2</div>
-              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
-                Hacé clic en cada producto para agregarlo a tu carrito de Dino.
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
+                Abrí el primer producto para agregarlo a tu carrito de Dino, luego añadí el resto.
               </p>
-              <div className="confirm-modal-warning">
-                ⚠️ Algunos navegadores bloquean pestañas automáticas. Si no se abren, usá los botones individuales.
-              </div>
               <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
                 {items.map((i, idx) => {
                   const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
@@ -516,23 +513,8 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                 })}
               </div>
               <div className="confirm-modal-btns">
-                <button className="confirm-btn primary" onClick={() => {
-                  // Abrir la primera pestaña INMEDIATAMENTE (conserva user gesture)
-                  const urls = items.map(i => buildDinoCartUrl(i.producto, i.cantidad)).filter(Boolean);
-                  if (urls.length > 0) {
-                    window.open(urls[0], "_blank", "noopener,noreferrer");
-                  }
-                  // Las demás con delay (pueden ser bloqueadas por popup blocker)
-                  urls.slice(1).forEach((url, idx) => {
-                    setTimeout(() => {
-                      window.open(url, "_blank", "noopener,noreferrer");
-                    }, (idx + 1) * 1000);
-                  });
-                  setPaso("listo");
-                }}>
-                  Abrir todos los productos →
-                </button>
-                <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
+                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
+                <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
               </div>
             </>
           ) : (
@@ -563,7 +545,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).
             </p>
             <div className="confirm-modal-btns">
-              <button className="confirm-btn primary" onClick={() => { window.open(loginUrl, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
+              <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
                 Abrir {superNombre} para ingresar →
               </button>
               <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
