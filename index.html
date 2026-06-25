@@ -731,7 +731,7 @@ function App() {
   const [orden, setOrden] = React.useState("popular");
   const [busqueda, setBusqueda] = React.useState("");
   const [modalProducto, setModalProducto] = React.useState(null);
-  const [porPagina, setPorPagina] = React.useState(25);
+  const [porPagina, setPorPagina] = React.useState(28);
   const [pagina, setPagina] = React.useState(1);
   const [totalProductos, setTotalProductos] = React.useState(0);
   const [totalPaginas, setTotalPaginas] = React.useState(1);
@@ -1008,7 +1008,7 @@ function App() {
               <span>{loading?"Cargando...":`${totalProductos} producto${totalProductos!==1?"s":""} · página ${pagina} de ${totalPaginas}`}</span>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                 <span style={{fontSize:11,color:"#9ca3af"}}>Por página:</span>
-                {[[25,"25"],[50,"50"],[100,"100"],[1000,"1000"],[0,"Todos"]].map(([val,label]) => (
+                {[[28,"28"],[56,"56"],[100,"100"],[1000,"1000"],[0,"Todos"]].map(([val,label]) => (
                   <button key={val} onClick={()=>cambiarPorPagina(val)} className={`pill ${porPagina===val?"active":""}`} style={{padding:"3px 10px",fontSize:11,...(porPagina===val?{background:"#1a1a1a",color:"#fff",border:"none"}:{})}}>{label}</button>
                 ))}
               </div>
