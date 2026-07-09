@@ -619,7 +619,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).
             </p>
             <div className="confirm-modal-btns">
-              <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
+              <button className="confirm-btn primary" onClick={() => { window.open(loginUrl, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
                 Abrir {superNombre} para ingresar →
               </button>
               <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
