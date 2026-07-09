@@ -71,8 +71,8 @@
       align-items:center; justify-content:center; flex-shrink:0;
       box-shadow:0 1px 3px rgba(0,0,0,.18); overflow:hidden; }
     .super-logo-circle img { width:100%; height:100%; object-fit:contain; display:block; }
-    .super-logo-square { border-radius:14px; background:rgba(255,255,255,.78);
-      backdrop-filter:blur(3px); display:inline-flex; align-items:center; justify-content:center;
+    .super-logo-square { border-radius:14px; background:#fff;
+      display:inline-flex; align-items:center; justify-content:center;
       flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.15); overflow:hidden; }
     .super-logo-square img { width:100%; height:100%; object-fit:contain; display:block; }
     .header-logos { display:flex; gap:8px; align-items:center; }
@@ -980,11 +980,10 @@ function App() {
         <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
           <div>
             <h1 style={{cursor:"pointer"}} onClick={()=>{setTab("todos");setSuperFiltro("Todos");setCatFiltro("Todas");setSubcatFiltro("Todas");setBusqueda("");setSoloOfertas(false);window.scrollTo({top:0,behavior:"smooth"});}}>🛒 <span>Super</span>Precios AR</h1>
-            <p>VEA · Carrefour · MásOnline · Dino</p>
           </div>
           <div className="header-logos">
             {["VEA","Carrefour","MasOnline","Dino"].map(s => (
-              <SuperLogo key={s} nombre={s} size={80} padding={10} shape="square"/>
+              <SuperLogo key={s} nombre={s} size={80} padding={s === "VEA" ? 10 : 3} shape="square"/>
             ))}
           </div>
         </div>
