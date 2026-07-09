@@ -249,11 +249,17 @@ function fmtFecha(ts) {
   return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit" });
 }
  
-function SuperLogo({ nombre, size = 22, padding }) {
+function SuperLogo({ nombre, size = 22, padding, bare = false }) {
   const [error, setError] = React.useState(false);
   const logo = SUPER_LOGOS[nombre];
   if (!logo || error) return null;
-  const pad = padding != null ? padding : Math.round(size * 0.16);
+  if (bare) {
+    return (
+      <img src={logo} alt={nombre} loading="lazy" onError={()=>setError(true)}
+        style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>
+    );
+  }
+  const pad = padding != null ? padding : Math.round(size * 0.08);
   return (
     <span className="super-logo-circle" style={{width:size, height:size, padding:pad}}>
       <img src={logo} alt={nombre} loading="lazy" onError={()=>setError(true)}/>
@@ -261,7 +267,7 @@ function SuperLogo({ nombre, size = 22, padding }) {
   );
 }
 
-function SuperBadge({ nombre, size = 20, fontSize = 10 }) {
+function SuperBadge({ nombre, size = 20, fontSize = 10, showText = true, bare = false }) {
   const sc = SUPER_COLORS[nombre] || {bg:"#888",text:"#fff"};
   const [logoError, setLogoError] = React.useState(false);
   const logo = SUPER_LOGOS[nombre];
@@ -269,13 +275,18 @@ function SuperBadge({ nombre, size = 20, fontSize = 10 }) {
   return (
     <span style={{display:"inline-flex", alignItems:"center", gap:6}}>
       {showLogo ? (
-        <span className="super-logo-circle" style={{width:size, height:size, padding:Math.round(size*0.16)}}>
-          <img src={logo} alt={nombre} loading="lazy" onError={()=>setLogoError(true)}/>
-        </span>
+        bare ? (
+          <img src={logo} alt={nombre} loading="lazy" onError={()=>setLogoError(true)}
+            style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>
+        ) : (
+          <span className="super-logo-circle" style={{width:size, height:size, padding:Math.round(size*0.08)}}>
+            <img src={logo} alt={nombre} loading="lazy" onError={()=>setLogoError(true)}/>
+          </span>
+        )
       ) : (
         <span className="super-badge" style={{background:sc.bg, color:sc.text, fontSize}}>{nombre}</span>
       )}
-      {showLogo && <span style={{fontSize:fontSize+1, fontWeight:800, color:"#374151"}}>{nombre}</span>}
+      {showLogo && showText && <span style={{fontSize:fontSize+1, fontWeight:800, color:"#374151"}}>{nombre}</span>}
     </span>
   );
 }
@@ -1086,7 +1097,7 @@ function App() {
                           )}
                         </div>
                         <div className="badges">
-                          <SuperBadge nombre={p.supermercado} size={36} fontSize={11}/>
+                          <SuperBadge nombre={p.supermercado} size={40} fontSize={11} bare={true}/>
                           <span className="cat-badge">{SUBCAT_LABELS[p.subcategoria]||CAT_LABELS[p.categoria]||p.categoria}</span>
                           {p.scrapeado_en&&<span className="time-badge">{relTime(p.scrapeado_en)}</span>}
                         </div>
