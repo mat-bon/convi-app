@@ -71,6 +71,10 @@
       align-items:center; justify-content:center; flex-shrink:0;
       box-shadow:0 1px 3px rgba(0,0,0,.18); overflow:hidden; }
     .super-logo-circle img { width:100%; height:100%; object-fit:contain; display:block; }
+    .super-logo-square { border-radius:14px; background:rgba(255,255,255,.78);
+      backdrop-filter:blur(3px); display:inline-flex; align-items:center; justify-content:center;
+      flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.15); overflow:hidden; }
+    .super-logo-square img { width:100%; height:100%; object-fit:contain; display:block; }
     .header-logos { display:flex; gap:8px; align-items:center; }
     .cat-badge { font-size:10px; color:#999; padding:2px 7px;
       background:#f5f5f5; border-radius:20px; }
@@ -249,7 +253,7 @@ function fmtFecha(ts) {
   return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit" });
 }
  
-function SuperLogo({ nombre, size = 22, padding, bare = false }) {
+function SuperLogo({ nombre, size = 22, padding, bare = false, shape = "circle" }) {
   const [error, setError] = React.useState(false);
   const logo = SUPER_LOGOS[nombre];
   if (!logo || error) return null;
@@ -260,18 +264,20 @@ function SuperLogo({ nombre, size = 22, padding, bare = false }) {
     );
   }
   const pad = padding != null ? padding : Math.round(size * 0.08);
+  const cls = shape === "square" ? "super-logo-square" : "super-logo-circle";
   return (
-    <span className="super-logo-circle" style={{width:size, height:size, padding:pad}}>
+    <span className={cls} style={{width:size, height:size, padding:pad}}>
       <img src={logo} alt={nombre} loading="lazy" onError={()=>setError(true)}/>
     </span>
   );
 }
 
-function SuperBadge({ nombre, size = 20, fontSize = 10, showText = true, bare = false }) {
+function SuperBadge({ nombre, size = 20, fontSize = 10, showText = true, bare = false, shape = "circle" }) {
   const sc = SUPER_COLORS[nombre] || {bg:"#888",text:"#fff"};
   const [logoError, setLogoError] = React.useState(false);
   const logo = SUPER_LOGOS[nombre];
   const showLogo = logo && !logoError;
+  const cls = shape === "square" ? "super-logo-square" : "super-logo-circle";
   return (
     <span style={{display:"inline-flex", alignItems:"center", gap:6}}>
       {showLogo ? (
@@ -279,7 +285,7 @@ function SuperBadge({ nombre, size = 20, fontSize = 10, showText = true, bare = 
           <img src={logo} alt={nombre} loading="lazy" onError={()=>setLogoError(true)}
             style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>
         ) : (
-          <span className="super-logo-circle" style={{width:size, height:size, padding:Math.round(size*0.08)}}>
+          <span className={cls} style={{width:size, height:size, padding:Math.round(size*0.08)}}>
             <img src={logo} alt={nombre} loading="lazy" onError={()=>setLogoError(true)}/>
           </span>
         )
@@ -382,7 +388,7 @@ function Modal({ producto, onClose }) {
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:14}}>
-          <SuperBadge nombre={producto.supermercado} size={60} fontSize={13}/>
+          <SuperBadge nombre={producto.supermercado} size={60} fontSize={13} bare={true}/>
           <span className="cat-badge">{SUBCAT_LABELS[producto.subcategoria] || CAT_LABELS[producto.categoria] || producto.categoria}</span>
         </div>
         {producto.imagen_url && <img src={producto.imagen_url} alt={producto.nombre} style={{width:"100%",height:"150px",objectFit:"contain",background:"#f9f9f9",borderRadius:10,marginBottom:14}}/>}
@@ -394,7 +400,7 @@ function Modal({ producto, onClose }) {
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {[...producto.otros_supers].sort((a,b)=>a.precio-b.precio).map(o => {
               const esMasBarato = o.precio < producto.precio;
-              return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",textDecoration:"none",padding:"10px 14px",borderRadius:12,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1.5px solid #A5D6A7":"1.5px solid #ebebeb"}}><SuperBadge nombre={o.supermercado} size={50}/><span style={{fontWeight:900,fontSize:18,color:esMasBarato?"#2E7D32":"#1a1a1a"}}>{fmt(o.precio)}{esMasBarato&&<span style={{fontSize:11,marginLeft:6,color:"#2E7D32"}}>💚 más barato</span>}</span></a>);
+              return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",textDecoration:"none",padding:"10px 14px",borderRadius:12,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1.5px solid #A5D6A7":"1.5px solid #ebebeb"}}><SuperBadge nombre={o.supermercado} size={50} bare={true}/><span style={{fontWeight:900,fontSize:18,color:esMasBarato?"#2E7D32":"#1a1a1a"}}>{fmt(o.precio)}{esMasBarato&&<span style={{fontSize:11,marginLeft:6,color:"#2E7D32"}}>💚 más barato</span>}</span></a>);
             })}
           </div></>
         )}
@@ -978,7 +984,7 @@ function App() {
           </div>
           <div className="header-logos">
             {["VEA","Carrefour","MasOnline","Dino"].map(s => (
-              <SuperLogo key={s} nombre={s} size={80} padding={10}/>
+              <SuperLogo key={s} nombre={s} size={80} padding={10} shape="square"/>
             ))}
           </div>
         </div>
