@@ -661,19 +661,22 @@ function SuperSwapButton({ item, onCambiarSuper }) {
   const ordenados = [...otros].sort((a, b) => a.precio - b.precio);
 
   return (
-    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-      <button className="qty-btn" title="Cambiar de supermercado"
-        onClick={() => setOpen(o => !o)} style={{ fontSize: 13, borderRadius: "50%" }}>
-        🔄
+    <div ref={ref} style={{ position: "relative", flexShrink: 0, marginTop: 6, display: "inline-block" }}>
+      <button onClick={() => setOpen(o => !o)} title="Ver el mismo producto en otros supermercados" style={{
+        display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700,
+        color: "#0066CC", background: "none", border: "1.5px solid #cfe0f5", borderRadius: 20,
+        padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap"
+      }}>
+        🔄 Cambiar de supermercado
       </button>
       {open && (
         <div style={{
           position: "absolute", top: "110%", left: 0, background: "#fff",
           border: "1.5px solid #e0e0e0", borderRadius: 12, boxShadow: "0 8px 28px rgba(0,0,0,.15)",
-          zIndex: 20, minWidth: 180, padding: 6
+          zIndex: 20, minWidth: 200, padding: 6
         }}>
           <div style={{ fontSize: 10, color: "#9ca3af", padding: "4px 8px", fontWeight: 700, textTransform: "uppercase" }}>
-            Cambiar a
+            Disponible también en
           </div>
           {ordenados.map(o => {
             const masBarato = o.precio < item.producto.precio;
@@ -803,8 +806,8 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                       {fmt(p.precio * cantidad)}
                       {cantidad > 1 && <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>{fmt(p.precio)} c/u</span>}
                     </div>
+                    <SuperSwapButton item={item} onCambiarSuper={onCambiarSuper} />
                   </div>
-                  <SuperSwapButton item={item} onCambiarSuper={onCambiarSuper} />
                   <div className="qty-control">
                     <button className="qty-btn" disabled={cantidad <= 1}
                       onClick={() => onUpdateCantidad(item.producto_id, cantidad - 1)}>−</button>
