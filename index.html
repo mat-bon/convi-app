@@ -643,9 +643,66 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
   );
 }
 // ---------------------------------------------------------------------------
+// SuperSwapButton — cambiar de supermercado manteniendo cantidad
+// ---------------------------------------------------------------------------
+function SuperSwapButton({ item, onCambiarSuper }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  const otros = item.producto.otros_supers || [];
+
+  React.useEffect(() => {
+    if (!open) return;
+    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (otros.length === 0) return null;
+  const ordenados = [...otros].sort((a, b) => a.precio - b.precio);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button className="qty-btn" title="Cambiar de supermercado"
+        onClick={() => setOpen(o => !o)} style={{ fontSize: 13, borderRadius: "50%" }}>
+        🔄
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "110%", left: 0, background: "#fff",
+          border: "1.5px solid #e0e0e0", borderRadius: 12, boxShadow: "0 8px 28px rgba(0,0,0,.15)",
+          zIndex: 20, minWidth: 180, padding: 6
+        }}>
+          <div style={{ fontSize: 10, color: "#9ca3af", padding: "4px 8px", fontWeight: 700, textTransform: "uppercase" }}>
+            Cambiar a
+          </div>
+          {ordenados.map(o => {
+            const masBarato = o.precio < item.producto.precio;
+            return (
+              <div key={o.id} onClick={() => { onCambiarSuper(item.producto_id, o.id); setOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "7px 8px",
+                  borderRadius: 8, cursor: "pointer", background: masBarato ? "#E8F5E9" : "transparent"
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = masBarato ? "#d5ecd7" : "#f5f5f5"}
+                onMouseLeave={e => e.currentTarget.style.background = masBarato ? "#E8F5E9" : "transparent"}>
+                <SuperBadge nombre={o.supermercado} size={24} bare={true} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{o.supermercado}</span>
+                <span style={{ fontSize: 12, marginLeft: "auto", fontWeight: 800, color: masBarato ? "#2E7D32" : "#1a1a1a" }}>
+                  {fmt(o.precio)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
-function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, token }) {
+function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, onCambiarSuper, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
   const [selectedProducto, setSelectedProducto] = React.useState(null);
  
@@ -747,6 +804,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, t
                       {cantidad > 1 && <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>{fmt(p.precio)} c/u</span>}
                     </div>
                   </div>
+                  <SuperSwapButton item={item} onCambiarSuper={onCambiarSuper} />
                   <div className="qty-control">
                     <button className="qty-btn" disabled={cantidad <= 1}
                       onClick={() => onUpdateCantidad(item.producto_id, cantidad - 1)}>−</button>
@@ -962,6 +1020,22 @@ function App() {
     }
   }
  
+  async function cambiarSuper(producto_id, nuevo_producto_id) {
+    const anterior = carritoItems;
+    setCarritoItems(prev => prev.map(i => i.producto_id === producto_id ? { ...i, producto_id: nuevo_producto_id } : i));
+    try {
+      const res = await fetch(`${API}/carrito/${producto_id}/cambiar-super`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ nuevo_producto_id })
+      });
+      if (!res.ok) throw new Error();
+      cargarCarrito(); // trae nombre/imagen/precio/otros_supers completos del nuevo producto
+    } catch (err) {
+      setCarritoItems(anterior);
+    }
+  }
+
   function cambiarPagina(p) { setPagina(p); cargar(p); window.scrollTo({top:0,behavior:"smooth"}); }
   function cambiarPorPagina(val) { setPorPagina(val); setPagina(1); }
   function handleCatFiltro(cat) { setCatFiltro(cat); setSubcatFiltro("Todas"); }
@@ -1026,7 +1100,7 @@ function App() {
         </div>
  
         {tab === "carrito" ? (
-          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} token={token}/>
+          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token}/>
         ) : (
           <>
             <div className="search">
