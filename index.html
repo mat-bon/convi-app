@@ -199,15 +199,17 @@ const API = "https://web-production-32c3f.up.railway.app";
  
 const SUPER_COLORS = {
   VEA:       { bg:"#FFD600", text:"#000" },
+  Disco:     { bg:"#C8102E", text:"#fff" },
   Carrefour: { bg:"#0066CC", text:"#fff" },
   MasOnline: { bg:"#E4002B", text:"#fff" },
   Dino:      { bg:"#2E7D32", text:"#fff" },
 };
- 
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino"];
+
+const SUPER_VTEX = ["VEA", "Disco", "Carrefour", "MasOnline", "Dino"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
+  Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
   Carrefour: "https://www.micarrefour.com.ar/images/footer/logo-carrefour-com-ar.svg",
   MasOnline: "https://masonlineprod.vtexassets.com/assets/vtex.file-manager-graphql/images/1f676005-1a66-4379-abe1-e8c39b539f10___3b7e04ce085fbfa38121c0692ad1dd9b.svg",
   Dino:      "https://www.dinoonline.com.ar/super/images/logo-super-mami.png",
@@ -232,6 +234,7 @@ function useLogoSources(nombre) {
  
 const BASE_URLS = {
   VEA:       "https://www.vea.com.ar",
+  Disco:     "https://www.disco.com.ar",
   Carrefour: "https://www.carrefour.com.ar",
   MasOnline: "https://www.masonline.com.ar",
   Dino:      "https://www.dinoonline.com.ar",
@@ -319,10 +322,10 @@ function promoColor(promo) {
   return "#C62828";
 }
  
-// Sales channel de checkout por supermercado. VEA (Cencosud) tiene el sc=1
-// inactivo — el único activo es el 34; con sc=1 el checkout rechaza todos los
-// ítems con "no encontrado o no disponible".
-const VTEX_SALES_CHANNEL = { VEA: 34 };
+// Sales channel de checkout por supermercado. Los sitios Cencosud tienen el
+// sc=1 inactivo — el único activo es el 34 en VEA y el 33 en Disco; con sc=1
+// el checkout rechaza todos los ítems con "no encontrado o no disponible".
+const VTEX_SALES_CHANNEL = { VEA: 34, Disco: 33 };
 
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
@@ -628,7 +631,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     );
   }
 
-  // --- Flujo normal (VEA, Carrefour, MasOnline) ---
+  // --- Flujo normal (VEA, Disco, Carrefour, MasOnline) ---
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="confirm-modal" onClick={e => e.stopPropagation()}>
@@ -1194,7 +1197,7 @@ function App() {
   function cambiarPorPagina(val) { setPorPagina(val); setPagina(1); }
   function handleCatFiltro(cat) { setCatFiltro(cat); setSubcatFiltro("Todas"); }
  
-  const supers = ["Todos","VEA","Carrefour","MasOnline","Dino"];
+  const supers = ["Todos","VEA","Disco","Carrefour","MasOnline","Dino"];
   const cats = ["Todas", ...Object.keys(CATEGORIAS)];
   const subcats = catFiltro!=="Todas"&&CATEGORIAS[catFiltro] ? ["Todas",...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
   const totalCarrito = carritoItems.length;
@@ -1210,7 +1213,7 @@ function App() {
             <h1 style={{cursor:"pointer"}} onClick={()=>{setTab("todos");setSuperFiltro("Todos");setCatFiltro("Todas");setSubcatFiltro("Todas");setBusqueda("");setSoloOfertas(false);window.scrollTo({top:0,behavior:"smooth"});}}>🛒 <span>Super</span>Precios AR</h1>
           </div>
           <div className="header-logos">
-            {["VEA","Carrefour","MasOnline","Dino"].map(s => (
+            {["VEA","Disco","Carrefour","MasOnline","Dino"].map(s => (
               <SuperLogo key={s} nombre={s} size={80} padding={s === "VEA" ? 10 : 3} shape="square"/>
             ))}
           </div>
