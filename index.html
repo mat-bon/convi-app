@@ -921,7 +921,6 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
       </div>
       <div className="badges">
         <SuperBadge nombre={p.supermercado} size={40} fontSize={11} bare={true}/>
-        <span className="cat-badge">{SUBCAT_LABELS[p.subcategoria]||CAT_LABELS[p.categoria]||p.categoria}</span>
         {p.scrapeado_en&&<span className="time-badge">{relTime(p.scrapeado_en)}</span>}
       </div>
       {p.imagen_url&&<img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{width:"100%",height:"140px",objectFit:"contain",borderRadius:"8px",background:"#f9f9f9"}}/>}
