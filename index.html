@@ -319,9 +319,15 @@ function promoColor(promo) {
   return "#C62828";
 }
  
+// Sales channel de checkout por supermercado. VEA (Cencosud) tiene el sc=1
+// inactivo — el único activo es el 34; con sc=1 el checkout rechaza todos los
+// ítems con "no encontrado o no disponible".
+const VTEX_SALES_CHANNEL = { VEA: 34 };
+
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
+  const sc = VTEX_SALES_CHANNEL[superNombre] || 1;
   const params = items
     .filter(i => i.sku_id)
     .map(i => {
@@ -331,25 +337,18 @@ function buildVtexCartUrl(superNombre, items) {
     })
     .join("&");
   if (!params) return null;
-  return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
+  return `${baseUrl}/checkout/cart/add?sc=${sc}&${params}`;
 }
 
 function buildDinoCartUrl(producto, cantidad) {
-  // En Dino, product_id y sku_id suelen ser el mismo valor
+  // Dino (ATG) agrega UN ítem por request; /super/carrito/ lo agrega y muestra
+  // el carrito. ATG resuelve por url_catalog_ref_id, así que sirve sku_id como
+  // fallback de product_id (con o sin prefijo "prod").
   const productId = producto.product_id || producto.sku_id;
-  console.log("buildDinoCartUrl:", {url: producto.url, sku_id: producto.sku_id, product_id: productId, cantidad});
-  if (!producto.url || !producto.sku_id || !productId) {
-    console.warn("buildDinoCartUrl: faltan datos", {url: !!producto.url, sku_id: !!producto.sku_id, product_id: !!productId});
-    return null;
-  }
-  const url = new URL(producto.url);
-  url.searchParams.set('dcs_action', 'additemtocart');
-  url.searchParams.set('url_catalog_ref_id', producto.sku_id);
-  url.searchParams.set('url_product_id', productId);
-  url.searchParams.set('url_quantity', cantidad);
-  const result = url.toString();
-  console.log("buildDinoCartUrl result:", result);
-  return result;
+  if (!producto.sku_id || !productId) return null;
+  const qtyNum = Number(cantidad);
+  const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
+  return `${BASE_URLS.Dino}/super/carrito/?dcs_action=additemtocart&url_catalog_ref_id=${producto.sku_id}&url_product_id=${productId}&url_quantity=${qty}`;
 }
  
 // ---------------------------------------------------------------------------
@@ -512,39 +511,31 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
+  const [dinoProgress, setDinoProgress] = React.useState(null); // {actual, total}
+  const dinoTimerRef = React.useRef(null);
+
+  React.useEffect(() => () => { if (dinoTimerRef.current) clearInterval(dinoTimerRef.current); }, []);
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
-  // --- Flujo VEA (producto por producto) ---
-  if (superNombre === "VEA") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-modal-title">Comprar en VEA</div>
-          <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
-            Abrí el primer producto para iniciar sesión en VEA, luego añadí el resto.
-          </p>
-          <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
-            {items.map((i, idx) => (
-              <div key={idx} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f3f4f6"}}>
-                <span style={{fontSize:13, color:"#374151", flex:1, marginRight:8}}>
-                  {i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
-                </span>
-                <button className="confirm-btn secondary"
-                  style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
-                  onClick={() => window.open(i.producto.url, "_blank", "noopener,noreferrer")}>
-                  Ver en VEA →
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="confirm-modal-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
-            <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
-          </div>
-        </div>
-      </div>
-    );
+  // Dino no tiene carga batch por URL (ATG procesa un ítem por request), así
+  // que abrimos UNA pestaña y la navegamos por cada URL de additemtocart.
+  // Asignar location a una ventana cross-origin está permitido; el delay le da
+  // tiempo a cada request a impactar antes de la siguiente navegación.
+  function cargarDinoAuto() {
+    const urls = items.map(i => buildDinoCartUrl(i.producto, i.cantidad)).filter(Boolean);
+    if (!urls.length) return;
+    const win = window.open(urls[0], "_blank");
+    if (!win) return; // popup bloqueado: queda el listado manual como fallback
+    setDinoProgress({ actual: 1, total: urls.length });
+    let idx = 1;
+    dinoTimerRef.current = setInterval(() => {
+      if (win.closed) { clearInterval(dinoTimerRef.current); setDinoProgress(null); return; }
+      if (idx >= urls.length) { clearInterval(dinoTimerRef.current); setDinoProgress(null); setPaso("listo"); return; }
+      win.location = urls[idx];
+      idx += 1;
+      setDinoProgress({ actual: idx, total: urls.length });
+    }, 3500);
   }
 
   // --- Flujo Dino (2 pasos con dcs_action) ---
@@ -568,30 +559,47 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           ) : paso === "carrito" ? (
             <>
               <div className="confirm-modal-title">Comprar en Dino — Paso 2 de 2</div>
-              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
-                Abrí producto por producto para agregarlo al carrito de Dino.
-              </p>
-              <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
-                {items.map((i, idx) => {
-                  const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
-                  return (
-                    <div key={idx} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f3f4f6"}}>
-                      <span style={{fontSize:13, color:"#374151", flex:1, marginRight:8}}>
-                        {i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
-                      </span>
-                      <button className="confirm-btn secondary"
-                        style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
-                        onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")}
-                        disabled={!dinoUrl}>
-                        {dinoUrl ? "Agregar →" : "Sin datos"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              {dinoProgress ? (
+                <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
+                  Cargando producto {dinoProgress.actual} de {dinoProgress.total} en Dino…
+                  No cierres la pestaña de Dino ni esta ventana hasta que termine.
+                </p>
+              ) : (
+                <>
+                  <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
+                    Cargá todos los productos de una (se abre una pestaña de Dino que los
+                    agrega uno por uno), o agregalos manualmente desde el listado.
+                  </p>
+                  <div className="confirm-modal-btns" style={{marginBottom:10}}>
+                    <button className="confirm-btn primary" onClick={cargarDinoAuto}>
+                      Cargar todos en el carrito →
+                    </button>
+                  </div>
+                  <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
+                    {items.map((i, idx) => {
+                      const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
+                      return (
+                        <div key={idx} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f3f4f6"}}>
+                          <span style={{fontSize:13, color:"#374151", flex:1, marginRight:8}}>
+                            {i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
+                          </span>
+                          <button className="confirm-btn secondary"
+                            style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
+                            onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")}
+                            disabled={!dinoUrl}>
+                            {dinoUrl ? "Agregar →" : "Sin datos"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div className="confirm-modal-btns">
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
-                <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
+                <button className="confirm-btn secondary" onClick={onClose}>
+                  {dinoProgress ? "Cancelar carga" : "Cerrar"}
+                </button>
               </div>
             </>
           ) : (
@@ -611,7 +619,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     );
   }
 
-  // --- Flujo normal (Carrefour, MasOnline) ---
+  // --- Flujo normal (VEA, Carrefour, MasOnline) ---
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="confirm-modal" onClick={e => e.stopPropagation()}>
