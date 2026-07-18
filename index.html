@@ -342,10 +342,13 @@ function buildVtexCartUrl(superNombre, items) {
 
 function buildDinoCartUrl(producto, cantidad) {
   // Dino (ATG) agrega UN ítem por request; /super/carrito/ lo agrega y muestra
-  // el carrito. ATG resuelve por url_catalog_ref_id, así que sirve sku_id como
-  // fallback de product_id (con o sin prefijo "prod").
-  const productId = producto.product_id || producto.sku_id;
-  if (!producto.sku_id || !productId) return null;
+  // el carrito. El url_product_id DEBE llevar el prefijo "prod" (los repository
+  // ids de Dino son "prod"+sku): con el sku pelado ATG crea un ítem con
+  // referencia rota (sin foto, sin link) que además rompe los agregados
+  // posteriores desde la propia página de Dino.
+  if (!producto.sku_id) return null;
+  const rawId = String(producto.product_id || producto.sku_id);
+  const productId = rawId.startsWith("prod") ? rawId : `prod${rawId}`;
   const qtyNum = Number(cantidad);
   const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
   return `${BASE_URLS.Dino}/super/carrito/?dcs_action=additemtocart&url_catalog_ref_id=${producto.sku_id}&url_product_id=${productId}&url_quantity=${qty}`;
@@ -547,7 +550,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
             <>
               <div className="confirm-modal-title">Comprar en Dino — Paso 1 de 2</div>
               <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
-                Abrí Dino e iniciá sesión con tu usuario (o continuá como invitado).
+                Abrí Dino e iniciá sesión con tu usuario. Si es tu primera compra,
+                configurá también tu <strong>dirección de entrega</strong> — Dino la
+                necesita para asignarte sucursal y mostrarte el carrito.
               </p>
               <div className="confirm-modal-btns">
                 <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
@@ -570,6 +575,10 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                     Cargá todos los productos de una (se abre una pestaña de Dino que los
                     agrega uno por uno), o agregalos manualmente desde el listado.
                   </p>
+                  <div className="confirm-modal-warning" style={{marginBottom:10}}>
+                    💡 Si al ver el carrito Dino te pide una dirección de entrega,
+                    completala: tus productos quedan guardados y aparecen al terminar.
+                  </div>
                   <div className="confirm-modal-btns" style={{marginBottom:10}}>
                     <button className="confirm-btn primary" onClick={cargarDinoAuto}>
                       Cargar todos en el carrito →
