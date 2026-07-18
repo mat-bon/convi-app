@@ -880,6 +880,56 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
+// Card memoizada: solo re-renderiza si cambian sus props (producto, estado de
+// carrito o handlers). Antes era JSX inline dentro del map de App: cada
+// setState del root (cada tecla de búsqueda, abrir un modal) re-renderizaba
+// hasta 224 cards completas.
+const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCarrito, onOpen }) {
+  const hasOffer = p.descuento_pct || p.promocion;
+  const esVtex = SUPER_VTEX.includes(p.supermercado);
+  return (
+    <div className={`card ${hasOffer?"oferta":""}`} onClick={()=>onOpen(p)}>
+      <div className="card-actions">
+        <button className="fav-btn" onClick={e=>onFav(e,p.id)} style={{filter:p.favorito?"none":"grayscale(1) opacity(.35)"}}>
+          {p.favorito?"❤️":"🤍"}
+        </button>
+        {(esVtex || p.supermercado === "Dino") && (
+          <button className={`cart-btn ${enCarrito?"en-carrito":""}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
+            {enCarrito?"✓ Carrito":"+ Carrito"}
+          </button>
+        )}
+      </div>
+      <div className="badges">
+        <SuperBadge nombre={p.supermercado} size={40} fontSize={11} bare={true}/>
+        <span className="cat-badge">{SUBCAT_LABELS[p.subcategoria]||CAT_LABELS[p.categoria]||p.categoria}</span>
+        {p.scrapeado_en&&<span className="time-badge">{relTime(p.scrapeado_en)}</span>}
+      </div>
+      {p.imagen_url&&<img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{width:"100%",height:"140px",objectFit:"contain",borderRadius:"8px",background:"#f9f9f9"}}/>}
+      <div className="product-name">{p.nombre}</div>
+      <div className="prices">
+        <span className={`price ${hasOffer?"oferta":"normal"}`}>{fmt(p.precio)}</span>
+        {p.precio_original&&<span className="price-original">{fmt(p.precio_original)}</span>}
+        {p.descuento_pct&&!p.promocion&&<span className="discount">-{p.descuento_pct}%</span>}
+        {p.precio_regional&&<span style={{fontSize:9,fontWeight:800,color:"#1565C0",background:"#E3F2FD",padding:"2px 7px",borderRadius:10}}>📍 tu región</span>}
+      </div>
+      {p.promocion&&<span className="promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
+      {p.otros_supers&&p.otros_supers.length>0&&(()=>{
+        const ordenados=[...p.otros_supers].sort((a,b)=>a.precio-b.precio);
+        return (<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+          {ordenados.map((o,i)=>{
+            const esMasBarato=o.precio<p.precio;
+            const osc=SUPER_COLORS[o.supermercado]||{bg:"#888",text:"#fff"};
+            return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,textDecoration:"none",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 8px",borderRadius:8,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1px solid #A5D6A7":"1px solid #ebebeb"}}>
+              <span style={{fontWeight:700,color:osc.bg==="FFD600"?"#b8860b":osc.bg}}>{i===0&&esMasBarato?"💚 ":""}{o.supermercado}</span>
+              <span style={{fontWeight:700,color:esMasBarato?"#2E7D32":"#555"}}>{fmt(o.precio)}</span>
+            </a>);
+          })}
+        </div>);
+      })()}
+    </div>
+  );
+});
+
 function App() {
   const [productos, setProductos] = React.useState([]);
   const [stats, setStats] = React.useState({});
@@ -1027,19 +1077,24 @@ function App() {
     if (regionId) params.append("region_id", regionId);
     try {
       const headers = token ? {Authorization:`Bearer ${token}`} : {};
-      const [resp, st] = await Promise.all([
-        fetch(`${API}/productos?${params}`, {signal, headers}).then(r=>r.json()),
-        fetch(`${API}/stats`, {signal, headers}).then(r=>r.json()),
-      ]);
+      // /stats ya no se pide acá: casi no cambia y se estaba refetcheando en
+      // cada cambio de filtro/página/búsqueda. Ahora tiene su propio efecto.
+      const resp = await fetch(`${API}/productos?${params}`, {signal, headers}).then(r=>r.json());
       if (signal.aborted) return;
       const prods = resp.productos || [];
       setProductos(Array.isArray(prods)?prods:[]);
       setTotalProductos(resp.total||0);
       setTotalPaginas(resp.total_paginas||1);
-      setStats(st);
     } catch(e) { if (e.name==="AbortError") return; }
     setLoading(false);
   }
+
+  // Stats: una vez al montar y cuando cambia la sesión (el toggle de favoritos
+  // ya lo refetchea por su cuenta al modificar el contador).
+  React.useEffect(() => {
+    const headers = token ? {Authorization:`Bearer ${token}`} : {};
+    fetch(`${API}/stats`, {headers}).then(r=>r.json()).then(st=>setStats(st)).catch(()=>{});
+  }, [token]);
  
   React.useEffect(() => {
     if (tab === "carrito") return;
@@ -1048,7 +1103,9 @@ function App() {
     return () => clearTimeout(t);
   }, [tab, superFiltro, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
  
-  async function toggleFav(e, id) {
+  // useCallback: identidad estable para que React.memo(ProductCard) evite
+  // re-renderizar hasta 224 cards en cada tecla de búsqueda / setState del root.
+  const toggleFav = React.useCallback(async (e, id) => {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
     setProductos(prev => prev.map(p => p.id===id ? {...p, favorito:!p.favorito} : p));
@@ -1056,9 +1113,9 @@ function App() {
     const data = await res.json().catch(()=>({}));
     if (data.favorito !== undefined) setProductos(prev => prev.map(p => p.id===id ? {...p, favorito:data.favorito} : p));
     fetch(`${API}/stats`, {headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).then(st=>setStats(st)).catch(()=>{});
-  }
- 
-  async function toggleCarrito(e, producto) {
+  }, [token]);
+
+  const toggleCarrito = React.useCallback(async (e, producto) => {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
     const yaEsta = carritoItems.some(i => i.producto_id === producto.id);
@@ -1076,7 +1133,7 @@ function App() {
       if (yaEsta) setCarritoItems(prev => [...prev, {producto_id:producto.id, cantidad:1}]);
       else setCarritoItems(prev => prev.filter(i => i.producto_id !== producto.id));
     }
-  }
+  }, [token, carritoItems]);
  
   async function removeDelCarrito(producto_id) {
     setCarritoItems(prev => prev.filter(i => i.producto_id !== producto_id));
@@ -1246,53 +1303,16 @@ function App() {
             ) : (
               <>
                 <div className="grid">
-                  {productos.map(p => {
-                    const hasOffer = p.descuento_pct || p.promocion;
-                    const sc = SUPER_COLORS[p.supermercado]||{bg:"#888",text:"#fff"};
-                    const enCarrito = carritoItems.some(i => i.producto_id===p.id);
-                    const esVtex = SUPER_VTEX.includes(p.supermercado);
-                    return (
-                      <div key={p.id} className={`card ${hasOffer?"oferta":""}`} onClick={()=>setModalProducto(p)}>
-                        <div className="card-actions">
-                          <button className="fav-btn" onClick={e=>toggleFav(e,p.id)} style={{filter:p.favorito?"none":"grayscale(1) opacity(.35)"}}>
-                            {p.favorito?"❤️":"🤍"}
-                          </button>
-                          {(esVtex || p.supermercado === "Dino") && (
-                            <button className={`cart-btn ${enCarrito?"en-carrito":""}`} onClick={e=>toggleCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
-                              {enCarrito?"✓ Carrito":"+ Carrito"}
-                            </button>
-                          )}
-                        </div>
-                        <div className="badges">
-                          <SuperBadge nombre={p.supermercado} size={40} fontSize={11} bare={true}/>
-                          <span className="cat-badge">{SUBCAT_LABELS[p.subcategoria]||CAT_LABELS[p.categoria]||p.categoria}</span>
-                          {p.scrapeado_en&&<span className="time-badge">{relTime(p.scrapeado_en)}</span>}
-                        </div>
-                        {p.imagen_url&&<img src={p.imagen_url} alt={p.nombre} style={{width:"100%",height:"140px",objectFit:"contain",borderRadius:"8px",background:"#f9f9f9"}}/>}
-                        <div className="product-name">{p.nombre}</div>
-                        <div className="prices">
-                          <span className={`price ${hasOffer?"oferta":"normal"}`}>{fmt(p.precio)}</span>
-                          {p.precio_original&&<span className="price-original">{fmt(p.precio_original)}</span>}
-                          {p.descuento_pct&&!p.promocion&&<span className="discount">-{p.descuento_pct}%</span>}
-                          {p.precio_regional&&<span style={{fontSize:9,fontWeight:800,color:"#1565C0",background:"#E3F2FD",padding:"2px 7px",borderRadius:10}}>📍 tu región</span>}
-                        </div>
-                        {p.promocion&&<span className="promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
-                        {p.otros_supers&&p.otros_supers.length>0&&(()=>{
-                          const ordenados=[...p.otros_supers].sort((a,b)=>a.precio-b.precio);
-                          return (<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
-                            {ordenados.map((o,i)=>{
-                              const esMasBarato=o.precio<p.precio;
-                              const osc=SUPER_COLORS[o.supermercado]||{bg:"#888",text:"#fff"};
-                              return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,textDecoration:"none",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 8px",borderRadius:8,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1px solid #A5D6A7":"1px solid #ebebeb"}}>
-                                <span style={{fontWeight:700,color:osc.bg==="FFD600"?"#b8860b":osc.bg}}>{i===0&&esMasBarato?"💚 ":""}{o.supermercado}</span>
-                                <span style={{fontWeight:700,color:esMasBarato?"#2E7D32":"#555"}}>{fmt(o.precio)}</span>
-                              </a>);
-                            })}
-                          </div>);
-                        })()}
-                      </div>
-                    );
-                  })}
+                  {productos.map(p => (
+                    <ProductCard
+                      key={p.id}
+                      p={p}
+                      enCarrito={carritoItems.some(i => i.producto_id===p.id)}
+                      onFav={toggleFav}
+                      onCarrito={toggleCarrito}
+                      onOpen={setModalProducto}
+                    />
+                  ))}
                 </div>
                 <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiar={cambiarPagina}/>
               </>
