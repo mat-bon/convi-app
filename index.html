@@ -1220,7 +1220,7 @@ function App() {
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           {regiones.length > 0 && (
             <select value={regionId||""} onChange={e=>cambiarRegion(e.target.value?Number(e.target.value):null)}
-              title="Ver precios de tu región (por ahora, Carrefour)"
+              title="Ver precios de tu región (Carrefour, MasOnline y VEA)"
               style={{fontSize:12,padding:"6px 10px",borderRadius:8,border:"1px solid #374151",background:"#1f2937",color:"#fff",cursor:"pointer",outline:"none",fontFamily:"inherit"}}>
               <option value="">📍 Sin región (precio general)</option>
               {regiones.map(r => <option key={r.id} value={r.id}>📍 {r.nombre}</option>)}
