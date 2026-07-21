@@ -1569,7 +1569,7 @@ function App() {
   const [orden, setOrden] = React.useState("popular");
   const [busqueda, setBusqueda] = React.useState("");
   const [modalProducto, setModalProducto] = React.useState(null);
-  const [porPagina, setPorPagina] = React.useState(28);
+  const [porPagina, setPorPagina] = React.useState(30);
   const [pagina, setPagina] = React.useState(1);
   const [totalProductos, setTotalProductos] = React.useState(0);
   const [totalPaginas, setTotalPaginas] = React.useState(1);
@@ -1830,7 +1830,7 @@ function App() {
             <div className="header-brand-icon">🛒</div>
             <div className="header-brand-text">
               <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 4 supermercados</div>
+              <div className="header-brand-sub">Compará precios entre 7 supermercados</div>
             </div>
           </a>
 
@@ -1946,7 +1946,7 @@ function App() {
                   </div>
                   <div className="per-page">
                     <span>Mostrar:</span>
-                    {[28,56,112,224].map(val => (
+                    {[30,60,120,240].map(val => (
                       <button key={val} onClick={()=>cambiarPorPagina(val)} className={`sort-btn ${porPagina===val?"active":""}`} style={{padding:"4px 10px",fontSize:11}}>{val}</button>
                     ))}
                   </div>
