@@ -1425,6 +1425,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
   ].sort((a, b) => a.precio - b.precio);
   const actualEsMejor = hayComparacion && listaPrecios[0].esActual;
   const ahorro = actualEsMejor ? listaPrecios[1].precio - p.precio : 0;
+  const AHORRO_MINIMO = 100; // solo mostramos el cartel si el ahorro supera este monto
 
   return (
     <div className={`product-card ${hasOffer?"offer":""}`} onClick={()=>onOpen(p)}>
@@ -1461,7 +1462,6 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
                   <span className="card-compare-name" style={{color: esMejor ? "var(--text-primary)" : "var(--text-secondary)"}}>
                     <SuperLogo nombre={o.supermercado} size={14} bare={true}/>
                     {o.supermercado}
-                    {o.esActual && <span className="card-compare-tag">acá</span>}
                   </span>
                   <span className={`card-compare-price ${esMejor ? "best" : "worse"}`}>
                     {fmt(o.precio)}{esMejor && " 💚"}
@@ -1474,7 +1474,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
                 +{listaPrecios.length - 3} supermercado{listaPrecios.length - 3 > 1 ? "s" : ""} más
               </div>
             )}
-            {ahorro > 0 && (
+            {ahorro > AHORRO_MINIMO && (
               <div className="card-compare-savings">
                 💚 Ahorrá {fmt(ahorro)} comprando acá
               </div>
