@@ -372,6 +372,7 @@
       margin-top: 5px; text-align: center; background: var(--success-light);
       padding: 4px; border-radius: 8px;
     }
+    .card-compare-savings.cheaper { color: #B45309; background: #FFF7ED; }
 
     /* Card actions */
     .card-actions {
@@ -1426,7 +1427,10 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
   const actualEsMejor = hayComparacion && listaPrecios[0].esActual;
   const precioMax = hayComparacion ? Math.max(...otros.map(o => o.precio)) : 0;
   const ahorro = actualEsMejor ? precioMax - p.precio : 0;
-  const AHORRO_MINIMO = 100; // solo mostramos el cartel si el ahorro supera este monto
+  // Si el súper de esta card NO es el más barato, cuánto y en qué súper conviene comprarlo
+  const masBarato = hayComparacion && !actualEsMejor ? listaPrecios[0] : null;
+  const diffMasBarato = masBarato ? p.precio - masBarato.precio : 0;
+  const AHORRO_MINIMO = 100; // solo mostramos el cartel si el monto supera este valor
 
   return (
     <div className={`product-card ${hasOffer?"offer":""}`} onClick={()=>onOpen(p)}>
@@ -1478,6 +1482,11 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
             {ahorro > AHORRO_MINIMO && (
               <div className="card-compare-savings">
                 💚 Ahorrá {fmt(ahorro)} comprando acá
+              </div>
+            )}
+            {diffMasBarato > AHORRO_MINIMO && (
+              <div className="card-compare-savings cheaper">
+                🔻 {fmt(diffMasBarato)} más barato en {masBarato.supermercado}
               </div>
             )}
           </div>
