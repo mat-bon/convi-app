@@ -204,6 +204,47 @@
     }
     .filter-chip.active .count { background: rgba(255,255,255,0.16); color: #fff; border-color: transparent; }
 
+    /* Selección múltiple de supermercados (checkboxes) */
+    .filter-checks { display: flex; flex-direction: column; gap: 1px; }
+    .filter-check {
+      display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+      border-radius: 10px; cursor: pointer; user-select: none;
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
+      transition: background 0.14s, color 0.14s;
+    }
+    .filter-check:hover { background: var(--surface-2); color: var(--text-primary); }
+    .filter-check.on { color: var(--text-primary); }
+    .filter-check input[type="checkbox"] {
+      appearance: none; -webkit-appearance: none;
+      width: 18px; height: 18px; flex-shrink: 0; margin: 0;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      background: var(--surface); cursor: pointer; position: relative;
+      transition: background 0.14s, border-color 0.14s;
+    }
+    .filter-check input[type="checkbox"]:hover { border-color: var(--accent-dark); }
+    .filter-check input[type="checkbox"]:checked,
+    .filter-check input[type="checkbox"]:indeterminate { background: var(--ink); border-color: var(--ink); }
+    .filter-check input[type="checkbox"]:checked::after {
+      content: ""; position: absolute; left: 5px; top: 1px;
+      width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .filter-check input[type="checkbox"]:indeterminate::after {
+      content: ""; position: absolute; left: 3.5px; top: 6.5px;
+      width: 9px; height: 2px; background: #fff; border-radius: 1px;
+    }
+    .filter-check img { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .filter-check-name { white-space: nowrap; }
+    .filter-check .count {
+      margin-left: auto; font-size: 11px; font-weight: 800;
+      padding: 1px 7px; border-radius: 10px; background: var(--surface-2);
+      color: var(--text-muted); border: 1px solid var(--border-light);
+    }
+    .filter-check.master {
+      border-bottom: 1px solid var(--border-light); border-radius: 0;
+      margin-bottom: 4px; padding-bottom: 9px; font-weight: 800; color: var(--text-primary);
+    }
+
     .filter-toggle {
       display: flex; align-items: center; gap: 11px; padding: 9px 11px;
       border-radius: 10px; cursor: pointer; transition: all 0.15s;
@@ -1567,22 +1608,34 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
 // ---------------------------------------------------------------------------
 // Sidebar Filters
 // ---------------------------------------------------------------------------
-function Sidebar({ superFiltro, setSuperFiltro, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats }) {
-  const supers = ["Todos","VEA","Carrefour","MasOnline","Dino","Dia","Coto","Disco"];
+function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats }) {
+  const supers = SUPER_TODOS;
   const cats = ["Todas", ...Object.keys(CATEGORIAS)];
   const subcats = catFiltro !== "Todas" && CATEGORIAS[catFiltro] ? ["Todas", ...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
+
+  const todosMarcados = supersVisibles.length === supers.length;
+  const algunoMarcado = supersVisibles.length > 0;
+  const toggleSuper = (s) => setSupersVisibles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleTodos = () => setSupersVisibles(todosMarcados ? [] : supers);
 
   return (
     <div>
       <div className="filter-card">
         <div className="filter-title">Supermercado</div>
-        <div className="filter-group">
+        <div className="filter-checks">
+          <label className="filter-check master">
+            <input type="checkbox" checked={todosMarcados}
+              ref={el => { if (el) el.indeterminate = algunoMarcado && !todosMarcados; }}
+              onChange={toggleTodos}/>
+            <span className="filter-check-name">Todos</span>
+          </label>
           {supers.map(s => (
-            <button key={s} className={`filter-chip ${superFiltro===s?"active":""}`} onClick={()=>setSuperFiltro(s)}>
-              {s !== "Todos" && <span className="dot" style={{background:SUPER_COLORS[s]?.bg||"#ccc"}}/>}
-              <span>{s}</span>
-              {s !== "Todos" && stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
-            </button>
+            <label key={s} className={`filter-check ${supersVisibles.includes(s)?"on":""}`}>
+              <input type="checkbox" checked={supersVisibles.includes(s)} onChange={()=>toggleSuper(s)}/>
+              <SuperLogo nombre={s} size={18} bare={true}/>
+              <span className="filter-check-name">{s}</span>
+              {stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
+            </label>
           ))}
         </div>
       </div>
@@ -1629,7 +1682,7 @@ function App() {
   const [stats, setStats] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState("todos");
-  const [superFiltro, setSuperFiltro] = React.useState("Todos");
+  const [supersVisibles, setSupersVisibles] = React.useState(SUPER_TODOS);
   const [catFiltro, setCatFiltro] = React.useState("Todas");
   const [subcatFiltro, setSubcatFiltro] = React.useState("Todas");
   const [soloOfertas, setSoloOfertas] = React.useState(false);
@@ -1648,6 +1701,12 @@ function App() {
   const [regiones, setRegiones] = React.useState([]);
   const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+
+  // Multi-selección de supermercados: si hay exactamente uno visible lo filtramos en el
+  // servidor (paginación correcta); con un subconjunto filtramos en cliente sobre lo traído.
+  const superParam = supersVisibles.length === 1 ? supersVisibles[0] : "";
+  const supersSet = new Set(supersVisibles);
+  const productosVisibles = productos.filter(p => supersSet.has(p.supermercado));
 
   React.useEffect(() => {
     fetch(`${API}/regiones`).then(r => r.json())
@@ -1776,7 +1835,7 @@ function App() {
     setLoading(true);
     const paginaActual = paginaOverride !== undefined ? paginaOverride : pagina;
     const params = new URLSearchParams();
-    if (superFiltro !== "Todos") params.append("supermercado", superFiltro);
+    if (superParam) params.append("supermercado", superParam);
     if (catFiltro !== "Todas") params.append("categoria", catFiltro);
     if (subcatFiltro !== "Todas") params.append("subcategoria", subcatFiltro);
     if (soloOfertas) params.append("ofertas", "true");
@@ -1808,7 +1867,7 @@ function App() {
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
-  }, [tab, superFiltro, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
+  }, [tab, superParam, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
 
   const toggleFav = React.useCallback(async (e, id) => {
     e.stopPropagation();
@@ -1881,7 +1940,7 @@ function App() {
   const totalCarrito = carritoItems.length;
 
   function resetFilters() {
-    setTab("todos"); setSuperFiltro("Todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas");
+    setTab("todos"); setSupersVisibles(SUPER_TODOS); setCatFiltro("Todas"); setSubcatFiltro("Todas");
     setBusqueda(""); setSoloOfertas(false); window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -1947,7 +2006,7 @@ function App() {
             </button>
             <aside className={`sidebar ${sidebarOpen?"open":""}`}>
               <Sidebar
-                superFiltro={superFiltro} setSuperFiltro={setSuperFiltro}
+                supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
                 catFiltro={catFiltro} setCatFiltro={setCatFiltro}
                 subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
                 soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
@@ -2021,7 +2080,13 @@ function App() {
               </div>
 
               {/* Grid */}
-              {productos.length===0 && !loading ? (
+              {supersVisibles.length===0 && !loading ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🛒</div>
+                  <div className="empty-state-title">No hay supermercados seleccionados</div>
+                  <div className="empty-state-desc">Marcá al menos un supermercado en el panel de la izquierda para ver productos.</div>
+                </div>
+              ) : productosVisibles.length===0 && !loading ? (
                 <div className="empty-state">
                   <div className="empty-state-icon">🧐</div>
                   <div className="empty-state-title">No encontramos productos</div>
@@ -2042,7 +2107,7 @@ function App() {
                         </div>
                       ))
                     ) : (
-                      productos.map(p => (
+                      productosVisibles.map(p => (
                         <ProductCard
                           key={p.id}
                           p={p}
