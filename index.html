@@ -274,11 +274,11 @@
     .product-card.offer:hover::before { opacity: 1; }
 
     .card-image-wrap {
-      position: relative; padding: 16px 16px 8px;
+      position: relative; padding: 30px 16px 8px;
       background: linear-gradient(180deg, #F7F8FA 0%, var(--surface) 100%);
     }
     .card-image {
-      width: 100%; height: 162px; object-fit: contain;
+      width: 100%; height: 150px; object-fit: contain;
       border-radius: var(--radius-sm); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
       mix-blend-mode: multiply;
     }
@@ -289,14 +289,14 @@
       pointer-events: none;
     }
     .card-badge-super {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 7px;
       background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
-      padding: 4px 9px 4px 5px; border-radius: 20px;
+      padding: 6px 12px 6px 7px; border-radius: 22px;
       box-shadow: 0 1px 5px rgba(16,24,40,0.10); border: 1px solid rgba(255,255,255,0.8);
       pointer-events: auto;
     }
-    .card-badge-super img { width: 16px; height: 16px; object-fit: contain; }
-    .card-badge-super span { font-size: 10.5px; font-weight: 800; color: var(--text-primary); }
+    .card-badge-super img { width: 24px; height: 24px; object-fit: contain; }
+    .card-badge-super span { font-size: 13.5px; font-weight: 800; color: var(--text-primary); }
     .card-badge-time {
       font-size: 10px; font-weight: 700; color: var(--text-muted);
       background: rgba(255,255,255,0.85); padding: 3px 8px;
@@ -316,9 +316,10 @@
       letter-spacing: 0.5px; color: var(--text-muted);
     }
     .card-name {
-      font-size: 13.5px; font-weight: 600; color: var(--text-primary);
-      line-height: 1.42; display: -webkit-box; -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical; overflow: hidden; min-height: 38px;
+      font-size: 15.5px; font-weight: 700; color: var(--text-primary);
+      line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden; min-height: 42px;
+      letter-spacing: -0.2px;
     }
 
     .card-price-block { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -351,22 +352,24 @@
     .card-compare-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 4px 0; font-size: 11.5px;
+      text-decoration: none; color: inherit; cursor: pointer; border-radius: 6px;
+      transition: background 0.15s;
     }
-    .card-compare-row.current, .card-compare-row.best {
-      background: var(--success-light); margin: -8px -10px 5px; padding: 7px 10px;
-      border-radius: 10px 10px 0 0;
-      border-bottom: 1px solid rgba(22,163,74,0.12);
-    }
-    .card-compare-name { display: flex; align-items: center; gap: 6px; font-weight: 700; }
-    .card-compare-tag {
-      font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px;
-      color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border);
-      padding: 1px 5px; border-radius: 6px; margin-left: 2px; line-height: 1.5;
+    .card-compare-row:hover { background: rgba(16,24,40,0.04); }
+    .card-compare-row:hover .card-compare-name { text-decoration: underline; }
+    .card-compare-name {
+      display: flex; align-items: center; gap: 6px; font-weight: 700;
+      color: var(--text-secondary);
     }
     .card-compare-name img { width: 14px; height: 14px; object-fit: contain; }
-    .card-compare-price { font-weight: 800; }
-    .card-compare-price.best { color: var(--success); }
+    .card-compare-price { font-weight: 800; color: var(--text-secondary); }
     .card-compare-price.worse { color: var(--text-muted); }
+    .card-compare-row.cheaper .card-compare-name,
+    .card-compare-price.cheaper { color: #B45309; }
+    .card-compare-more {
+      font-size: 10.5px; color: var(--text-muted); text-align: center;
+      margin-top: 4px; font-weight: 600;
+    }
     .card-compare-savings {
       font-size: 10.5px; font-weight: 800; color: var(--success);
       margin-top: 5px; text-align: center; background: var(--success-light);
@@ -781,15 +784,22 @@ const SUPER_COLORS = {
   Carrefour: { bg:"#0066CC", text:"#fff" },
   MasOnline: { bg:"#E4002B", text:"#fff" },
   Dino:      { bg:"#2E7D32", text:"#fff" },
+  Dia:       { bg:"#E30613", text:"#fff" },
+  Coto:      { bg:"#E4002B", text:"#fff" },
+  Disco:     { bg:"#D52B1E", text:"#fff" },
 };
 
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino"];
+const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco"];
+const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
   Carrefour: "https://www.micarrefour.com.ar/images/footer/logo-carrefour-com-ar.svg",
   MasOnline: "https://masonlineprod.vtexassets.com/assets/vtex.file-manager-graphql/images/1f676005-1a66-4379-abe1-e8c39b539f10___3b7e04ce085fbfa38121c0692ad1dd9b.svg",
   Dino:      "https://www.dinoonline.com.ar/super/images/logo-super-mami.png",
+  Dia:       "https://tradeyretail.com/img/39b330a74fb0ce11006649d94eedb67c.jpg",
+  Coto:      "https://static.cotodigital3.com.ar/sitios/cdigi/static/content/images/nuevositio/header/LogoCOTO.svg",
+  Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
 };
 
 const SUPER_LOGOS_FALLBACK = {
@@ -801,6 +811,9 @@ const BASE_URLS = {
   Carrefour: "https://www.carrefour.com.ar",
   MasOnline: "https://www.masonline.com.ar",
   Dino:      "https://www.dinoonline.com.ar",
+  Dia:       "https://diaonline.supermercadosdia.com.ar",
+  Coto:      "https://www.cotodigital3.com.ar",
+  Disco:     "https://www.disco.com.ar",
 };
 
 const CATEGORIAS = {
@@ -912,6 +925,18 @@ function buildDinoCartUrl(producto, cantidad) {
   url.searchParams.set('url_product_id', productId);
   url.searchParams.set('url_quantity', cantidad);
   return url.toString();
+}
+
+// Coto no expone carrito ni URL de producto (Constructor.io): abrimos su buscador por nombre
+function buildCotoSearchUrl(producto) {
+  const q = encodeURIComponent(producto.nombre || "");
+  return `https://www.cotodigital3.com.ar/sitios/cdigi/browse?Ntt=${q}`;
+}
+
+// true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
+function esPromoDescuento(promo) {
+  if (!promo) return false;
+  return /(\d+\s*%|dto|desc)/i.test(promo) && !/\dx\d|unidad|2da|lleva|combo/i.test(promo);
 }
 
 // ---------------------------------------------------------------------------
@@ -1117,6 +1142,33 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           </div>
           <div className="confirm-btns">
             <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
+            <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (superNombre === "Coto") {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+          <div className="confirm-title">Comprar en Coto</div>
+          <p className="confirm-desc">
+            Coto no permite cargar el carrito automáticamente. Abrí cada producto en su buscador y agregalo desde el sitio de Coto.
+          </p>
+          <div className="confirm-item-list">
+            {items.map((i, idx) => (
+              <div key={idx} className="confirm-item-row">
+                <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
+                <button className="confirm-item-btn" onClick={() => window.open(buildCotoSearchUrl(i.producto), "_blank", "noopener,noreferrer")}>
+                  Buscar en Coto →
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="confirm-btns">
+            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Coto</button>
             <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
           </div>
         </div>
@@ -1334,12 +1386,13 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
         const esVtex = SUPER_VTEX.includes(superNombre);
         const esDino = superNombre === "Dino";
+        const esCoto = superNombre === "Coto";
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
-        const puedeComprar = esVtex || esDino;
+        const puedeComprar = esVtex || esDino || esCoto;
 
         return (
           <div key={superNombre} className="cart-section">
@@ -1390,7 +1443,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                       onClick={() => onUpdateCantidad(item.producto_id, cantidad + 1)}>+</button>
                   </div>
                   {(!esVtex && !esDino) && (
-                    <a href={p.url} target="_blank" rel="noopener noreferrer"
+                    <a href={esCoto ? buildCotoSearchUrl(p) : p.url} target="_blank" rel="noopener noreferrer"
                       style={{fontSize:11,color:"var(--info)",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
                       Ver →
                     </a>
@@ -1419,6 +1472,8 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
   const esVtex = SUPER_VTEX.includes(p.supermercado);
   const otros = p.otros_supers || [];
   const hayComparacion = otros.length > 0;
+  // Sólo los OTROS supers (el principal ya es el encabezado de la card), más barato primero
+  const otrosOrdenados = [...otros].sort((a, b) => a.precio - b.precio);
   // Todos los precios (el de esta card + los otros supers) ordenados de más barato a más caro
   const listaPrecios = [
     { supermercado: p.supermercado, precio: p.precio, esActual: true },
@@ -1437,7 +1492,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
       <div className="card-image-wrap">
         <div className="card-badges-top">
           <div className="card-badge-super">
-            <SuperLogo nombre={p.supermercado} size={16} bare={true}/>
+            <SuperLogo nombre={p.supermercado} size={24} bare={true}/>
             <span>{p.supermercado}</span>
           </div>
           {p.scrapeado_en && <span className="card-badge-time">{relTime(p.scrapeado_en)}</span>}
@@ -1456,27 +1511,29 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           {p.precio_regional && <span className="card-region">📍 tu región</span>}
         </div>
 
-        {p.promocion && <span className="card-promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
+        {p.promocion && !esPromoDescuento(p.promocion) && <span className="card-promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
 
         {hayComparacion && (
           <div className="card-compare">
-            {listaPrecios.slice(0, 3).map((o, idx) => {
-              const esMejor = idx === 0;
+            {otrosOrdenados.slice(0, 3).map(o => {
+              const esMejor = masBarato && o.supermercado === masBarato.supermercado && diffMasBarato > 0;
               return (
-                <div key={o.supermercado} className={`card-compare-row ${esMejor ? "best" : ""}`} onClick={e=>e.stopPropagation()}>
-                  <span className="card-compare-name" style={{color: esMejor ? "var(--text-primary)" : "var(--text-secondary)"}}>
+                <a key={o.supermercado} className={`card-compare-row ${esMejor ? "cheaper" : ""}`}
+                  href={o.url || undefined} target="_blank" rel="noopener noreferrer"
+                  onClick={e=>e.stopPropagation()}>
+                  <span className="card-compare-name">
                     <SuperLogo nombre={o.supermercado} size={14} bare={true}/>
                     {o.supermercado}
                   </span>
-                  <span className={`card-compare-price ${esMejor ? "best" : "worse"}`}>
-                    {fmt(o.precio)}{esMejor && " 💚"}
+                  <span className={`card-compare-price ${esMejor ? "cheaper" : "worse"}`}>
+                    {fmt(o.precio)}
                   </span>
-                </div>
+                </a>
               );
             })}
-            {listaPrecios.length > 3 && (
-              <div style={{fontSize:10.5,color:"var(--text-muted)",textAlign:"center",marginTop:4,fontWeight:600}}>
-                +{listaPrecios.length - 3} supermercado{listaPrecios.length - 3 > 1 ? "s" : ""} más
+            {otrosOrdenados.length > 3 && (
+              <div className="card-compare-more">
+                +{otrosOrdenados.length - 3} supermercado{otrosOrdenados.length - 3 > 1 ? "s" : ""} más
               </div>
             )}
             {ahorro > AHORRO_MINIMO && (
@@ -1496,7 +1553,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           <button className={`card-btn fav ${p.favorito?"active":""}`} onClick={e=>onFav(e,p.id)} title={p.favorito?"Quitar de favoritos":"Agregar a favoritos"}>
             {p.favorito?"❤️":"🤍"}
           </button>
-          {(esVtex || p.supermercado === "Dino") && (
+          {(esVtex || p.supermercado === "Coto") && (
             <button className={`card-btn ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
               {enCarrito?"✓ En carrito":"+ Agregar"}
             </button>
@@ -1511,7 +1568,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
 // Sidebar Filters
 // ---------------------------------------------------------------------------
 function Sidebar({ superFiltro, setSuperFiltro, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats }) {
-  const supers = ["Todos","VEA","Carrefour","MasOnline","Dino"];
+  const supers = ["Todos","VEA","Carrefour","MasOnline","Dino","Dia","Coto","Disco"];
   const cats = ["Todas", ...Object.keys(CATEGORIAS)];
   const subcats = catFiltro !== "Todas" && CATEGORIAS[catFiltro] ? ["Todas", ...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
 
@@ -1840,7 +1897,7 @@ function App() {
             <div className="header-brand-icon">🛒</div>
             <div className="header-brand-text">
               <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 4 supermercados</div>
+              <div className="header-brand-sub">Compará precios entre 7 supermercados</div>
             </div>
           </a>
 
@@ -1912,7 +1969,7 @@ function App() {
               <span className="logos-label">Comparás precios en</span>
               <div className="logos-viewport">
                 <div className="logos-track" aria-hidden="true">
-                  {[...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX].map((s, i) => (
+                  {[...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS].map((s, i) => (
                     <span className="logos-item" key={i}>
                       <SuperLogo nombre={s} size={20} bare={true}/>
                       <span>{s}</span>
