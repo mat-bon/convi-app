@@ -168,8 +168,9 @@
       .main { padding: 12px; }
     }
 
-    /* Sidebar filters */
-    .sidebar { position: sticky; top: 78px; align-self: flex-start; }
+    /* Sidebar filters — scrollea junto con la página (no queda fijo), así los
+       filtros de abajo como "Solo ofertas" se alcanzan sin recorrer todos los productos */
+    .sidebar { align-self: flex-start; }
     .filter-card {
       background: var(--surface); border-radius: var(--radius-lg);
       border: 1px solid var(--border); padding: 14px;
@@ -343,12 +344,12 @@
       background: rgba(255,255,255,0.85); padding: 3px 8px;
       border-radius: 10px; backdrop-filter: blur(6px);
     }
-    .card-discount-pill {
-      position: absolute; top: 10px; right: 10px;
+    .card-discount-inline {
+      margin-left: auto; align-self: center;
       background: linear-gradient(135deg, #FF5A5A, #E23434); color: #fff;
       font-size: 11px; font-weight: 900; padding: 4px 10px; letter-spacing: 0.2px;
       border-radius: 20px; box-shadow: 0 4px 10px -2px rgba(226,52,52,0.45);
-      pointer-events: none;
+      white-space: nowrap;
     }
 
     .card-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
@@ -692,27 +693,6 @@
     .confirm-item-btn:hover { background: var(--surface-2); border-color: #D3D8DF; color: var(--text-primary); }
     .confirm-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Super swap dropdown */
-    .swap-popover {
-      position: fixed; background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); z-index: 1000;
-      min-width: 224px; padding: 6px; animation: slideUp 0.16s ease;
-    }
-    .swap-popover-header {
-      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
-      color: var(--text-muted); padding: 6px 8px 8px;
-    }
-    .swap-option {
-      display: flex; align-items: center; gap: 9px; padding: 9px 10px;
-      border-radius: var(--radius-sm); cursor: pointer; transition: all 0.12s;
-    }
-    .swap-option:hover { background: var(--surface-2); }
-    .swap-option.best { background: var(--success-light); }
-    .swap-option.best:hover { background: #dcfce7; }
-    .swap-option-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
-    .swap-option-price { margin-left: auto; font-size: 12.5px; font-weight: 800; }
-    .swap-option-price.best { color: var(--success); }
-
     /* Skeleton loading */
     @keyframes shimmer {
       0% { background-position: -200% 0; }
@@ -1007,7 +987,7 @@ function MiniChart({ data }) {
 // ---------------------------------------------------------------------------
 // Modal de producto
 // ---------------------------------------------------------------------------
-function Modal({ producto, onClose }) {
+function Modal({ producto, onClose, onCambiarSuper }) {
   const [historial, setHistorial] = React.useState([]);
   const [loadingH, setLoadingH] = React.useState(true);
   const hasOffer = producto.descuento_pct || producto.promocion;
@@ -1050,16 +1030,29 @@ function Modal({ producto, onClose }) {
           {producto.otros_supers && producto.otros_supers.length > 0 && (
             <>
               <div className="modal-section-title">🏪 En otros supermercados</div>
+              {onCambiarSuper && <p style={{fontSize:12,color:"var(--text-secondary)",margin:"-4px 0 10px",fontWeight:600}}>Tocá un supermercado para cambiar este producto en tu carrito.</p>}
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {[...producto.otros_supers].sort((a,b)=>a.precio-b.precio).map(o => {
                   const esMasBarato = o.precio < producto.precio;
-                  return (
-                    <a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",textDecoration:"none",padding:"12px 14px",borderRadius:"var(--radius)",background:esMasBarato?"var(--success-light)":"var(--bg)",border:esMasBarato?"1.5px solid #bbf7d0":"1.5px solid var(--border-light)"}}>
+                  const puedeCambiar = onCambiarSuper && o.id != null;
+                  const contenido = (
+                    <>
                       <SuperBadge nombre={o.supermercado} size={44} bare={true}/>
-                      <span style={{fontWeight:900,fontSize:18,color:esMasBarato?"var(--success)":"var(--text-primary)"}}>
+                      <span style={{fontWeight:900,fontSize:18,color:esMasBarato?"var(--success)":"var(--text-primary)",display:"flex",alignItems:"center"}}>
                         {fmt(o.precio)}
                         {esMasBarato && <span style={{fontSize:11,marginLeft:6,color:"var(--success)",fontWeight:700}}>💚 más barato</span>}
+                        {puedeCambiar && <span style={{fontSize:12,marginLeft:8,color:"var(--info)",fontWeight:800}}>Cambiar →</span>}
                       </span>
+                    </>
+                  );
+                  const estilo = {display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",textAlign:"left",textDecoration:"none",padding:"12px 14px",borderRadius:"var(--radius)",background:esMasBarato?"var(--success-light)":"var(--bg)",border:esMasBarato?"1.5px solid #bbf7d0":"1.5px solid var(--border-light)"};
+                  return puedeCambiar ? (
+                    <button key={o.supermercado} onClick={()=>{ onCambiarSuper(producto.id, o.id); onClose(); }} style={{...estilo,cursor:"pointer",fontFamily:"inherit"}}>
+                      {contenido}
+                    </button>
+                  ) : (
+                    <a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={estilo}>
+                      {contenido}
                     </a>
                   );
                 })}
@@ -1313,80 +1306,11 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 }
 
 // ---------------------------------------------------------------------------
-// SuperSwapButton
-// ---------------------------------------------------------------------------
-function SuperSwapButton({ item, onCambiarSuper }) {
-  const [open, setOpen] = React.useState(false);
-  const [coords, setCoords] = React.useState({ top: 0, left: 0 });
-  const btnRef = React.useRef(null);
-  const popRef = React.useRef(null);
-  const otros = item.producto.otros_supers || [];
-
-  function toggleOpen() {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      const left = Math.min(rect.left, window.innerWidth - 236);
-      setCoords({ top: rect.bottom + 6, left: Math.max(8, left) });
-    }
-    setOpen(o => !o);
-  }
-
-  React.useEffect(() => {
-    if (!open) return;
-    function handleClick(e) {
-      if (popRef.current && !popRef.current.contains(e.target) &&
-          btnRef.current && !btnRef.current.contains(e.target)) setOpen(false);
-    }
-    function handleCerrar() { setOpen(false); }
-    document.addEventListener("mousedown", handleClick);
-    window.addEventListener("scroll", handleCerrar, true);
-    window.addEventListener("resize", handleCerrar);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("scroll", handleCerrar, true);
-      window.removeEventListener("resize", handleCerrar);
-    };
-  }, [open]);
-
-  if (otros.length === 0) return null;
-  const ordenados = [...otros].sort((a, b) => a.precio - b.precio);
-
-  return (
-    <div style={{ display: "inline-block" }} className="cart-item-swap">
-      <button ref={btnRef} onClick={toggleOpen} style={{
-        display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700,
-        color: "var(--info)", background: "var(--info-light)", border: "none",
-        borderRadius: 20, padding: "4px 10px", cursor: "pointer", whiteSpace: "nowrap"
-      }}>
-        🔄 Cambiar de supermercado
-      </button>
-      {open && ReactDOM.createPortal(
-        <div ref={popRef} className="swap-popover">
-          <div className="swap-popover-header">Disponible también en</div>
-          {ordenados.map(o => {
-            const masBarato = o.precio < item.producto.precio;
-            return (
-              <div key={o.id} onClick={() => { onCambiarSuper(item.producto_id, o.id); setOpen(false); }}
-                className={"swap-option " + (masBarato ? "best" : "")}>
-                <SuperBadge nombre={o.supermercado} size={22} bare={true} />
-                <span className="swap-option-name">{o.supermercado}</span>
-                <span className={"swap-option-price " + (masBarato ? "best" : "")}>{fmt(o.precio)}</span>
-              </div>
-            );
-          })}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
 function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, onCambiarSuper, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
-  const [selectedProducto, setSelectedProducto] = React.useState(null);
+  const [modalProd, setModalProd] = React.useState(null); // { producto, swap }
 
   if (carritoItems.length === 0) {
     return (
@@ -1408,7 +1332,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
 
   return (
     <div>
-      {selectedProducto && <Modal producto={selectedProducto} onClose={() => setSelectedProducto(null)} />}
+      {modalProd && <Modal producto={modalProd.producto} onClose={() => setModalProd(null)} onCambiarSuper={modalProd.swap ? onCambiarSuper : undefined} />}
       {confirmData && (
         <ConfirmCompraModal
           superNombre={confirmData.superNombre}
@@ -1466,7 +1390,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                     ? <img src={p.imagen_url} alt={p.nombre} className="cart-item-img"/>
                     : <div className="cart-item-img-placeholder">🛍️</div>}
                   <div className="cart-item-info">
-                    <div className="cart-item-name" title={p.nombre} onClick={() => setSelectedProducto(p)}>
+                    <div className="cart-item-name" title={p.nombre} onClick={() => setModalProd({ producto: p, swap: false })}>
                       {p.nombre}
                     </div>
                     <div className="cart-item-price">
@@ -1474,7 +1398,15 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                       {cantidad > 1 && <span className="unit">{fmt(p.precio)} c/u</span>}
                       {p.precio_regional && <span className="cart-item-region">📍 tu región</span>}
                     </div>
-                    <SuperSwapButton item={item} onCambiarSuper={onCambiarSuper} />
+                    {(p.otros_supers && p.otros_supers.length > 0) && (
+                      <button className="cart-item-swap" onClick={() => setModalProd({ producto: p, swap: true })} style={{
+                        display:"flex", alignItems:"center", gap:4, fontSize:11.5, fontWeight:700,
+                        color:"var(--info)", background:"var(--info-light)", border:"none",
+                        borderRadius:20, padding:"4px 10px", cursor:"pointer", whiteSpace:"nowrap", fontFamily:"inherit"
+                      }}>
+                        🔄 Cambiar de supermercado
+                      </button>
+                    )}
                   </div>
                   <div className="qty-control">
                     <button className="qty-btn" disabled={cantidad <= 1}
@@ -1538,7 +1470,6 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           </div>
           {p.scrapeado_en && <span className="card-badge-time">{relTime(p.scrapeado_en)}</span>}
         </div>
-        {hasOffer && <div className="card-discount-pill">{p.descuento_pct ? `-${p.descuento_pct}%` : "OFERTA"}</div>}
         {p.imagen_url && <img src={p.imagen_url} alt={p.nombre} loading="lazy" className="card-image"/>}
       </div>
 
@@ -1550,6 +1481,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           <span className={`card-price ${hasOffer?"offer":""}`}>{fmt(p.precio)}</span>
           {p.precio_original && <span className="card-price-old">{fmt(p.precio_original)}</span>}
           {p.precio_regional && <span className="card-region">📍 tu región</span>}
+          {hasOffer && <span className="card-discount-inline">{p.descuento_pct ? `-${p.descuento_pct}%` : "OFERTA"}</span>}
         </div>
 
         {p.promocion && !esPromoDescuento(p.promocion) && <span className="card-promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
@@ -1689,7 +1621,7 @@ function App() {
   const [orden, setOrden] = React.useState("popular");
   const [busqueda, setBusqueda] = React.useState("");
   const [modalProducto, setModalProducto] = React.useState(null);
-  const [porPagina, setPorPagina] = React.useState(28);
+  const [porPagina, setPorPagina] = React.useState(30);
   const [pagina, setPagina] = React.useState(1);
   const [totalProductos, setTotalProductos] = React.useState(0);
   const [totalPaginas, setTotalPaginas] = React.useState(1);
@@ -2047,7 +1979,7 @@ function App() {
               <div className="stats-bar">
                 <div className="stat-card" onClick={resetFilters}>
                   <div className="stat-value accent">{stats.total_productos||0}</div>
-                  <div className="stat-label">Productos comparados</div>
+                  <div className="stat-label">Precios monitoreados</div>
                 </div>
                 <div className="stat-card" onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
                   <div className="stat-value success">{stats.favoritos||0}</div>
@@ -2072,7 +2004,7 @@ function App() {
                   </div>
                   <div className="per-page">
                     <span>Mostrar:</span>
-                    {[28,56,112,224].map(val => (
+                    {[30,60,120,240].map(val => (
                       <button key={val} onClick={()=>cambiarPorPagina(val)} className={`sort-btn ${porPagina===val?"active":""}`} style={{padding:"4px 10px",fontSize:11}}>{val}</button>
                     ))}
                   </div>
