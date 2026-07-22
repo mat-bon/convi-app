@@ -3,806 +3,254 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SuperPrecios AR — Compará y ahorrá en tu supermercado</title>
+  <title>SuperPrecios AR</title>
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #F4F5F8;
-      --surface: #FFFFFF;
-      --surface-elevated: #FFFFFF;
-      --surface-2: #FAFBFC;
-      --border: #E6E8EC;
-      --border-light: #EEF0F3;
-      --text-primary: #0E1524;
-      --text-secondary: #59616F;
-      --text-muted: #98A1AF;
-      --accent: #FFD600;
-      --accent-dark: #D9AE00;
-      --accent-soft: #FFF6C9;
-      --ink: #131A28;
-      --danger: #EF4444;
-      --danger-light: #FEF2F2;
-      --success: #16A34A;
-      --success-light: #EFFCF3;
-      --info: #3B82F6;
-      --info-light: #EFF6FF;
-      --warning: #F59E0B;
-      --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
-      --shadow: 0 1px 3px rgba(16,24,40,0.06), 0 6px 16px -6px rgba(16,24,40,0.10);
-      --shadow-lg: 0 10px 28px -8px rgba(16,24,40,0.16), 0 2px 6px rgba(16,24,40,0.05);
-      --shadow-xl: 0 28px 56px -14px rgba(16,24,40,0.24);
-      --radius-sm: 9px;
-      --radius: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 22px;
-      --ring: 0 0 0 3px rgba(255,214,0,0.30);
-    }
     * { margin:0; padding:0; box-sizing:border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg);
-      background-image:
-        radial-gradient(1100px 520px at 100% -8%, rgba(255,214,0,0.10), transparent 58%),
-        radial-gradient(900px 460px at -8% -4%, rgba(59,130,246,0.05), transparent 55%);
-      background-attachment: fixed;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      color: var(--text-primary);
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
-    ::selection { background: var(--accent); color: #1b1600; }
-    :focus-visible { outline: none; box-shadow: var(--ring); border-radius: 8px; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #D2D7DE; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
-    ::-webkit-scrollbar-thumb:hover { background: #B4BCC7; background-clip: padding-box; }
-
-    /* Header */
-    .header {
-      border-bottom: 1px solid var(--border);
-      padding: 0;
-      position: sticky; top: 0; z-index: 50;
-      backdrop-filter: saturate(180%) blur(14px);
-      -webkit-backdrop-filter: saturate(180%) blur(14px);
-      background: rgba(255,255,255,0.80);
-    }
-    .header-inner {
-      max-width: 1320px; margin: 0 auto; padding: 12px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px;
-    }
-    .header-brand {
-      display: flex; align-items: center; gap: 11px; cursor: pointer;
-      text-decoration: none; user-select: none;
-    }
-    .header-brand-icon {
-      width: 40px; height: 40px;
-      background: linear-gradient(145deg, #FFE45C 0%, var(--accent) 45%, #FFC400 100%);
-      border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      font-size: 21px;
-      box-shadow: 0 4px 12px -2px rgba(224,178,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6);
-      transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .header-brand:hover .header-brand-icon { transform: rotate(-6deg) scale(1.05); }
-    .header-brand-text { display: flex; flex-direction: column; }
-    .header-brand-title { font-size: 17px; font-weight: 900; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.2; }
-    .header-brand-title span { color: var(--accent-dark); }
-    .header-brand-sub { font-size: 10.5px; color: var(--text-muted); font-weight: 600; }
-
-    .header-search-wrap { flex: 1; max-width: 520px; position: relative; }
-    .header-search-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
-    .header-search-wrap input {
-      width: 100%; padding: 11px 16px 11px 42px; font-size: 13.5px;
-      border: 1.5px solid var(--border); border-radius: 999px;
-      background: var(--surface-2); outline: none; font-family: inherit; font-weight: 500;
-      color: var(--text-primary);
-      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
-    }
-    .header-search-wrap input:hover { border-color: #D3D8DF; }
-    .header-search-wrap input:focus { border-color: var(--accent); background: var(--surface); box-shadow: var(--ring); }
-    .header-search-wrap input::placeholder { color: var(--text-muted); font-weight: 500; }
-
-    .header-actions { display: flex; align-items: center; gap: 8px; }
-    .header-btn {
-      display: flex; align-items: center; gap: 6px; padding: 9px 14px;
-      border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 12.5px; font-weight: 700;
-      color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
-      font-family: inherit; position: relative;
-    }
-    .header-btn:hover { border-color: #D3D8DF; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
-    .header-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: var(--shadow); }
-    .header-btn-badge {
-      position: absolute; top: -6px; right: -6px;
-      min-width: 18px; height: 18px; padding: 0 5px;
-      border-radius: 9px; font-size: 10px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 6px rgba(16,24,40,0.18); border: 2px solid var(--surface);
-    }
-    .header-btn-badge.yellow { background: var(--accent); color: #000; }
-    .header-btn-badge.pink { background: var(--danger); color: #fff; }
-
-    .header-user { display: flex; align-items: center; gap: 10px; }
-    .header-user-email { font-size: 12px; color: var(--text-secondary); font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .header-user-btn {
-      padding: 8px 14px; border-radius: var(--radius); border: none;
-      background: var(--accent); color: #1b1600; font-size: 12.5px; font-weight: 800;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-      box-shadow: 0 2px 8px -2px rgba(224,178,0,0.5);
-    }
-    .header-user-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(224,178,0,0.55); }
-    .header-user-btn.ghost {
-      background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border); box-shadow: none;
-    }
-    .header-user-btn.ghost:hover { background: var(--surface-2); color: var(--text-primary); }
-
-    /* Region selector */
-    .region-select {
-      padding: 9px 12px; border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 12px; font-weight: 700; color: var(--text-secondary);
-      cursor: pointer; outline: none; font-family: inherit; transition: all 0.15s;
-    }
-    .region-select:hover { border-color: #D3D8DF; color: var(--text-primary); }
-    .region-select:focus { border-color: var(--accent); box-shadow: var(--ring); }
-
-    /* Main layout */
-    .main { max-width: 1320px; margin: 0 auto; padding: 20px; display: flex; gap: 20px; }
-    .sidebar { width: 260px; flex-shrink: 0; }
-    .content { flex: 1; min-width: 0; }
-
-    @media (max-width: 1024px) {
-      .main { flex-direction: column; }
-      .sidebar { width: 100%; }
-    }
-    @media (max-width: 768px) {
-      .header-inner { flex-wrap: wrap; }
-      .header-search-wrap { order: 3; max-width: 100%; width: 100%; }
-      .main { padding: 12px; }
-    }
-
-    /* Sidebar filters */
-    .sidebar { position: sticky; top: 78px; align-self: flex-start; }
-    .filter-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border); padding: 14px;
-      box-shadow: var(--shadow-sm); margin-bottom: 12px;
-    }
-    .filter-title {
-      font-size: 10.5px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 10px; padding: 0 4px;
-    }
-    .filter-group { display: flex; flex-direction: column; gap: 2px; }
-    .filter-chip {
-      display: flex; align-items: center; gap: 9px; padding: 8px 11px;
-      border-radius: 10px; border: none; background: transparent;
-      font-size: 13px; font-weight: 600; color: var(--text-secondary);
-      cursor: pointer; transition: all 0.14s; font-family: inherit; text-align: left;
-      position: relative;
-    }
-    .filter-chip:hover { background: var(--surface-2); color: var(--text-primary); }
-    .filter-chip.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-sm); }
-    .filter-chip.active::before {
-      content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-      width: 3px; height: 16px; border-radius: 3px; background: var(--accent);
-    }
-    .filter-chip .dot {
-      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
-      box-shadow: 0 0 0 2px rgba(0,0,0,0.04);
-    }
-    .filter-chip .count {
-      margin-left: auto; font-size: 11px; font-weight: 800;
-      padding: 1px 7px; border-radius: 10px; background: var(--surface-2);
-      color: var(--text-muted); border: 1px solid var(--border-light);
-    }
-    .filter-chip.active .count { background: rgba(255,255,255,0.16); color: #fff; border-color: transparent; }
-
-    .filter-toggle {
-      display: flex; align-items: center; gap: 11px; padding: 9px 11px;
-      border-radius: 10px; cursor: pointer; transition: all 0.15s;
-    }
-    .filter-toggle:hover { background: var(--surface-2); }
-    .toggle-track {
-      width: 38px; height: 22px; border-radius: 11px; background: #D7DBE1;
-      position: relative; transition: background 0.22s; flex-shrink: 0;
-    }
-    .toggle-track.on { background: var(--danger); }
-    .toggle-thumb {
-      position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
-      border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-      transition: left 0.22s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .toggle-track.on .toggle-thumb { left: 18px; }
-    .toggle-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
-    .toggle-label.on { color: var(--danger); }
-
-    /* Sort bar */
-    .sort-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-    }
-    .sort-info { font-size: 13px; color: var(--text-muted); font-weight: 600; }
-    .sort-info strong { color: var(--text-primary); font-weight: 800; }
-    .sort-options { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; background: var(--surface); padding: 4px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .sort-btn {
-      padding: 6px 12px; border-radius: 8px; border: none;
-      background: transparent; font-size: 12px; font-weight: 700;
-      color: var(--text-secondary); cursor: pointer; transition: all 0.14s;
-      font-family: inherit;
-    }
-    .sort-btn:hover { background: var(--surface-2); color: var(--text-primary); }
-    .sort-btn.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-sm); }
-    .per-page { display: flex; align-items: center; gap: 4px; background: var(--surface); padding: 4px 4px 4px 10px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .per-page span { font-size: 11px; color: var(--text-muted); font-weight: 700; }
-
-    /* Product Grid */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
-      gap: 16px;
-    }
-    @media (max-width: 640px) {
-      .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    }
-
-    /* Product Card */
-    .product-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border-light); overflow: hidden;
-      box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
-      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s, border-color 0.22s;
-      cursor: pointer; position: relative;
-    }
-    .product-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-lg);
-      border-color: var(--border);
-    }
-    .product-card.offer { border-color: rgba(239,68,68,0.18); }
-    .product-card.offer::before {
-      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-      box-shadow: inset 0 2px 0 rgba(239,68,68,0.5); opacity: 0; transition: opacity 0.22s;
-    }
-    .product-card.offer:hover { border-color: rgba(239,68,68,0.35); }
-    .product-card.offer:hover::before { opacity: 1; }
-
-    .card-image-wrap {
-      position: relative; padding: 16px 16px 8px;
-      background: linear-gradient(180deg, #F7F8FA 0%, var(--surface) 100%);
-    }
-    .card-image {
-      width: 100%; height: 162px; object-fit: contain;
-      border-radius: var(--radius-sm); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-      mix-blend-mode: multiply;
-    }
-    .product-card:hover .card-image { transform: scale(1.05); }
-    .card-badges-top {
-      position: absolute; top: 10px; left: 10px; right: 10px;
-      display: flex; justify-content: space-between; align-items: flex-start;
-      pointer-events: none;
-    }
-    .card-badge-super {
-      display: flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
-      padding: 4px 9px 4px 5px; border-radius: 20px;
-      box-shadow: 0 1px 5px rgba(16,24,40,0.10); border: 1px solid rgba(255,255,255,0.8);
-      pointer-events: auto;
-    }
-    .card-badge-super img { width: 16px; height: 16px; object-fit: contain; }
-    .card-badge-super span { font-size: 10.5px; font-weight: 800; color: var(--text-primary); }
-    .card-badge-time {
-      font-size: 10px; font-weight: 700; color: var(--text-muted);
-      background: rgba(255,255,255,0.85); padding: 3px 8px;
-      border-radius: 10px; backdrop-filter: blur(6px);
-    }
-    .card-discount-pill {
-      position: absolute; top: 10px; right: 10px;
-      background: linear-gradient(135deg, #FF5A5A, #E23434); color: #fff;
-      font-size: 11px; font-weight: 900; padding: 4px 10px; letter-spacing: 0.2px;
-      border-radius: 20px; box-shadow: 0 4px 10px -2px rgba(226,52,52,0.45);
-      pointer-events: none;
-    }
-
-    .card-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
-    .card-category {
-      font-size: 10px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.5px; color: var(--text-muted);
-    }
-    .card-name {
-      font-size: 13.5px; font-weight: 600; color: var(--text-primary);
-      line-height: 1.42; display: -webkit-box; -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical; overflow: hidden; min-height: 38px;
-    }
-
-    .card-price-block { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-    .card-price {
-      font-size: 23px; font-weight: 900; letter-spacing: -0.9px; color: var(--text-primary);
-    }
-    .card-price.offer { color: var(--danger); }
-    .card-price-old {
-      font-size: 12.5px; color: var(--text-muted); text-decoration: line-through;
-      font-weight: 500;
-    }
-    .card-promo {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 10.5px; font-weight: 800; padding: 4px 10px;
-      border-radius: 20px; letter-spacing: 0.3px; text-transform: uppercase;
-      color: #fff; width: fit-content; box-shadow: 0 2px 6px -1px rgba(16,24,40,0.25);
-    }
-    .card-region {
-      display: inline-flex; align-items: center; gap: 3px;
-      font-size: 10px; font-weight: 800; color: var(--info);
-      background: var(--info-light); padding: 3px 8px;
-      border-radius: 10px; width: fit-content;
-    }
-
-    /* Price comparison strip */
-    .card-compare {
-      background: var(--surface-2); border: 1px solid var(--border-light);
-      border-radius: 11px; padding: 8px 10px; margin-top: 2px;
-    }
-    .card-compare-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 0; font-size: 11.5px;
-    }
-    .card-compare-row.current, .card-compare-row.best {
-      background: var(--success-light); margin: -8px -10px 5px; padding: 7px 10px;
-      border-radius: 10px 10px 0 0;
-      border-bottom: 1px solid rgba(22,163,74,0.12);
-    }
-    .card-compare-name { display: flex; align-items: center; gap: 6px; font-weight: 700; }
-    .card-compare-tag {
-      font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px;
-      color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border);
-      padding: 1px 5px; border-radius: 6px; margin-left: 2px; line-height: 1.5;
-    }
-    .card-compare-name img { width: 14px; height: 14px; object-fit: contain; }
-    .card-compare-price { font-weight: 800; }
-    .card-compare-price.best { color: var(--success); }
-    .card-compare-price.worse { color: var(--text-muted); }
-    .card-compare-savings {
-      font-size: 10.5px; font-weight: 800; color: var(--success);
-      margin-top: 5px; text-align: center; background: var(--success-light);
-      padding: 4px; border-radius: 8px;
-    }
-    .card-compare-savings.cheaper { color: #B45309; background: #FFF7ED; }
-
-    /* Card actions */
-    .card-actions {
-      display: flex; gap: 8px; margin-top: auto; padding-top: 10px;
-    }
-    .card-btn {
-      flex: 1; padding: 10px; border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 12.5px; font-weight: 800;
-      color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
-      font-family: inherit; display: flex; align-items: center;
-      justify-content: center; gap: 5px;
-    }
-    .card-btn:hover { background: var(--surface-2); border-color: #D3D8DF; color: var(--text-primary); }
-    .card-btn.primary {
-      background: var(--ink); color: #fff; border-color: var(--ink);
-    }
-    .card-btn.primary:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
-    .card-btn.accent {
-      background: var(--accent); color: #1b1600; border-color: var(--accent);
-    }
-    .card-btn.accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 14px -4px rgba(224,178,0,0.5); }
-    .card-btn.fav { flex: 0 0 42px; padding: 10px 0; font-size: 14px; }
-    .card-btn.fav:hover { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
-    .card-btn.fav.active { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center; padding: 80px 20px; background: var(--surface);
-      border-radius: var(--radius-lg); border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
-    }
-    .empty-state-icon { font-size: 56px; margin-bottom: 16px; filter: saturate(1.1); }
-    .empty-state-title { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
-    .empty-state-desc { font-size: 13.5px; color: var(--text-secondary); max-width: 360px; margin: 0 auto; line-height: 1.6; }
-
-    /* Pagination */
-    .pagination {
-      display: flex; justify-content: center; align-items: center;
-      gap: 6px; margin-top: 32px; flex-wrap: wrap;
-    }
-    .page-btn {
-      min-width: 38px; height: 38px; padding: 0 10px;
-      border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 13px; font-weight: 800;
-      color: var(--text-secondary); cursor: pointer; transition: all 0.14s;
-      font-family: inherit; display: flex; align-items: center; justify-content: center;
-    }
-    .page-btn:hover:not(:disabled) { border-color: #D3D8DF; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
-    .page-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: var(--shadow-sm); }
-    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .page-input-wrap { display: flex; align-items: center; gap: 6px; margin-left: 4px; }
-    .page-input-wrap span { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-    .page-input {
-      width: 50px; height: 38px; padding: 0 4px;
-      border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 13px; font-weight: 800;
-      text-align: center; font-family: inherit; outline: none; color: var(--text-primary);
-    }
-    .page-input:focus { border-color: var(--accent); box-shadow: var(--ring); }
-
-    /* Footer */
-    .footer {
-      margin-top: 40px; padding: 24px;
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow-sm);
-    }
-    .footer-text { font-size: 12.5px; color: var(--text-secondary); line-height: 1.8; max-width: 620px; margin: 0 auto; }
-    .footer-text strong { color: var(--text-primary); font-weight: 700; }
-
-    /* Modal Overlay */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(11,17,28,0.55);
-      z-index: 100; display: flex; align-items: center; justify-content: center;
-      padding: 16px; backdrop-filter: blur(6px);
-      animation: fadeIn 0.2s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .modal {
-      background: var(--surface); border-radius: var(--radius-xl);
-      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
-      box-shadow: var(--shadow-xl); animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-      border: 1px solid rgba(255,255,255,0.6);
-    }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    .modal-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 16px; padding: 24px 24px 0;
-    }
-    .modal-title { font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1.4; }
-    .modal-close {
-      width: 34px; height: 34px; border-radius: 50%; border: none;
-      background: var(--surface-2); color: var(--text-muted); font-size: 16px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; flex-shrink: 0;
-    }
-    .modal-close:hover { background: var(--danger-light); color: var(--danger); transform: rotate(90deg); }
-    .modal-body { padding: 20px 24px 24px; }
-    .modal-section-title {
-      font-size: 10.5px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.6px; color: var(--text-muted); margin: 22px 0 10px;
-    }
-    .modal-link {
-      display: inline-flex; align-items: center; gap: 6px; margin-top: 22px;
-      padding: 13px 20px; background: var(--ink); color: #fff;
-      border-radius: var(--radius); font-size: 13px; font-weight: 800;
-      text-decoration: none; transition: all 0.15s; width: 100%; justify-content: center;
-    }
-    .modal-link:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
-
-    /* Auth Modal */
-    .auth-input {
-      width: 100%; padding: 13px 14px; font-size: 14px; border: 1.5px solid var(--border);
-      border-radius: var(--radius); outline: none; font-family: inherit; margin-bottom: 10px;
-      font-weight: 500; transition: all 0.15s; background: var(--surface-2); color: var(--text-primary);
-    }
-    .auth-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: var(--ring); }
-    .auth-btn {
-      width: 100%; padding: 13px; background: var(--ink); color: #fff;
-      border: none; border-radius: var(--radius); font-size: 14px; font-weight: 800;
-      cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 4px;
-    }
-    .auth-btn:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
-    .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .auth-link {
-      background: none; border: none; color: var(--text-secondary); font-size: 13px;
-      cursor: pointer; text-decoration: underline; font-family: inherit; margin-top: 10px;
-      font-weight: 600;
-    }
-    .auth-link:hover { color: var(--text-primary); }
-    .auth-alert {
-      padding: 11px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px;
-      font-weight: 600;
-    }
-    .auth-alert.success { background: var(--success-light); color: #166534; border: 1px solid rgba(22,163,74,0.2); }
-    .auth-alert.error { background: var(--danger-light); color: #991b1b; border: 1px solid rgba(239,68,68,0.2); }
-
-    /* Mini chart */
-    .chart-wrap { margin: 8px 0; }
-
-    /* Cart View */
-    .cart-empty {
-      text-align: center; padding: 80px 20px; background: var(--surface);
-      border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
-    }
-    .cart-section {
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border); overflow: hidden;
-      box-shadow: var(--shadow-sm); margin-bottom: 16px;
-    }
-    .cart-section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 15px 20px; border-bottom: 1px solid var(--border-light);
-      background: linear-gradient(90deg, var(--surface-2), var(--surface));
-    }
-    .cart-section-title { display: flex; align-items: center; gap: 11px; }
-    .cart-section-title span { font-size: 14px; font-weight: 800; color: var(--text-primary); }
-    .cart-section-title .count {
-      font-size: 11px; font-weight: 800; color: var(--text-muted);
-      background: var(--surface-2); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-light);
-    }
-    .cart-buy-btn {
-      padding: 9px 16px; border: none; border-radius: var(--radius);
-      font-size: 12.5px; font-weight: 800; cursor: pointer; transition: all 0.15s;
-      text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
-      color: #fff; box-shadow: var(--shadow-sm);
-    }
-    .cart-buy-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); filter: brightness(1.05); }
-
-    .cart-item {
-      display: flex; align-items: center; gap: 14px; padding: 14px 20px;
-      border-bottom: 1px solid var(--border-light); transition: background 0.15s;
-    }
-    .cart-item:hover { background: var(--surface-2); }
-    .cart-item:last-child { border-bottom: none; }
-    .cart-item-img {
-      width: 54px; height: 54px; object-fit: contain; border-radius: 10px;
-      background: var(--surface-2); flex-shrink: 0; border: 1px solid var(--border-light); padding: 3px;
-    }
-    .cart-item-img-placeholder {
-      width: 54px; height: 54px; border-radius: 10px;
-      background: var(--surface-2); flex-shrink: 0; display: flex;
-      align-items: center; justify-content: center; font-size: 22px; border: 1px solid var(--border-light);
-    }
-    .cart-item-info { flex: 1; min-width: 0; }
-    .cart-item-name {
-      font-size: 13.5px; font-weight: 600; color: var(--text-primary);
-      line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      cursor: pointer;
-    }
-    .cart-item-name:hover { color: var(--info); }
-    .cart-item-price {
-      font-size: 15px; font-weight: 900; color: var(--text-primary); margin-top: 3px;
-    }
-    .cart-item-price .unit { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-left: 6px; }
-    .cart-item-region {
-      display: inline-flex; align-items: center; gap: 3px;
-      font-size: 9.5px; font-weight: 800; color: var(--info);
-      background: var(--info-light); padding: 1px 6px; border-radius: 8px; margin-left: 6px;
-    }
-    .cart-item-swap { margin-top: 5px; }
-
-    .qty-control { display: flex; align-items: center; gap: 2px; flex-shrink: 0; background: var(--surface-2); border: 1px solid var(--border-light); border-radius: 999px; padding: 2px; }
-    .qty-btn {
-      width: 28px; height: 28px; border-radius: 50%; border: none;
-      background: transparent; font-size: 15px; font-weight: 700; cursor: pointer;
-      color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s; line-height: 1; padding: 0;
-    }
-    .qty-btn:hover:not(:disabled) { background: var(--ink); color: #fff; }
-    .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .qty-val { font-size: 14px; font-weight: 800; color: var(--text-primary); min-width: 24px; text-align: center; }
-
-    .cart-item-remove {
-      width: 30px; height: 30px; border-radius: 50%; border: none;
-      background: transparent; color: var(--text-muted); font-size: 16px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s; flex-shrink: 0;
-    }
-    .cart-item-remove:hover { background: var(--danger-light); color: var(--danger); }
-
-    .cart-total {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 14px 20px; background: var(--surface-2); font-size: 13px; color: var(--text-secondary); font-weight: 600;
-    }
-    .cart-total strong { color: var(--text-primary); font-size: 17px; font-weight: 900; }
-
-    .cart-dino-note {
-      background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius);
-      padding: 10px 14px; font-size: 12px; color: #92400E; margin-bottom: 16px;
-      font-weight: 500;
-    }
-
-    /* Confirm Modal */
-    .confirm-modal {
-      background: var(--surface); border-radius: var(--radius-xl);
-      width: 100%; max-width: 460px; padding: 28px;
-      box-shadow: var(--shadow-xl); animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .confirm-title { font-size: 18px; font-weight: 900; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.3px; }
-    .confirm-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
-    .confirm-warning {
-      background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius);
-      padding: 12px 14px; font-size: 12.5px; color: #92400E; margin: 14px 0; line-height: 1.6;
-      font-weight: 500;
-    }
-    .confirm-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
-    .confirm-btn {
-      padding: 13px 18px; border-radius: var(--radius); font-size: 14px; font-weight: 800;
-      cursor: pointer; border: none; font-family: inherit; transition: all 0.15s;
-      text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .confirm-btn:hover { transform: translateY(-1px); }
-    .confirm-btn.primary { background: var(--ink); color: var(--accent); box-shadow: var(--shadow); }
-    .confirm-btn.primary:hover { background: #000; }
-    .confirm-btn.secondary { background: var(--surface-2); color: var(--text-secondary); border: 1.5px solid var(--border); }
-    .confirm-btn.secondary:hover { background: var(--surface); color: var(--text-primary); border-color: #D3D8DF; }
-    .confirm-btn.danger { background: var(--danger-light); color: var(--danger); }
-    .confirm-btn.danger:hover { background: #FCE4E4; }
-
-    .confirm-item-list { max-height: 260px; overflow-y: auto; margin: 12px 0; }
-    .confirm-item-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 0; border-bottom: 1px solid var(--border-light);
-    }
-    .confirm-item-row:last-child { border-bottom: none; }
-    .confirm-item-name { font-size: 13px; color: var(--text-primary); font-weight: 500; flex: 1; margin-right: 8px; }
-    .confirm-item-qty { font-size: 11px; color: var(--text-muted); margin-right: 8px; }
-    .confirm-item-btn {
-      padding: 6px 11px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 11.5px; font-weight: 800; color: var(--text-secondary);
-      cursor: pointer; white-space: nowrap; font-family: inherit; transition: all 0.15s;
-    }
-    .confirm-item-btn:hover { background: var(--surface-2); border-color: #D3D8DF; color: var(--text-primary); }
-    .confirm-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* Super swap dropdown */
-    .swap-popover {
-      position: fixed; background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); z-index: 1000;
-      min-width: 224px; padding: 6px; animation: slideUp 0.16s ease;
-    }
-    .swap-popover-header {
-      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
-      color: var(--text-muted); padding: 6px 8px 8px;
-    }
-    .swap-option {
-      display: flex; align-items: center; gap: 9px; padding: 9px 10px;
-      border-radius: var(--radius-sm); cursor: pointer; transition: all 0.12s;
-    }
-    .swap-option:hover { background: var(--surface-2); }
-    .swap-option.best { background: var(--success-light); }
-    .swap-option.best:hover { background: #dcfce7; }
-    .swap-option-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
-    .swap-option-price { margin-left: auto; font-size: 12.5px; font-weight: 800; }
-    .swap-option-price.best { color: var(--success); }
-
-    /* Skeleton loading */
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    .skeleton {
-      background: linear-gradient(90deg, var(--surface-2) 25%, #EEF1F4 50%, var(--surface-2) 75%);
-      background-size: 200% 100%; animation: shimmer 1.4s infinite;
-      border-radius: var(--radius-sm);
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex; gap: 4px; margin-bottom: 20px;
-      background: var(--surface); padding: 5px; border-radius: 14px;
-      border: 1px solid var(--border); width: fit-content; box-shadow: var(--shadow-sm);
-    }
-    .tab {
-      padding: 9px 18px; border-radius: 10px; border: none;
-      background: transparent; font-size: 13px; font-weight: 800;
-      color: var(--text-muted); cursor: pointer; transition: all 0.18s;
-      font-family: inherit; display: flex; align-items: center; gap: 6px;
-      position: relative;
-    }
-    .tab:hover { color: var(--text-secondary); background: var(--surface-2); }
-    .tab.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-sm); }
-    .tab.active:hover { color: #fff; }
-    .tab-badge {
-      font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 10px;
-    }
-    .tab-badge.pink { background: var(--danger); color: #fff; }
-    .tab-badge.yellow { background: var(--accent); color: #000; }
-
-    /* Brand bar: "Todos los productos" + logos de supermercados en movimiento */
-    .brandbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
-    .brandbar .tabs { margin-bottom: 0; flex-shrink: 0; }
-    .logos-marquee {
-      flex: 1; min-width: 220px; display: flex; align-items: center; gap: 14px;
-      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-      box-shadow: var(--shadow-sm); padding: 9px 16px; overflow: hidden;
-    }
-    .logos-label {
-      font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
-      color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
-    }
-    .logos-viewport {
-      position: relative; flex: 1; min-width: 0; overflow: hidden;
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-      mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-    }
-    .logos-track { display: flex; align-items: center; gap: 30px; width: max-content; animation: marquee 30s linear infinite; }
-    .logos-marquee:hover .logos-track { animation-play-state: paused; }
-    .logos-item { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; }
-    .logos-item > span { font-size: 12.5px; font-weight: 800; color: var(--text-secondary); white-space: nowrap; }
-    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    @media (max-width: 680px) { .logos-label { display: none; } .logos-marquee { min-width: 100%; } }
-    @media (prefers-reduced-motion: reduce) { .logos-track { animation: none; } }
-
-    /* Stats bar */
-    .stats-bar {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border); padding: 18px 16px;
-      box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.18s;
-      text-align: center; position: relative; overflow: hidden;
-    }
-    .stat-card::after {
-      content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%;
-      background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.25s;
-    }
-    .stat-card:hover { border-color: #D3D8DF; box-shadow: var(--shadow); transform: translateY(-2px); }
-    .stat-card:hover::after { transform: scaleX(1); }
-    .stat-value { font-size: 26px; font-weight: 900; color: var(--text-primary); line-height: 1; letter-spacing: -0.5px; }
-    .stat-value.accent { color: var(--accent-dark); }
-    .stat-value.success { color: var(--success); }
-    .stat-label { font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-top: 7px; }
-
-    /* Super colors */
-    .super-VEA { --s-bg: #FFD600; --s-text: #000; }
-    .super-Carrefour { --s-bg: #0066CC; --s-text: #fff; }
-    .super-MasOnline { --s-bg: #E4002B; --s-text: #fff; }
-    .super-Dino { --s-bg: #2E7D32; --s-text: #fff; }
-
-    /* Responsive sidebar collapse */
-    .mobile-filter-toggle {
-      display: none; width: 100%; padding: 11px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); font-size: 13px; font-weight: 800;
-      color: var(--text-secondary); cursor: pointer; margin-bottom: 12px;
-      font-family: inherit; box-shadow: var(--shadow-sm);
-    }
-    @media (max-width: 1024px) {
-      .mobile-filter-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; }
-      .sidebar { display: none; position: static; }
-      .sidebar.open { display: block; }
-    }
+    body { background:#F4F5F8; font-family:'Segoe UI',system-ui,sans-serif; }
+ 
+    .header { background:#111827; color:#fff; padding:16px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:12px; position:sticky; top:0; z-index:50;
+      box-shadow:0 4px 24px rgba(0,0,0,.4); }
+    .header h1 { font-size:20px; font-weight:900; letter-spacing:-.5px; }
+    .header h1 span { color:#FFD600; }
+    .header p { font-size:11px; color:#888; margin-top:2px; }
+ 
+    .stats { display:flex; gap:10px; flex-wrap:wrap; }
+    .stat { background:#2a2a2a; padding:10px 16px; border-radius:12px; text-align:center; }
+    .stat-val { font-size:20px; font-weight:900; }
+    .stat-lbl { color:#888; font-size:11px; }
+ 
+    .container { max-width:1200px; margin:0 auto; padding:20px 16px; }
+ 
+    .filters { background:#fff; border-radius:14px; padding:14px 18px;
+      margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+    .filter-row { display:flex; flex-wrap:nowrap; gap:8px; align-items:center; margin-bottom:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .filter-row::-webkit-scrollbar { display:none; }
+    .filter-row:last-child { margin-bottom:0; }
+    .filter-label { font-size:11px; color:#9ca3af; width:90px; flex-shrink:0; }
+ 
+    .pill { padding:6px 14px; border-radius:24px; font-size:12.5px; font-weight:700;
+      border:1.5px solid #e0e0e0; background:#fff; color:#555;
+      cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .pill.active { border:none; color:#fff; }
+ 
+    .search { position:relative; margin-bottom:14px; }
+    .search span { position:absolute; left:14px; top:50%; transform:translateY(-50%); }
+    .search input { width:100%; padding:12px 14px 12px 40px; font-size:14px;
+      border:1.5px solid #e5e7eb; border-radius:12px; background:#fff;
+      outline:none; font-family:inherit; }
+    .search input:focus { border-color:#FFD600; }
+ 
+    .result-count { font-size:13px; color:#9ca3af; margin-bottom:12px; }
+ 
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+ 
+    .card { background:#fff; border-radius:16px; padding:16px 18px;
+      border:1.5px solid #ebebeb; box-shadow:0 2px 10px rgba(0,0,0,.05);
+      display:flex; flex-direction:column; gap:10px; position:relative;
+      transition:all .18s; cursor:pointer; }
+    .card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.12); }
+    .card.oferta { border-color:#FFD600; box-shadow:0 4px 16px rgba(255,214,0,.15); }
+ 
+    .card-actions { position:absolute; top:12px; right:12px; display:flex; gap:6px; align-items:center; z-index:2; }
+    .fav-btn { background:none; border:none; cursor:pointer; font-size:18px; padding:2px; transition:all .15s; }
+    .cart-btn { background:none; border:1.5px solid #e0e0e0; cursor:pointer; font-size:12px;
+      padding:3px 8px; border-radius:20px; transition:all .15s; font-weight:700;
+      color:#555; white-space:nowrap; }
+    .cart-btn.en-carrito { background:#111827; border-color:#111827; color:#FFD600; }
+    .cart-btn:hover { transform:scale(1.05); }
+ 
+    .badges { display:flex; gap:5px; flex-wrap:wrap; padding-right:110px; }
+    .super-badge { font-size:10px; font-weight:800; padding:2px 8px;
+      border-radius:20px; letter-spacing:.5px; }
+    .super-logo-circle { border-radius:50%; background:#fff; display:inline-flex;
+      align-items:center; justify-content:center; flex-shrink:0;
+      box-shadow:0 1px 3px rgba(0,0,0,.18); overflow:hidden; }
+    .super-logo-circle img { width:100%; height:100%; object-fit:contain; display:block; }
+    .super-logo-square { border-radius:14px; background:#fff;
+      display:inline-flex; align-items:center; justify-content:center;
+      flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.15); overflow:hidden; }
+    .super-logo-square img { width:100%; height:100%; object-fit:contain; display:block; }
+    .header-logos { display:flex; gap:8px; align-items:center; }
+    .cat-badge { font-size:10px; color:#999; padding:2px 7px;
+      background:#f5f5f5; border-radius:20px; }
+    .time-badge { font-size:10px; color:#bbb; padding:2px 7px;
+      background:#f9f9f9; border-radius:20px; margin-left:auto; }
+ 
+    .product-name { font-size:13.5px; font-weight:600; color:#1a1a1a; line-height:1.4; }
+ 
+    .prices { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+    .price { font-size:24px; font-weight:900; letter-spacing:-1px; }
+    .price.normal { color:#1a1a1a; }
+    .price.oferta { color:#E91E63; }
+    .price-original { font-size:13px; color:#ccc; text-decoration:line-through; }
+    .discount { font-size:12px; font-weight:800; color:#E91E63;
+      background:#FCE4EC; padding:2px 7px; border-radius:10px; }
+ 
+    .promo { display:inline-flex; align-items:center; gap:3px;
+      color:#fff; font-size:10px; font-weight:800; padding:3px 8px;
+      border-radius:20px; letter-spacing:.4px; text-transform:uppercase; }
+ 
+    .empty { text-align:center; padding:60px 20px; color:#d1d5db;
+      background:#fff; border-radius:16px; }
+    .empty div { font-size:56px; }
+ 
+    .tabs { display:flex; border-bottom:2px solid #e5e7eb;
+      background:#fff; border-radius:12px 12px 0 0; overflow:hidden;
+      box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:20px; }
+    .tab { padding:12px 24px; font-size:13.5px; font-weight:700;
+      border:none; background:none; cursor:pointer; color:#9ca3af;
+      border-bottom:3px solid transparent; margin-bottom:-2px;
+      transition:all .15s; flex:1; }
+    .tab.active { color:#111827; border-bottom-color:#FFD600; }
+ 
+    .footer { margin-top:36px; padding:18px 22px; background:#111827;
+      border-radius:16px; color:#6b7280; font-size:12px; line-height:1.8; }
+    .footer strong { color:#FFD600; }
+ 
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6);
+      z-index:100; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal { background:#fff; border-radius:20px; width:100%; max-width:520px;
+      max-height:90vh; overflow-y:auto; padding:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .modal-header { display:flex; justify-content:space-between; align-items:flex-start;
+      gap:12px; margin-bottom:16px; }
+    .modal-title { font-size:15px; font-weight:700; color:#1a1a1a; line-height:1.4; }
+    .modal-close { background:none; border:none; font-size:22px; cursor:pointer; color:#9ca3af; flex-shrink:0; }
+    .modal-close:hover { color:#1a1a1a; }
+    .modal-section { font-size:11px; font-weight:700; color:#9ca3af;
+      text-transform:uppercase; letter-spacing:.5px; margin:20px 0 10px; }
+    .modal-link { display:inline-flex; align-items:center; gap:6px;
+      margin-top:16px; padding:10px 18px; background:#111827; color:#fff;
+      border-radius:10px; font-size:13px; font-weight:700; text-decoration:none; }
+    .modal-link:hover { background:#374151; }
+    .history-empty { text-align:center; padding:24px; color:#d1d5db; font-size:13px; }
+    .auth-input { width:100%; padding:11px 14px; font-size:14px; border:1.5px solid #e5e7eb;
+      border-radius:10px; outline:none; font-family:inherit; margin-bottom:10px; }
+    .auth-input:focus { border-color:#FFD600; }
+    .auth-btn { width:100%; padding:12px; background:#111827; color:#fff; border:none;
+      border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .auth-btn:hover { background:#374151; }
+    .auth-link { background:none; border:none; color:#6b7280; font-size:13px;
+      cursor:pointer; text-decoration:underline; font-family:inherit; margin-top:8px; }
+ 
+    /* Carrito */
+    .carrito-empty { text-align:center; padding:60px 20px; background:#fff;
+      border-radius:16px; color:#9ca3af; }
+    .carrito-super-section { background:#fff; border-radius:16px; margin-bottom:16px;
+      border:1.5px solid #ebebeb; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+    .carrito-super-header { display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px; border-bottom:1px solid #f3f4f6; }
+    .carrito-super-title { display:flex; align-items:center; gap:10px; }
+    .carrito-comprar-btn { padding:9px 18px; border:none; border-radius:10px;
+      font-size:13px; font-weight:800; cursor:pointer; transition:all .15s;
+      text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    .carrito-comprar-btn:hover { opacity:.85; transform:translateY(-1px); }
+    .carrito-item { display:flex; align-items:center; gap:12px; padding:12px 18px;
+      border-bottom:1px solid #f9fafb; }
+    .carrito-item:last-child { border-bottom:none; }
+    .carrito-item-img { width:48px; height:48px; object-fit:contain;
+      border-radius:8px; background:#f9f9f9; flex-shrink:0; }
+    .carrito-item-img-placeholder { width:48px; height:48px; border-radius:8px;
+      background:#f3f4f6; flex-shrink:0; display:flex; align-items:center;
+      justify-content:center; font-size:20px; }
+    .carrito-item-info { flex:1; min-width:0; }
+    .carrito-item-name { font-size:13px; font-weight:600; color:#1a1a1a;
+      line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .carrito-item-precio { font-size:15px; font-weight:900; color:#1a1a1a; margin-top:2px; }
+    .carrito-item-remove { background:none; border:none; cursor:pointer;
+      color:#d1d5db; font-size:18px; padding:4px; transition:color .15s; flex-shrink:0; }
+    .carrito-item-remove:hover { color:#E91E63; }
+    .qty-control { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+    .qty-btn { width:28px; height:28px; border-radius:50%; border:1.5px solid #e0e0e0;
+      background:#fff; font-size:16px; font-weight:700; cursor:pointer; color:#374151;
+      display:flex; align-items:center; justify-content:center; transition:all .15s; line-height:1; }
+    .qty-btn:hover:not(:disabled) { background:#111827; color:#FFD600; border-color:#111827; }
+    .qty-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .qty-val { font-size:14px; font-weight:800; color:#1a1a1a; min-width:20px; text-align:center; }
+    .carrito-total { display:flex; justify-content:space-between; align-items:center;
+      padding:12px 18px; background:#f9fafb; font-size:13px; color:#6b7280; }
+    .carrito-total strong { color:#1a1a1a; font-size:16px; }
+    .carrito-dino-note { background:#FFF8E1; border:1px solid #FFD600; border-radius:10px;
+      padding:10px 14px; font-size:12px; color:#92400e; margin-bottom:16px; }
+    .confirm-modal { background:#fff; border-radius:20px; width:100%; max-width:440px;
+      padding:28px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .confirm-modal-title { font-size:17px; font-weight:900; color:#1a1a1a; margin-bottom:8px; }
+    .confirm-modal-warning { background:#FFF8E1; border:1px solid #FFD600; border-radius:10px;
+      padding:12px 14px; font-size:12.5px; color:#92400e; margin:14px 0; line-height:1.6; }
+    .confirm-modal-btns { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+    .confirm-btn { padding:12px 18px; border-radius:12px; font-size:14px; font-weight:700;
+      cursor:pointer; border:none; font-family:inherit; transition:all .15s; text-align:center; }
+    .confirm-btn:hover { opacity:.85; transform:translateY(-1px); }
+    .confirm-btn.primary { background:#111827; color:#FFD600; }
+    .confirm-btn.secondary { background:#f3f4f6; color:#374151; }
+    .confirm-btn.danger { background:#FCE4EC; color:#C62828; }
   </style>
-<base target="_blank">
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-
+ 
 const API = "https://web-production-32c3f.up.railway.app";
-
+ 
 const SUPER_COLORS = {
   VEA:       { bg:"#FFD600", text:"#000" },
+  Disco:     { bg:"#C8102E", text:"#fff" },
   Carrefour: { bg:"#0066CC", text:"#fff" },
   MasOnline: { bg:"#E4002B", text:"#fff" },
   Dino:      { bg:"#2E7D32", text:"#fff" },
+  Coto:      { bg:"#EE1C25", text:"#fff" },
+  Dia:       { bg:"#E30613", text:"#fff" },
 };
 
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino"];
+// Coto NO entra acá: no es VTEX ni tiene (todavía) un mecanismo de carrito
+// automático como Dino. Se muestra en el comparador como los demás, pero sin
+// botón "+ Carrito" — el link del modal ("Ver en Coto") lleva al sitio.
+// Dia SÍ entra: es VTEX estándar (checkout /checkout/cart/add, sc=1, seller=1),
+// así que reutiliza buildVtexCartUrl igual que Carrefour/MasOnline → botón "+Carrito".
+const SUPER_VTEX = ["VEA", "Disco", "Carrefour", "MasOnline", "Dino", "Dia"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
+  Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
   Carrefour: "https://www.micarrefour.com.ar/images/footer/logo-carrefour-com-ar.svg",
   MasOnline: "https://masonlineprod.vtexassets.com/assets/vtex.file-manager-graphql/images/1f676005-1a66-4379-abe1-e8c39b539f10___3b7e04ce085fbfa38121c0692ad1dd9b.svg",
   Dino:      "https://www.dinoonline.com.ar/super/images/logo-super-mami.png",
+  Coto:      "https://static.cotodigital3.com.ar/sitios/cdigi/static/content/images/nuevositio/header/LogoCOTO.svg",
+  Dia:       "https://diaio.vtexassets.com/assets/vtex.file-manager-graphql/images/2ed8a7a3-95d4-4db2-897c-1370d972f8cd___35f8793fd5e07272ffdf01407f8cc7b5.svg",
 };
 
+// Logos alternativos: se prueban en orden si el/los anteriores fallan (ej. Dino
+// suele caerse y tirar abajo también las imágenes servidas desde su propio dominio).
 const SUPER_LOGOS_FALLBACK = {
   Dino: ["https://statics.dinoonline.com.ar/img/dino-online_sm.png"],
 };
 
+function useLogoSources(nombre) {
+  const [srcIndex, setSrcIndex] = React.useState(0);
+  const sources = React.useMemo(
+    () => [SUPER_LOGOS[nombre], ...(SUPER_LOGOS_FALLBACK[nombre] || [])].filter(Boolean),
+    [nombre]
+  );
+  const src = sources[srcIndex] || null;
+  const onError = () => setSrcIndex(i => i + 1);
+  return { src, onError };
+}
+ 
 const BASE_URLS = {
   VEA:       "https://www.vea.com.ar",
+  Disco:     "https://www.disco.com.ar",
   Carrefour: "https://www.carrefour.com.ar",
   MasOnline: "https://www.masonline.com.ar",
   Dino:      "https://www.dinoonline.com.ar",
+  Coto:      "https://www.coto.com.ar",
+  Dia:       "https://diaonline.supermercadosdia.com.ar",
 };
-
+ 
 const CATEGORIAS = {
   "almacen": { label:"Almacén", subs:{ "aceites-y-vinagres":"Aceites y Vinagres","aderezos-salsas-y-especias":"Aderezos, Salsas y Especias","arroz-pastas-y-legumbres":"Arroz, Pastas y Legumbres","caldos-sopas-y-pure":"Caldos, Sopas y Puré","desayuno-y-merienda":"Desayuno y Merienda","enlatados-y-conservas":"Enlatados y Conservas","golosinas-y-chocolates":"Golosinas y Chocolates","harinas":"Harinas","panaderia":"Panadería","reposteria-y-postres":"Repostería y Postres","snacks":"Snacks" } },
   "carnes": { label:"Carnes", subs:{ "carne-vacuna":"Carne Vacuna","carne-cerdo":"Carne Cerdo","pollo":"Pollo","embutidos-y-achuras":"Embutidos y Achuras","carbon-y-lena":"Carbón y Leña" } },
@@ -815,12 +263,12 @@ const CATEGORIAS = {
   "mundo-bebe": { label:"Mundo Bebé", subs:{ "accesorios-para-bebe":"Accesorios para Bebé","alimentos-y-leches":"Alimentos y Leches","panales-e-higiene":"Pañales e Higiene" } },
   "mascotas": { label:"Mascotas", subs:{ "alimentos":"Alimentos","accesorios-e-higiene":"Accesorios e Higiene" } },
 };
-
+ 
 const CAT_LABELS = Object.fromEntries(Object.entries(CATEGORIAS).map(([k,v]) => [k, v.label]));
 const SUBCAT_LABELS = Object.fromEntries(Object.values(CATEGORIAS).flatMap(v => Object.entries(v.subs)));
-
+ 
 function fmt(n) { return n != null ? "$" + Math.round(n).toLocaleString("es-AR") : "—"; }
-
+ 
 function relTime(ts) {
   if (!ts) return null;
   const d = new Date(ts.replace(" ","T")), now = new Date();
@@ -829,54 +277,51 @@ function relTime(ts) {
   if (mins < 1440) return `hace ${Math.round(mins/60)}h`;
   return `hace ${Math.round(mins/1440)}d`;
 }
-
+ 
 function fmtFecha(ts) {
   if (!ts) return "";
   const d = new Date(ts.replace(" ","T"));
   return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit" });
 }
-
-function useLogoSources(nombre) {
-  const [srcIndex, setSrcIndex] = React.useState(0);
-  const sources = React.useMemo(
-    () => [SUPER_LOGOS[nombre], ...(SUPER_LOGOS_FALLBACK[nombre] || [])].filter(Boolean),
-    [nombre]
-  );
-  const src = sources[srcIndex] || null;
-  const onError = () => setSrcIndex(i => i + 1);
-  return { src, onError };
-}
-
-function SuperLogo({ nombre, size = 22, bare = false }) {
+ 
+function SuperLogo({ nombre, size = 22, padding, bare = false, shape = "circle" }) {
   const { src, onError } = useLogoSources(nombre);
   if (!src) return null;
   if (bare) {
-    return <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:size, height:size, objectFit:"contain", display:"block"}}/>;
+    return (
+      <img src={src} alt={nombre} loading="lazy" onError={onError}
+        style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>
+    );
   }
-  const pad = Math.round(size * 0.1);
+  const pad = padding != null ? padding : Math.round(size * 0.08);
+  const cls = shape === "square" ? "super-logo-square" : "super-logo-circle";
   return (
-    <span style={{width:size, height:size, padding:pad, borderRadius:"50%", background:"#fff", display:"inline-flex", alignItems:"center", justifyContent:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.1)", overflow:"hidden", flexShrink:0}}>
-      <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:"100%", height:"100%", objectFit:"contain", display:"block"}}/>
+    <span className={cls} style={{width:size, height:size, padding:pad}}>
+      <img src={src} alt={nombre} loading="lazy" onError={onError}/>
     </span>
   );
 }
 
-function SuperBadge({ nombre, size = 20, showText = true, bare = false }) {
+function SuperBadge({ nombre, size = 20, fontSize = 10, showText = true, bare = false, shape = "circle" }) {
+  const sc = SUPER_COLORS[nombre] || {bg:"#888",text:"#fff"};
   const { src, onError } = useLogoSources(nombre);
   const showLogo = !!src;
-  if (showLogo && bare) {
-    return <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>;
-  }
+  const cls = shape === "square" ? "super-logo-square" : "super-logo-circle";
   return (
-    <span style={{display:"inline-flex", alignItems:"center", gap:5}}>
+    <span style={{display:"inline-flex", alignItems:"center", gap:6}}>
       {showLogo ? (
-        <span style={{width:size, height:size, padding:Math.round(size*0.1), borderRadius:"50%", background:"#fff", display:"inline-flex", alignItems:"center", justifyContent:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.1)", overflow:"hidden", flexShrink:0}}>
-          <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:"100%", height:"100%", objectFit:"contain", display:"block"}}/>
-        </span>
+        bare ? (
+          <img src={src} alt={nombre} loading="lazy" onError={onError}
+            style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>
+        ) : (
+          <span className={cls} style={{width:size, height:size, padding:Math.round(size*0.08)}}>
+            <img src={src} alt={nombre} loading="lazy" onError={onError}/>
+          </span>
+        )
       ) : (
-        <span style={{fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:20, background:SUPER_COLORS[nombre]?.bg||"#888", color:SUPER_COLORS[nombre]?.text||"#fff"}}>{nombre}</span>
+        <span className="super-badge" style={{background:sc.bg, color:sc.text, fontSize}}>{nombre}</span>
       )}
-      {showLogo && showText && <span style={{fontSize:12, fontWeight:800, color:"#374151"}}>{nombre}</span>}
+      {showLogo && showText && <span style={{fontSize:fontSize+1, fontWeight:800, color:"#374151"}}>{nombre}</span>}
     </span>
   );
 }
@@ -887,10 +332,16 @@ function promoColor(promo) {
   if (promo.includes("unidad")) return "#7B1FA2";
   return "#C62828";
 }
+ 
+// Sales channel de checkout por supermercado. Los sitios Cencosud tienen el
+// sc=1 inactivo — el único activo es el 34 en VEA y el 33 en Disco; con sc=1
+// el checkout rechaza todos los ítems con "no encontrado o no disponible".
+const VTEX_SALES_CHANNEL = { VEA: 34, Disco: 33 };
 
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
+  const sc = VTEX_SALES_CHANNEL[superNombre] || 1;
   const params = items
     .filter(i => i.sku_id)
     .map(i => {
@@ -900,26 +351,29 @@ function buildVtexCartUrl(superNombre, items) {
     })
     .join("&");
   if (!params) return null;
-  return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
+  return `${baseUrl}/checkout/cart/add?sc=${sc}&${params}`;
 }
 
 function buildDinoCartUrl(producto, cantidad) {
-  const productId = producto.product_id || producto.sku_id;
-  if (!producto.url || !producto.sku_id || !productId) return null;
-  const url = new URL(producto.url);
-  url.searchParams.set('dcs_action', 'additemtocart');
-  url.searchParams.set('url_catalog_ref_id', producto.sku_id);
-  url.searchParams.set('url_product_id', productId);
-  url.searchParams.set('url_quantity', cantidad);
-  return url.toString();
+  // Dino (ATG) agrega UN ítem por request; /super/carrito/ lo agrega y muestra
+  // el carrito. El url_product_id DEBE llevar el prefijo "prod" (los repository
+  // ids de Dino son "prod"+sku): con el sku pelado ATG crea un ítem con
+  // referencia rota (sin foto, sin link) que además rompe los agregados
+  // posteriores desde la propia página de Dino.
+  if (!producto.sku_id) return null;
+  const rawId = String(producto.product_id || producto.sku_id);
+  const productId = rawId.startsWith("prod") ? rawId : `prod${rawId}`;
+  const qtyNum = Number(cantidad);
+  const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
+  return `${BASE_URLS.Dino}/super/carrito/?dcs_action=additemtocart&url_catalog_ref_id=${producto.sku_id}&url_product_id=${productId}&url_quantity=${qty}`;
 }
-
+ 
 // ---------------------------------------------------------------------------
 // MiniChart
 // ---------------------------------------------------------------------------
 function MiniChart({ data }) {
   if (!data || data.length < 2) return null;
-  const W = 480, H = 140, PAD = { top:10, right:10, bottom:24, left:60 };
+  const W = 460, H = 140, PAD = { top:10, right:10, bottom:24, left:60 };
   const innerW = W - PAD.left - PAD.right, innerH = H - PAD.top - PAD.bottom;
   const precios = data.map(d => d.precio);
   const minP = Math.min(...precios), maxP = Math.max(...precios), rng = maxP - minP || 1;
@@ -929,33 +383,34 @@ function MiniChart({ data }) {
   const points = data.map((d,i) => `${toX(i)},${toY(d.precio)}`).join(" ");
   const areaPoints = [`${toX(0)},${PAD.top + innerH}`, ...data.map((d,i) => `${toX(i)},${toY(d.precio)}`), `${toX(data.length-1)},${PAD.top + innerH}`].join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:H}} className="chart-wrap">
-      {[0,.5,1].map(t => { const y = PAD.top + innerH*(1-t); return (<g key={t}><line x1={PAD.left} y1={y} x2={W-PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="1"/><text x={PAD.left-6} y={y+4} textAnchor="end" fontSize="10" fill="#94a3b8">${Math.round(minP+rng*t).toLocaleString("es-AR")}</text></g>); })}
-      <polygon points={areaPoints} fill="#EF4444" fillOpacity="0.06"/>
-      <polyline points={points} fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
-      {data.map((d,i) => (<g key={i}><circle cx={toX(i)} cy={toY(d.precio)} r="4" fill="#EF4444"/><text x={toX(i)} y={H-6} textAnchor="middle" fontSize="10" fill="#94a3b8">{fmtFecha(d.scrapeado_en)}</text></g>))}
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:H}}>
+      {[0,.5,1].map(t => { const y = PAD.top + innerH*(1-t); return (<g key={t}><line x1={PAD.left} y1={y} x2={W-PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="1"/><text x={PAD.left-6} y={y+4} textAnchor="end" fontSize="10" fill="#9ca3af">${Math.round(minP+rng*t).toLocaleString("es-AR")}</text></g>); })}
+      <polygon points={areaPoints} fill="#E91E63" fillOpacity="0.08"/>
+      <polyline points={points} fill="none" stroke="#E91E63" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+      {data.map((d,i) => (<g key={i}><circle cx={toX(i)} cy={toY(d.precio)} r="4" fill="#E91E63"/><text x={toX(i)} y={H-6} textAnchor="middle" fontSize="10" fill="#9ca3af">{fmtFecha(d.scrapeado_en)}</text></g>))}
     </svg>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // Modal de producto
 // ---------------------------------------------------------------------------
 function Modal({ producto, onClose }) {
   const [historial, setHistorial] = React.useState([]);
   const [loadingH, setLoadingH] = React.useState(true);
+  const sc = SUPER_COLORS[producto.supermercado] || {bg:"#888",text:"#fff"};
   const hasOffer = producto.descuento_pct || producto.promocion;
-
+ 
   React.useEffect(() => {
     fetch(`${API}/productos/${producto.id}/historial`)
       .then(r => r.json())
       .then(data => { setHistorial([...data].sort((a,b) => new Date(a.scrapeado_en)-new Date(b.scrapeado_en))); setLoadingH(false); })
       .catch(() => setLoadingH(false));
   }, [producto.id]);
-
+ 
   const minP = historial.length ? Math.min(...historial.map(h=>h.precio)) : null;
   const maxP = historial.length ? Math.max(...historial.map(h=>h.precio)) : null;
-
+ 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -963,56 +418,37 @@ function Modal({ producto, onClose }) {
           <div className="modal-title">{producto.nombre}</div>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body">
-          <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14}}>
-            <SuperBadge nombre={producto.supermercado} size={56} bare={true}/>
-            <span style={{fontSize:11,fontWeight:700,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:"0.5px",padding:"4px 10px",background:"var(--bg)",borderRadius:20}}>{SUBCAT_LABELS[producto.subcategoria] || CAT_LABELS[producto.categoria] || producto.categoria}</span>
-          </div>
-          {producto.imagen_url && <img src={producto.imagen_url} alt={producto.nombre} style={{width:"100%",height:"180px",objectFit:"contain",background:"var(--bg)",borderRadius:"var(--radius)",marginBottom:16}}/>}
-          <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-            <div style={{fontSize:32,fontWeight:900,color:hasOffer?"var(--danger)":"var(--text-primary)",letterSpacing:"-1px"}}>{fmt(producto.precio)}</div>
-            {producto.precio_regional && <span style={{fontSize:10,fontWeight:800,color:"var(--info)",background:"var(--info-light)",padding:"3px 10px",borderRadius:10}}>📍 precio de tu región</span>}
-          </div>
-          {producto.precio_original && (
-            <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}>
-              <span style={{color:"var(--text-muted)",textDecoration:"line-through",fontSize:14,fontWeight:500}}>{fmt(producto.precio_original)}</span>
-              {producto.descuento_pct && <span style={{fontSize:12,fontWeight:800,color:"#fff",background:"var(--danger)",padding:"3px 10px",borderRadius:20}}>-{producto.descuento_pct}%</span>}
-            </div>
-          )}
-          {producto.promocion && <span style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,fontSize:11,fontWeight:800,padding:"4px 12px",borderRadius:20,letterSpacing:"0.3px",textTransform:"uppercase",color:"#fff",background:promoColor(producto.promocion)}}>{producto.promocion}</span>}
-
-          {producto.otros_supers && producto.otros_supers.length > 0 && (
-            <>
-              <div className="modal-section-title">🏪 En otros supermercados</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {[...producto.otros_supers].sort((a,b)=>a.precio-b.precio).map(o => {
-                  const esMasBarato = o.precio < producto.precio;
-                  return (
-                    <a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",textDecoration:"none",padding:"12px 14px",borderRadius:"var(--radius)",background:esMasBarato?"var(--success-light)":"var(--bg)",border:esMasBarato?"1.5px solid #bbf7d0":"1.5px solid var(--border-light)"}}>
-                      <SuperBadge nombre={o.supermercado} size={44} bare={true}/>
-                      <span style={{fontWeight:900,fontSize:18,color:esMasBarato?"var(--success)":"var(--text-primary)"}}>
-                        {fmt(o.precio)}
-                        {esMasBarato && <span style={{fontSize:11,marginLeft:6,color:"var(--success)",fontWeight:700}}>💚 más barato</span>}
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          <div className="modal-section-title">📈 Historial de precios</div>
-          {loadingH ? <div style={{textAlign:"center",padding:24,color:"var(--text-muted)",fontSize:13}}>Cargando...</div>
-            : historial.length < 2 ? <div style={{textAlign:"center",padding:24,color:"var(--text-muted)",fontSize:13}}>No hay suficiente historial aún — volvé en unos días 📅</div>
-            : <><MiniChart data={historial}/><div style={{display:"flex",gap:20,marginTop:10,fontSize:12,color:"var(--text-secondary)"}}><span>📉 Mínimo: <strong style={{color:"var(--success)"}}>{fmt(minP)}</strong></span><span>📈 Máximo: <strong style={{color:"var(--danger)"}}>{fmt(maxP)}</strong></span></div></>
-          }
-          <a href={producto.url} target="_blank" rel="noopener noreferrer" className="modal-link">Ver en {producto.supermercado} →</a>
+        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:14}}>
+          <SuperBadge nombre={producto.supermercado} size={60} fontSize={13} bare={true}/>
+          <span className="cat-badge">{SUBCAT_LABELS[producto.subcategoria] || CAT_LABELS[producto.categoria] || producto.categoria}</span>
         </div>
+        {producto.imagen_url && <img src={producto.imagen_url} alt={producto.nombre} style={{width:"100%",height:"150px",objectFit:"contain",background:"#f9f9f9",borderRadius:10,marginBottom:14}}/>}
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <div style={{fontSize:32,fontWeight:900,color:hasOffer?"#E91E63":"#1a1a1a"}}>{fmt(producto.precio)}</div>
+          {producto.precio_regional&&<span style={{fontSize:10,fontWeight:800,color:"#1565C0",background:"#E3F2FD",padding:"3px 8px",borderRadius:10}}>📍 precio de tu región</span>}
+        </div>
+        {producto.precio_original && <div style={{display:"flex",gap:8,alignItems:"center",marginTop:4}}><span style={{color:"#ccc",textDecoration:"line-through",fontSize:13}}>{fmt(producto.precio_original)}</span>{producto.descuento_pct && <span className="discount">-{producto.descuento_pct}%</span>}</div>}
+        {producto.promocion && <span className="promo" style={{background:promoColor(producto.promocion),marginTop:6,display:"inline-flex"}}>{producto.promocion}</span>}
+        {producto.otros_supers && producto.otros_supers.length > 0 && (
+          <><div className="modal-section">🏪 En otros supermercados</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[...producto.otros_supers].sort((a,b)=>a.precio-b.precio).map(o => {
+              const esMasBarato = o.precio < producto.precio;
+              return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",textDecoration:"none",padding:"10px 14px",borderRadius:12,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1.5px solid #A5D6A7":"1.5px solid #ebebeb"}}><SuperBadge nombre={o.supermercado} size={50} bare={true}/><span style={{fontWeight:900,fontSize:18,color:esMasBarato?"#2E7D32":"#1a1a1a"}}>{fmt(o.precio)}{esMasBarato&&<span style={{fontSize:11,marginLeft:6,color:"#2E7D32"}}>💚 más barato</span>}</span></a>);
+            })}
+          </div></>
+        )}
+        <div className="modal-section">📈 Historial de precios</div>
+        {loadingH ? <div className="history-empty">Cargando...</div>
+          : historial.length < 2 ? <div className="history-empty">No hay suficiente historial aún — volvé en unos días 📅</div>
+          : <><MiniChart data={historial}/><div style={{display:"flex",gap:20,marginTop:8,fontSize:12,color:"#6b7280"}}><span>📉 Mínimo: <strong style={{color:"#4CAF50"}}>{fmt(minP)}</strong></span><span>📈 Máximo: <strong style={{color:"#E91E63"}}>{fmt(maxP)}</strong></span></div></>
+        }
+        <a href={producto.url} target="_blank" rel="noopener noreferrer" className="modal-link">Ver en {producto.supermercado} →</a>
       </div>
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // Paginacion
 // ---------------------------------------------------------------------------
@@ -1026,24 +462,24 @@ function Paginacion({ paginaActual, totalPaginas, onCambiar }) {
     if (i===1||i===totalPaginas||(i>=paginaActual-delta&&i<=paginaActual+delta)) { if (prev!==null&&i-prev>1) items.push("..."); items.push(i); prev=i; }
   }
   return (
-    <div className="pagination">
-      <button className="page-btn" onClick={()=>onCambiar(paginaActual-1)} disabled={paginaActual===1}>←</button>
+    <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:6,marginTop:24,flexWrap:"wrap"}}>
+      <button className="pill" onClick={()=>onCambiar(paginaActual-1)} disabled={paginaActual===1} style={{padding:"6px 14px",opacity:paginaActual===1?0.4:1}}>← Anterior</button>
       {items.map((item,i) => item==="..."
-        ? <span key={"e"+i} style={{color:"var(--text-muted)",padding:"0 4px",fontSize:13,fontWeight:700}}>...</span>
-        : <button key={item} className={"page-btn "+(item===paginaActual?"active":"")} onClick={()=>onCambiar(item)}>{item}</button>
+        ? <span key={"e"+i} style={{color:"#9ca3af",padding:"0 2px"}}>...</span>
+        : <button key={item} className={"pill"+(item===paginaActual?" active":"")} onClick={()=>onCambiar(item)} style={{padding:"6px 12px",...(item===paginaActual?{background:"#111827",color:"#fff",border:"none"}:{})}}>{item}</button>
       )}
-      <div className="page-input-wrap">
-        <span>Ir a</span>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:4}}>
+        <span style={{fontSize:12,color:"#9ca3af"}}>Ir a:</span>
         <input type="number" min="1" max={totalPaginas} value={inputVal}
           onChange={e=>setInputVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&irAPagina()} onBlur={irAPagina}
-          className="page-input"/>
-        <span>de {totalPaginas}</span>
+          style={{width:52,padding:"5px 8px",borderRadius:10,border:"1.5px solid #e0e0e0",fontSize:13,fontWeight:700,textAlign:"center",fontFamily:"inherit",outline:"none"}}/>
+        <span style={{fontSize:12,color:"#9ca3af"}}>de {totalPaginas}</span>
       </div>
-      <button className="page-btn" onClick={()=>onCambiar(paginaActual+1)} disabled={paginaActual===totalPaginas}>→</button>
+      <button className="pill" onClick={()=>onCambiar(paginaActual+1)} disabled={paginaActual===totalPaginas} style={{padding:"6px 14px",opacity:paginaActual===totalPaginas?0.4:1}}>Siguiente →</button>
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // AuthModal
 // ---------------------------------------------------------------------------
@@ -1054,7 +490,7 @@ function AuthModal({ onClose, onLogin }) {
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [msg, setMsg] = React.useState("");
-
+ 
   async function handleSubmit() {
     setError(""); setMsg(""); setLoading(true);
     try {
@@ -1066,7 +502,7 @@ function AuthModal({ onClose, onLogin }) {
     } catch(e) { setError(e.message); }
     setLoading(false);
   }
-
+ 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:400}} onClick={e=>e.stopPropagation()}>
@@ -1074,65 +510,65 @@ function AuthModal({ onClose, onLogin }) {
           <div className="modal-title">{modo==="login"?"Iniciar sesión":"Crear cuenta"}</div>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="modal-body">
-          {msg && <div className="auth-alert success">{msg}</div>}
-          {error && <div className="auth-alert error">{error}</div>}
-          <input className="auth-input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-          <input className="auth-input" type="password" placeholder="Contraseña" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
-          <button className="auth-btn" onClick={handleSubmit} disabled={loading}>{loading?"Cargando...":modo==="login"?"Iniciar sesión":"Crear cuenta"}</button>
-          <div style={{textAlign:"center",marginTop:12}}>
-            <button className="auth-link" onClick={()=>{setModo(modo==="login"?"register":"login");setError("");setMsg("");}}>{modo==="login"?"¿No tenés cuenta? Registrate":"¿Ya tenés cuenta? Iniciá sesión"}</button>
-          </div>
+        {msg && <div style={{background:"#E8F5E9",color:"#2E7D32",padding:"10px 14px",borderRadius:10,marginBottom:12,fontSize:13}}>{msg}</div>}
+        {error && <div style={{background:"#FCE4EC",color:"#C62828",padding:"10px 14px",borderRadius:10,marginBottom:12,fontSize:13}}>{error}</div>}
+        <input className="auth-input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        <input className="auth-input" type="password" placeholder="Contraseña" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+        <button className="auth-btn" onClick={handleSubmit} disabled={loading}>{loading?"Cargando...":modo==="login"?"Iniciar sesión":"Crear cuenta"}</button>
+        <div style={{textAlign:"center",marginTop:12}}>
+          <button className="auth-link" onClick={()=>{setModo(modo==="login"?"register":"login");setError("");setMsg("");}}>{modo==="login"?"¿No tenés cuenta? Registrate":"¿Ya tenés cuenta? Iniciá sesión"}</button>
         </div>
       </div>
     </div>
   );
 }
-
+ 
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
+  const [dinoProgress, setDinoProgress] = React.useState(null); // {actual, total}
+  const dinoTimerRef = React.useRef(null);
+
+  React.useEffect(() => () => { if (dinoTimerRef.current) clearInterval(dinoTimerRef.current); }, []);
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
-  if (superNombre === "VEA") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-title">Comprar en VEA</div>
-          <p className="confirm-desc">
-            Abrí el primer producto para iniciar sesión en VEA, luego añadí el resto.
-          </p>
-          <div className="confirm-item-list">
-            {items.map((i, idx) => (
-              <div key={idx} className="confirm-item-row">
-                <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                <button className="confirm-item-btn" onClick={() => window.open(i.producto.url, "_blank", "noopener,noreferrer")}>
-                  Ver en VEA →
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="confirm-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
-            <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
-          </div>
-        </div>
-      </div>
-    );
+  // Dino no tiene carga batch por URL (ATG procesa un ítem por request), así
+  // que abrimos UNA pestaña y la navegamos por cada URL de additemtocart.
+  // Asignar location a una ventana cross-origin está permitido; el delay le da
+  // tiempo a cada request a impactar antes de la siguiente navegación.
+  function cargarDinoAuto() {
+    const urls = items.map(i => buildDinoCartUrl(i.producto, i.cantidad)).filter(Boolean);
+    if (!urls.length) return;
+    const win = window.open(urls[0], "_blank");
+    if (!win) return; // popup bloqueado: queda el listado manual como fallback
+    setDinoProgress({ actual: 1, total: urls.length });
+    let idx = 1;
+    dinoTimerRef.current = setInterval(() => {
+      if (win.closed) { clearInterval(dinoTimerRef.current); setDinoProgress(null); return; }
+      if (idx >= urls.length) { clearInterval(dinoTimerRef.current); setDinoProgress(null); setPaso("listo"); return; }
+      win.location = urls[idx];
+      idx += 1;
+      setDinoProgress({ actual: idx, total: urls.length });
+    }, 3500);
   }
 
+  // --- Flujo Dino (2 pasos con dcs_action) ---
   if (superNombre === "Dino") {
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
           {paso === "login" ? (
             <>
-              <div className="confirm-title">Comprar en Dino — Paso 1 de 2</div>
-              <p className="confirm-desc">Abrí Dino e iniciá sesión con tu usuario (o continuá como invitado).</p>
-              <div className="confirm-btns">
+              <div className="confirm-modal-title">Comprar en Dino — Paso 1 de 2</div>
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+                Abrí Dino e iniciá sesión con tu usuario. Si es tu primera compra,
+                configurá también tu <strong>dirección de entrega</strong> — Dino la
+                necesita para asignarte sucursal y mostrarte el carrito.
+              </p>
+              <div className="confirm-modal-btns">
                 <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
                   Abrir Dino para ingresar →
                 </button>
@@ -1141,31 +577,61 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
             </>
           ) : paso === "carrito" ? (
             <>
-              <div className="confirm-title">Comprar en Dino — Paso 2 de 2</div>
-              <p className="confirm-desc">Abrí producto por producto para agregarlo al carrito de Dino.</p>
-              <div className="confirm-item-list">
-                {items.map((i, idx) => {
-                  const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
-                  return (
-                    <div key={idx} className="confirm-item-row">
-                      <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                      <button className="confirm-item-btn" onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")} disabled={!dinoUrl}>
-                        {dinoUrl ? "Agregar →" : "Sin datos"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="confirm-btns">
+              <div className="confirm-modal-title">Comprar en Dino — Paso 2 de 2</div>
+              {dinoProgress ? (
+                <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
+                  Cargando producto {dinoProgress.actual} de {dinoProgress.total} en Dino…
+                  No cierres la pestaña de Dino ni esta ventana hasta que termine.
+                </p>
+              ) : (
+                <>
+                  <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5, marginBottom:10}}>
+                    Cargá todos los productos de una (se abre una pestaña de Dino que los
+                    agrega uno por uno), o agregalos manualmente desde el listado.
+                  </p>
+                  <div className="confirm-modal-warning" style={{marginBottom:10}}>
+                    💡 Si al ver el carrito Dino te pide una dirección de entrega,
+                    completala: tus productos quedan guardados y aparecen al terminar.
+                  </div>
+                  <div className="confirm-modal-btns" style={{marginBottom:10}}>
+                    <button className="confirm-btn primary" onClick={cargarDinoAuto}>
+                      Cargar todos en el carrito →
+                    </button>
+                  </div>
+                  <div style={{maxHeight:240, overflowY:"auto", marginBottom:12}}>
+                    {items.map((i, idx) => {
+                      const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
+                      return (
+                        <div key={idx} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f3f4f6"}}>
+                          <span style={{fontSize:13, color:"#374151", flex:1, marginRight:8}}>
+                            {i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
+                          </span>
+                          <button className="confirm-btn secondary"
+                            style={{padding:"4px 10px", fontSize:12, whiteSpace:"nowrap"}}
+                            onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")}
+                            disabled={!dinoUrl}>
+                            {dinoUrl ? "Agregar →" : "Sin datos"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              <div className="confirm-modal-btns">
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
-                <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
+                <button className="confirm-btn secondary" onClick={onClose}>
+                  {dinoProgress ? "Cancelar carga" : "Cerrar"}
+                </button>
               </div>
             </>
           ) : (
             <>
-              <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
-              <div className="confirm-btns">
+              <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
+              <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+                ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
+              </p>
+              <div className="confirm-modal-btns">
                 <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
               </div>
@@ -1176,14 +642,17 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     );
   }
 
+  // --- Flujo normal (VEA, Disco, Carrefour, MasOnline) ---
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="confirm-modal" onClick={e => e.stopPropagation()}>
         {paso === "login" ? (
           <>
-            <div className="confirm-title">Comprar en {superNombre} — Paso 1 de 2</div>
-            <p className="confirm-desc">Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).</p>
-            <div className="confirm-btns">
+            <div className="confirm-modal-title">Comprar en {superNombre} — Paso 1 de 2</div>
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+              Abrí {superNombre} e iniciá sesión con tu cuenta (o continuá como invitado).
+            </p>
+            <div className="confirm-modal-btns">
               <button className="confirm-btn primary" onClick={() => { window.open(loginUrl, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
                 Abrir {superNombre} para ingresar →
               </button>
@@ -1192,12 +661,14 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           </>
         ) : paso === "carrito" ? (
           <>
-            <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
-            <p className="confirm-desc">Cuando estés listo, cargá los productos en el carrito de {superNombre}.</p>
-            <div className="confirm-warning">
+            <div className="confirm-modal-title">Comprar en {superNombre} — Paso 2 de 2</div>
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+              Cuando estés listo, cargá los productos en el carrito de {superNombre}.
+            </p>
+            <div className="confirm-modal-warning">
               ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
             </div>
-            <div className="confirm-btns">
+            <div className="confirm-modal-btns">
               <button className="confirm-btn primary" onClick={() => { window.open(cartUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
                 Cargar productos en el carrito →
               </button>
@@ -1206,9 +677,11 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           </>
         ) : (
           <>
-            <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-            <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
-            <div className="confirm-btns">
+            <div className="confirm-modal-title">¿Cómo quedó el carrito? ✅</div>
+            <p style={{fontSize:13, color:"#6b7280", lineHeight:1.5}}>
+              ¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?
+            </p>
+            <div className="confirm-modal-btns">
               <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
               <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
             </div>
@@ -1218,9 +691,8 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     </div>
   );
 }
-
 // ---------------------------------------------------------------------------
-// SuperSwapButton
+// SuperSwapButton — cambiar de supermercado manteniendo cantidad
 // ---------------------------------------------------------------------------
 function SuperSwapButton({ item, onCambiarSuper }) {
   const [open, setOpen] = React.useState(false);
@@ -1232,8 +704,8 @@ function SuperSwapButton({ item, onCambiarSuper }) {
   function toggleOpen() {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const left = Math.min(rect.left, window.innerWidth - 236);
-      setCoords({ top: rect.bottom + 6, left: Math.max(8, left) });
+      const left = Math.min(rect.left, window.innerWidth - 216);
+      setCoords({ top: rect.bottom + 4, left: Math.max(8, left) });
     }
     setOpen(o => !o);
   }
@@ -1259,25 +731,38 @@ function SuperSwapButton({ item, onCambiarSuper }) {
   const ordenados = [...otros].sort((a, b) => a.precio - b.precio);
 
   return (
-    <div style={{ display: "inline-block" }} className="cart-item-swap">
-      <button ref={btnRef} onClick={toggleOpen} style={{
-        display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700,
-        color: "var(--info)", background: "var(--info-light)", border: "none",
-        borderRadius: 20, padding: "4px 10px", cursor: "pointer", whiteSpace: "nowrap"
+    <div style={{ display: "inline-block", marginTop: 6 }}>
+      <button ref={btnRef} onClick={toggleOpen} title="Ver el mismo producto en otros supermercados" style={{
+        display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700,
+        color: "#0066CC", background: "none", border: "1.5px solid #cfe0f5", borderRadius: 20,
+        padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap"
       }}>
         🔄 Cambiar de supermercado
       </button>
       {open && ReactDOM.createPortal(
-        <div ref={popRef} className="swap-popover">
-          <div className="swap-popover-header">Disponible también en</div>
+        <div ref={popRef} style={{
+          position: "fixed", top: coords.top, left: coords.left, background: "#fff",
+          border: "1.5px solid #e0e0e0", borderRadius: 12, boxShadow: "0 8px 28px rgba(0,0,0,.15)",
+          zIndex: 1000, minWidth: 200, padding: 6
+        }}>
+          <div style={{ fontSize: 10, color: "#9ca3af", padding: "4px 8px", fontWeight: 700, textTransform: "uppercase" }}>
+            Disponible también en
+          </div>
           {ordenados.map(o => {
             const masBarato = o.precio < item.producto.precio;
             return (
               <div key={o.id} onClick={() => { onCambiarSuper(item.producto_id, o.id); setOpen(false); }}
-                className={"swap-option " + (masBarato ? "best" : "")}>
-                <SuperBadge nombre={o.supermercado} size={22} bare={true} />
-                <span className="swap-option-name">{o.supermercado}</span>
-                <span className={"swap-option-price " + (masBarato ? "best" : "")}>{fmt(o.precio)}</span>
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "7px 8px",
+                  borderRadius: 8, cursor: "pointer", background: masBarato ? "#E8F5E9" : "transparent"
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = masBarato ? "#d5ecd7" : "#f5f5f5"}
+                onMouseLeave={e => e.currentTarget.style.background = masBarato ? "#E8F5E9" : "transparent"}>
+                <SuperBadge nombre={o.supermercado} size={24} bare={true} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{o.supermercado}</span>
+                <span style={{ fontSize: 12, marginLeft: "auto", fontWeight: 800, color: masBarato ? "#2E7D32" : "#1a1a1a" }}>
+                  {fmt(o.precio)}
+                </span>
               </div>
             );
           })}
@@ -1294,17 +779,18 @@ function SuperSwapButton({ item, onCambiarSuper }) {
 function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, onCambiarSuper, token }) {
   const [confirmData, setConfirmData] = React.useState(null);
   const [selectedProducto, setSelectedProducto] = React.useState(null);
-
+ 
   if (carritoItems.length === 0) {
     return (
-      <div className="cart-empty">
+      <div className="carrito-empty">
         <div style={{fontSize:56}}>🛒</div>
-        <p style={{fontSize:17,marginTop:14,fontWeight:800,color:"var(--text-primary)"}}>Tu carrito está vacío</p>
-        <p style={{fontSize:13.5,marginTop:6,color:"var(--text-secondary)",maxWidth:320,lineHeight:1.6}}>Agregá productos con el botón "Agregar" en la pestaña de productos para empezar a comparar</p>
+        <p style={{fontSize:16,marginTop:12,fontWeight:700,color:"#6b7280"}}>Tu carrito está vacío</p>
+        <p style={{fontSize:13,marginTop:6,color:"#9ca3af"}}>Agregá productos con el botón "+ Carrito" en la pestaña de productos</p>
       </div>
     );
   }
-
+ 
+  // Agrupar por supermercado
   const porSuper = {};
   carritoItems.forEach(item => {
     const prod = item.producto || productosMap[item.producto_id];
@@ -1312,7 +798,9 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
     if (!porSuper[prod.supermercado]) porSuper[prod.supermercado] = [];
     porSuper[prod.supermercado].push({...item, producto: prod});
   });
-
+ 
+  const hayDino = porSuper["Dino"]?.length > 0;
+ 
   return (
     <div>
       {selectedProducto && <Modal producto={selectedProducto} onClose={() => setSelectedProducto(null)} />}
@@ -1328,7 +816,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
           token={token}
         />
       )}
-
+ 
       {Object.entries(porSuper).map(([superNombre, items]) => {
         const sc = SUPER_COLORS[superNombre] || {bg:"#888",text:"#fff"};
         const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
@@ -1340,45 +828,55 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
         const puedeComprar = esVtex || esDino;
-
+ 
         return (
-          <div key={superNombre} className="cart-section">
-            <div className="cart-section-header">
-              <div className="cart-section-title">
-                <SuperBadge nombre={superNombre} size={48} bare={true}/>
-                <div>
-                  <span>{superNombre}</span>
-                  <div className="count">{items.length} producto{items.length!==1?"s":""}</div>
-                </div>
+          <div key={superNombre} className="carrito-super-section">
+            <div className="carrito-super-header">
+              <div className="carrito-super-title">
+                <SuperBadge nombre={superNombre} size={56} fontSize={13}/>
+                <span style={{fontSize:13,color:"#6b7280"}}>{items.length} producto{items.length!==1?"s":""}</span>
               </div>
               {(puedeComprar && loginUrl) ? (
-                <button className="cart-buy-btn" style={{background:sc.bg,color:sc.text}}
-                  onClick={() => setConfirmData({ superNombre, loginUrl, cartUrl, itemIds: items.map(i => i.producto_id), items })}>
+                <button
+                  className="carrito-comprar-btn"
+                  style={{background:sc.bg,color:sc.text}}
+                  onClick={() => setConfirmData({
+                    superNombre,
+                    loginUrl,
+                    cartUrl,
+                    itemIds: items.map(i => i.producto_id),
+                    items
+                  })}>
                   Comprar en {superNombre} →
                 </button>
               ) : esVtex && conSku.length < items.length ? (
-                <span style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic"}}>
+                <span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic"}}>
                   {conSku.length === 0 ? "Sin SKUs — esperá el próximo scrape" : `${conSku.length}/${items.length} con SKU`}
                 </span>
               ) : null}
             </div>
-
+ 
             {items.map(item => {
               const p = item.producto;
               const cantidad = item.cantidad || 1;
               return (
-                <div key={item.producto_id} className="cart-item">
+                <div key={item.producto_id} className="carrito-item">
                   {p.imagen_url
-                    ? <img src={p.imagen_url} alt={p.nombre} className="cart-item-img"/>
-                    : <div className="cart-item-img-placeholder">🛍️</div>}
-                  <div className="cart-item-info">
-                    <div className="cart-item-name" title={p.nombre} onClick={() => setSelectedProducto(p)}>
+                    ? <img src={p.imagen_url} alt={p.nombre} className="carrito-item-img"/>
+                    : <div className="carrito-item-img-placeholder">🛍️</div>}
+                  <div className="carrito-item-info">
+                    <div
+                      className="carrito-item-name"
+                      title={p.nombre}
+                      style={{cursor:"pointer", textDecoration:"underline dotted", textDecorationColor:"#d1d5db"}}
+                      onClick={() => setSelectedProducto(p)}
+                    >
                       {p.nombre}
                     </div>
-                    <div className="cart-item-price">
+                    <div className="carrito-item-precio">
                       {fmt(p.precio * cantidad)}
-                      {cantidad > 1 && <span className="unit">{fmt(p.precio)} c/u</span>}
-                      {p.precio_regional && <span className="cart-item-region">📍 tu región</span>}
+                      {cantidad > 1 && <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>{fmt(p.precio)} c/u</span>}
+                      {p.precio_regional && <span style={{fontSize:9,fontWeight:800,color:"#1565C0",background:"#E3F2FD",padding:"2px 6px",borderRadius:8,marginLeft:6}}>📍 tu región</span>}
                     </div>
                     <SuperSwapButton item={item} onCambiarSuper={onCambiarSuper} />
                   </div>
@@ -1391,17 +889,17 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                   </div>
                   {(!esVtex && !esDino) && (
                     <a href={p.url} target="_blank" rel="noopener noreferrer"
-                      style={{fontSize:11,color:"var(--info)",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
+                      style={{fontSize:11,color:"#0066CC",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
                       Ver →
                     </a>
                   )}
-                  <button className="cart-item-remove" onClick={() => onRemove(item.producto_id)} title="Quitar del carrito">✕</button>
+                  <button className="carrito-item-remove" onClick={() => onRemove(item.producto_id)} title="Quitar del carrito">✕</button>
                 </div>
               );
             })}
-
-            <div className="cart-total">
-              <span>Total estimado en {superNombre}</span>
+ 
+            <div className="carrito-total">
+              <span>Total estimado {superNombre}</span>
               <strong>{fmt(total)}</strong>
             </div>
           </div>
@@ -1410,163 +908,58 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
     </div>
   );
 }
-
 // ---------------------------------------------------------------------------
-// ProductCard
+// App
 // ---------------------------------------------------------------------------
+// Card memoizada: solo re-renderiza si cambian sus props (producto, estado de
+// carrito o handlers). Antes era JSX inline dentro del map de App: cada
+// setState del root (cada tecla de búsqueda, abrir un modal) re-renderizaba
+// hasta 224 cards completas.
 const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCarrito, onOpen }) {
   const hasOffer = p.descuento_pct || p.promocion;
   const esVtex = SUPER_VTEX.includes(p.supermercado);
-  const otros = p.otros_supers || [];
-  const hayComparacion = otros.length > 0;
-  // Todos los precios (el de esta card + los otros supers) ordenados de más barato a más caro
-  const listaPrecios = [
-    { supermercado: p.supermercado, precio: p.precio, esActual: true },
-    ...otros.map(o => ({ supermercado: o.supermercado, precio: o.precio, esActual: false })),
-  ].sort((a, b) => a.precio - b.precio);
-  const actualEsMejor = hayComparacion && listaPrecios[0].esActual;
-  const precioMax = hayComparacion ? Math.max(...otros.map(o => o.precio)) : 0;
-  const ahorro = actualEsMejor ? precioMax - p.precio : 0;
-  // Si el súper de esta card NO es el más barato, cuánto y en qué súper conviene comprarlo
-  const masBarato = hayComparacion && !actualEsMejor ? listaPrecios[0] : null;
-  const diffMasBarato = masBarato ? p.precio - masBarato.precio : 0;
-  const AHORRO_MINIMO = 100; // solo mostramos el cartel si el monto supera este valor
-
   return (
-    <div className={`product-card ${hasOffer?"offer":""}`} onClick={()=>onOpen(p)}>
-      <div className="card-image-wrap">
-        <div className="card-badges-top">
-          <div className="card-badge-super">
-            <SuperLogo nombre={p.supermercado} size={16} bare={true}/>
-            <span>{p.supermercado}</span>
-          </div>
-          {p.scrapeado_en && <span className="card-badge-time">{relTime(p.scrapeado_en)}</span>}
-        </div>
-        {hasOffer && <div className="card-discount-pill">{p.descuento_pct ? `-${p.descuento_pct}%` : "OFERTA"}</div>}
-        {p.imagen_url && <img src={p.imagen_url} alt={p.nombre} loading="lazy" className="card-image"/>}
-      </div>
-
-      <div className="card-body">
-        <div className="card-category">{SUBCAT_LABELS[p.subcategoria]||CAT_LABELS[p.categoria]||p.categoria}</div>
-        <div className="card-name">{p.nombre}</div>
-
-        <div className="card-price-block">
-          <span className={`card-price ${hasOffer?"offer":""}`}>{fmt(p.precio)}</span>
-          {p.precio_original && <span className="card-price-old">{fmt(p.precio_original)}</span>}
-          {p.precio_regional && <span className="card-region">📍 tu región</span>}
-        </div>
-
-        {p.promocion && <span className="card-promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
-
-        {hayComparacion && (
-          <div className="card-compare">
-            {listaPrecios.slice(0, 3).map((o, idx) => {
-              const esMejor = idx === 0;
-              return (
-                <div key={o.supermercado} className={`card-compare-row ${esMejor ? "best" : ""}`} onClick={e=>e.stopPropagation()}>
-                  <span className="card-compare-name" style={{color: esMejor ? "var(--text-primary)" : "var(--text-secondary)"}}>
-                    <SuperLogo nombre={o.supermercado} size={14} bare={true}/>
-                    {o.supermercado}
-                  </span>
-                  <span className={`card-compare-price ${esMejor ? "best" : "worse"}`}>
-                    {fmt(o.precio)}{esMejor && " 💚"}
-                  </span>
-                </div>
-              );
-            })}
-            {listaPrecios.length > 3 && (
-              <div style={{fontSize:10.5,color:"var(--text-muted)",textAlign:"center",marginTop:4,fontWeight:600}}>
-                +{listaPrecios.length - 3} supermercado{listaPrecios.length - 3 > 1 ? "s" : ""} más
-              </div>
-            )}
-            {ahorro > AHORRO_MINIMO && (
-              <div className="card-compare-savings">
-                💚 Ahorrá {fmt(ahorro)} comprando acá
-              </div>
-            )}
-            {diffMasBarato > AHORRO_MINIMO && (
-              <div className="card-compare-savings cheaper">
-                🔻 {fmt(diffMasBarato)} más barato en {masBarato.supermercado}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="card-actions">
-          <button className={`card-btn fav ${p.favorito?"active":""}`} onClick={e=>onFav(e,p.id)} title={p.favorito?"Quitar de favoritos":"Agregar a favoritos"}>
-            {p.favorito?"❤️":"🤍"}
+    <div className={`card ${hasOffer?"oferta":""}`} onClick={()=>onOpen(p)}>
+      <div className="card-actions">
+        <button className="fav-btn" onClick={e=>onFav(e,p.id)} style={{filter:p.favorito?"none":"grayscale(1) opacity(.35)"}}>
+          {p.favorito?"❤️":"🤍"}
+        </button>
+        {(esVtex || p.supermercado === "Dino") && (
+          <button className={`cart-btn ${enCarrito?"en-carrito":""}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
+            {enCarrito?"✓ Carrito":"+ Carrito"}
           </button>
-          {(esVtex || p.supermercado === "Dino") && (
-            <button className={`card-btn ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
-              {enCarrito?"✓ En carrito":"+ Agregar"}
-            </button>
-          )}
-        </div>
+        )}
       </div>
+      <div className="badges">
+        <SuperBadge nombre={p.supermercado} size={40} fontSize={11} bare={true}/>
+        {p.scrapeado_en&&<span className="time-badge">{relTime(p.scrapeado_en)}</span>}
+      </div>
+      {p.imagen_url&&<img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{width:"100%",height:"140px",objectFit:"contain",borderRadius:"8px",background:"#f9f9f9"}}/>}
+      <div className="product-name">{p.nombre}</div>
+      <div className="prices">
+        <span className={`price ${hasOffer?"oferta":"normal"}`}>{fmt(p.precio)}</span>
+        {p.precio_original&&<span className="price-original">{fmt(p.precio_original)}</span>}
+        {p.descuento_pct&&!p.promocion&&<span className="discount">-{p.descuento_pct}%</span>}
+        {p.precio_regional&&<span style={{fontSize:9,fontWeight:800,color:"#1565C0",background:"#E3F2FD",padding:"2px 7px",borderRadius:10}}>📍 tu región</span>}
+      </div>
+      {p.promocion&&<span className="promo" style={{background:promoColor(p.promocion)}}>{p.promocion}</span>}
+      {p.otros_supers&&p.otros_supers.length>0&&(()=>{
+        const ordenados=[...p.otros_supers].sort((a,b)=>a.precio-b.precio);
+        return (<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+          {ordenados.map((o,i)=>{
+            const esMasBarato=o.precio<p.precio;
+            const osc=SUPER_COLORS[o.supermercado]||{bg:"#888",text:"#fff"};
+            return (<a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,textDecoration:"none",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 8px",borderRadius:8,background:esMasBarato?"#E8F5E9":"#f9f9f9",border:esMasBarato?"1px solid #A5D6A7":"1px solid #ebebeb"}}>
+              <span style={{fontWeight:700,color:osc.bg==="FFD600"?"#b8860b":osc.bg}}>{i===0&&esMasBarato?"💚 ":""}{o.supermercado}</span>
+              <span style={{fontWeight:700,color:esMasBarato?"#2E7D32":"#555"}}>{fmt(o.precio)}</span>
+            </a>);
+          })}
+        </div>);
+      })()}
     </div>
   );
 });
 
-// ---------------------------------------------------------------------------
-// Sidebar Filters
-// ---------------------------------------------------------------------------
-function Sidebar({ superFiltro, setSuperFiltro, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats }) {
-  const supers = ["Todos","VEA","Carrefour","MasOnline","Dino"];
-  const cats = ["Todas", ...Object.keys(CATEGORIAS)];
-  const subcats = catFiltro !== "Todas" && CATEGORIAS[catFiltro] ? ["Todas", ...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
-
-  return (
-    <div>
-      <div className="filter-card">
-        <div className="filter-title">Supermercado</div>
-        <div className="filter-group">
-          {supers.map(s => (
-            <button key={s} className={`filter-chip ${superFiltro===s?"active":""}`} onClick={()=>setSuperFiltro(s)}>
-              {s !== "Todos" && <span className="dot" style={{background:SUPER_COLORS[s]?.bg||"#ccc"}}/>}
-              <span>{s}</span>
-              {s !== "Todos" && stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="filter-card">
-        <div className="filter-title">Categoría</div>
-        <div className="filter-group">
-          {cats.map(c => (
-            <button key={c} className={`filter-chip ${catFiltro===c?"active":""}`} onClick={()=>{setCatFiltro(c);setSubcatFiltro("Todas");}}>
-              <span>{CAT_LABELS[c]||"Todas"}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {subcats.length > 0 && (
-        <div className="filter-card">
-          <div className="filter-title">Subcategoría</div>
-          <select value={subcatFiltro} onChange={e=>setSubcatFiltro(e.target.value)}
-            style={{width:"100%",padding:"8px 10px",borderRadius:"var(--radius)",fontSize:12.5,fontWeight:600,border:"1.5px solid var(--border)",background:"var(--surface)",color:"var(--text-secondary)",cursor:"pointer",outline:"none",fontFamily:"inherit"}}>
-            {subcats.map(s => (<option key={s} value={s}>{s==="Todas"?"Todas las subcategorías":SUBCAT_LABELS[s]||s}</option>))}
-          </select>
-        </div>
-      )}
-
-      <div className="filter-card">
-        <div className="filter-title">Filtros rápidos</div>
-        <div className="filter-toggle" onClick={()=>setSoloOfertas(!soloOfertas)}>
-          <div className={`toggle-track ${soloOfertas?"on":""}`}>
-            <div className="toggle-thumb"/>
-          </div>
-          <span className={`toggle-label ${soloOfertas?"on":""}`}>Solo ofertas y promos</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// App
-// ---------------------------------------------------------------------------
 function App() {
   const [productos, setProductos] = React.useState([]);
   const [stats, setStats] = React.useState({});
@@ -1589,37 +982,17 @@ function App() {
   const [carritoItems, setCarritoItems] = React.useState([]);
   const [productosMap, setProductosMap] = React.useState({});
   const [regiones, setRegiones] = React.useState([]);
-  const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-
+  const [regionId, setRegionId] = React.useState(() => {
+    const saved = localStorage.getItem("sp_region");
+    return saved ? Number(saved) : null;
+  });
+ 
   React.useEffect(() => {
     fetch(`${API}/regiones`).then(r => r.json())
       .then(data => { if (Array.isArray(data)) setRegiones(data); })
       .catch(() => {});
   }, []);
-
-  // Autodetección de región por IP (solo si el usuario todavía no eligió una).
-  // Usa ipwho.is (https, sin API key) y mapea el código de provincia AR a nuestras regiones.
-  const geoIntentado = React.useRef(false);
-  React.useEffect(() => {
-    if (geoIntentado.current) return;
-    if (regiones.length === 0) return;
-    if (regionId || localStorage.getItem("sp_region")) return;
-    geoIntentado.current = true;
-    fetch("https://ipwho.is/?fields=success,country_code,region_code,city")
-      .then(r => r.json())
-      .then(g => {
-        if (!g || !g.success || g.country_code !== "AR") return;
-        const PROV_A_REGION = { C:"caba_gba", B:"caba_gba", X:"cordoba", S:"santa_fe_rosario", M:"mendoza", A:"salta", T:"tucuman" };
-        let codigo = PROV_A_REGION[g.region_code];
-        if (g.region_code === "B" && /la\s*plata/i.test(g.city || "")) codigo = "la_plata";
-        if (!codigo) return;
-        const match = regiones.find(r => r.codigo === codigo);
-        if (match) cambiarRegion(match.id);
-      })
-      .catch(() => {});
-  }, [regiones, regionId]);
-
+ 
   function cambiarRegion(id) {
     setRegionId(id);
     if (id) localStorage.setItem("sp_region", id);
@@ -1632,7 +1005,7 @@ function App() {
       }).catch(() => {});
     }
   }
-
+ 
   function handleLogin(access_token, refresh_token, user) {
     setToken(access_token); setUsuario(user);
     localStorage.setItem("sp_token", access_token);
@@ -1643,7 +1016,8 @@ function App() {
     setToken(null); setUsuario(null); setCarritoItems([]); setProductosMap({});
     localStorage.removeItem("sp_token"); localStorage.removeItem("sp_refresh"); localStorage.removeItem("sp_user");
   }
-
+ 
+  // Auto-refresh token
   React.useEffect(() => {
     if (!token) return;
     try {
@@ -1654,7 +1028,7 @@ function App() {
       return () => clearTimeout(timer);
     } catch(e) {}
   }, [token]);
-
+ 
   async function refreshToken() {
     const refresh = localStorage.getItem("sp_refresh");
     if (!refresh) { handleLogout(); return; }
@@ -1667,7 +1041,7 @@ function App() {
       if (data.refresh_token) localStorage.setItem("sp_refresh", data.refresh_token);
     } catch(e) { handleLogout(); }
   }
-
+ 
   function cargarCarrito() {
     if (!token) return;
     const qs = regionId ? `?region_id=${regionId}` : "";
@@ -1684,10 +1058,11 @@ function App() {
       })
       .catch(() => {});
   }
-
+ 
   React.useEffect(() => {
     if (!token) { setCarritoItems([]); return; }
     cargarCarrito();
+    // La región guardada en el backend prevalece sobre localStorage al loguearse.
     fetch(`${API}/preferencia`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
@@ -1698,19 +1073,20 @@ function App() {
       })
       .catch(() => {});
   }, [token]);
-
+ 
   React.useEffect(() => {
     if (token && tab === "carrito") cargarCarrito();
   }, [tab, regionId]);
-
+ 
+  // Enriquecer productosMap con productos cargados
   React.useEffect(() => {
     if (productos.length > 0) {
       setProductosMap(prev => { const next={...prev}; productos.forEach(p => { next[p.id]=p; }); return next; });
     }
   }, [productos]);
-
+ 
   const cargarRef = React.useRef(null);
-
+ 
   async function cargar(paginaOverride) {
     if (cargarRef.current) cargarRef.current.abort();
     const controller = new AbortController();
@@ -1731,6 +1107,8 @@ function App() {
     if (regionId) params.append("region_id", regionId);
     try {
       const headers = token ? {Authorization:`Bearer ${token}`} : {};
+      // /stats ya no se pide acá: casi no cambia y se estaba refetcheando en
+      // cada cambio de filtro/página/búsqueda. Ahora tiene su propio efecto.
       const resp = await fetch(`${API}/productos?${params}`, {signal, headers}).then(r=>r.json());
       if (signal.aborted) return;
       const prods = resp.productos || [];
@@ -1741,18 +1119,22 @@ function App() {
     setLoading(false);
   }
 
+  // Stats: una vez al montar y cuando cambia la sesión (el toggle de favoritos
+  // ya lo refetchea por su cuenta al modificar el contador).
   React.useEffect(() => {
     const headers = token ? {Authorization:`Bearer ${token}`} : {};
     fetch(`${API}/stats`, {headers}).then(r=>r.json()).then(st=>setStats(st)).catch(()=>{});
   }, [token]);
-
+ 
   React.useEffect(() => {
     if (tab === "carrito") return;
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
   }, [tab, superFiltro, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
-
+ 
+  // useCallback: identidad estable para que React.memo(ProductCard) evite
+  // re-renderizar hasta 224 cards en cada tecla de búsqueda / setState del root.
   const toggleFav = React.useCallback(async (e, id) => {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
@@ -1767,6 +1149,7 @@ function App() {
     e.stopPropagation();
     if (!token) { setShowAuth(true); return; }
     const yaEsta = carritoItems.some(i => i.producto_id === producto.id);
+    // Optimistic update
     if (yaEsta) {
       setCarritoItems(prev => prev.filter(i => i.producto_id !== producto.id));
     } else {
@@ -1776,18 +1159,19 @@ function App() {
     try {
       await fetch(`${API}/carrito/${producto.id}`, {method:"POST", headers:{Authorization:`Bearer ${token}`}});
     } catch(err) {
+      // Revertir si falla
       if (yaEsta) setCarritoItems(prev => [...prev, {producto_id:producto.id, cantidad:1}]);
       else setCarritoItems(prev => prev.filter(i => i.producto_id !== producto.id));
     }
   }, [token, carritoItems]);
-
+ 
   async function removeDelCarrito(producto_id) {
     setCarritoItems(prev => prev.filter(i => i.producto_id !== producto_id));
     try {
       await fetch(`${API}/carrito/${producto_id}`, {method:"POST", headers:{Authorization:`Bearer ${token}`}});
     } catch(err) {}
   }
-
+ 
   async function updateCantidad(producto_id, cantidad) {
     setCarritoItems(prev => prev.map(i => i.producto_id === producto_id ? {...i, cantidad} : i));
     try {
@@ -1797,11 +1181,12 @@ function App() {
         body: JSON.stringify({cantidad})
       });
     } catch(err) {
+      // Revertir si falla — recargamos desde el backend
       fetch(`${API}/carrito`, {headers:{Authorization:`Bearer ${token}`}})
         .then(r => r.json()).then(data => { if (Array.isArray(data)) setCarritoItems(data); }).catch(()=>{});
     }
   }
-
+ 
   async function cambiarSuper(producto_id, nuevo_producto_id) {
     const anterior = carritoItems;
     setCarritoItems(prev => prev.map(i => i.producto_id === producto_id ? { ...i, producto_id: nuevo_producto_id } : i));
@@ -1812,7 +1197,7 @@ function App() {
         body: JSON.stringify({ nuevo_producto_id })
       });
       if (!res.ok) throw new Error();
-      cargarCarrito();
+      cargarCarrito(); // trae nombre/imagen/precio/otros_supers completos del nuevo producto
     } catch (err) {
       setCarritoItems(anterior);
     }
@@ -1820,202 +1205,161 @@ function App() {
 
   function cambiarPagina(p) { setPagina(p); cargar(p); window.scrollTo({top:0,behavior:"smooth"}); }
   function cambiarPorPagina(val) { setPorPagina(val); setPagina(1); }
-
+  function handleCatFiltro(cat) { setCatFiltro(cat); setSubcatFiltro("Todas"); }
+ 
+  const supers = ["Todos","VEA","Disco","Carrefour","MasOnline","Dino"];
+  const cats = ["Todas", ...Object.keys(CATEGORIAS)];
+  const subcats = catFiltro!=="Todas"&&CATEGORIAS[catFiltro] ? ["Todas",...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
   const totalCarrito = carritoItems.length;
-
-  function resetFilters() {
-    setTab("todos"); setSuperFiltro("Todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas");
-    setBusqueda(""); setSoloOfertas(false); window.scrollTo({top:0,behavior:"smooth"});
-  }
-
+ 
   return (
     <div>
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onLogin={handleLogin}/>}
       {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)}/>}
-
-      {/* Header */}
-      <header className="header">
-        <div className="header-inner">
-          <a className="header-brand" onClick={resetFilters}>
-            <div className="header-brand-icon">🛒</div>
-            <div className="header-brand-text">
-              <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 4 supermercados</div>
-            </div>
-          </a>
-
-          <div className="header-search-wrap">
-            <span>🔍</span>
-            <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar productos..."/>
+ 
+      <div className="header">
+        <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+          <div>
+            <h1 style={{cursor:"pointer"}} onClick={()=>{setTab("todos");setSuperFiltro("Todos");setCatFiltro("Todas");setSubcatFiltro("Todas");setBusqueda("");setSoloOfertas(false);window.scrollTo({top:0,behavior:"smooth"});}}>🛒 <span>Super</span>Precios AR</h1>
           </div>
-
-          <div className="header-actions">
-            {regiones.length > 0 && (
-              <select value={regionId||""} onChange={e=>cambiarRegion(e.target.value?Number(e.target.value):null)}
-                title="Ver precios de tu región" className="region-select">
-                <option value="">📍 Sin región</option>
-                {regiones.map(r => <option key={r.id} value={r.id}>📍 {r.nombre}</option>)}
-              </select>
-            )}
-
-            <button className={`header-btn ${tab==="favoritos"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
-              ❤️ Favoritos
-              {stats.favoritos > 0 && <span className="header-btn-badge pink">{stats.favoritos}</span>}
-            </button>
-
-            <button className={`header-btn ${tab==="carrito"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");}}>
-              🛒 Carrito
-              {totalCarrito > 0 && <span className="header-btn-badge yellow">{totalCarrito}</span>}
-            </button>
-
-            {usuario ? (
-              <div className="header-user">
-                <span className="header-user-email">{usuario.email}</span>
-                <button className="header-user-btn ghost" onClick={handleLogout}>Salir</button>
-              </div>
-            ) : (
-              <button className="header-user-btn" onClick={()=>setShowAuth(true)}>Iniciar sesión</button>
-            )}
+          <div className="header-logos">
+            {["VEA","Disco","Carrefour","MasOnline","Dino"].map(s => (
+              <SuperLogo key={s} nombre={s} size={80} padding={s === "VEA" ? 10 : 3} shape="square"/>
+            ))}
           </div>
         </div>
-      </header>
-
-      {/* Main */}
-      <div className="main">
-        {/* Sidebar - solo en pestañas de productos */}
-        {tab !== "carrito" && (
-          <>
-            <button className="mobile-filter-toggle" onClick={()=>setSidebarOpen(!sidebarOpen)}>
-              ⚙️ {sidebarOpen ? "Ocultar filtros" : "Mostrar filtros"}
-            </button>
-            <aside className={`sidebar ${sidebarOpen?"open":""}`}>
-              <Sidebar
-                superFiltro={superFiltro} setSuperFiltro={setSuperFiltro}
-                catFiltro={catFiltro} setCatFiltro={setCatFiltro}
-                subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
-                soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
-                stats={stats}
-              />
-            </aside>
-          </>
-        )}
-
-        <div className="content">
-          {/* Barra: "Todos los productos" + logos de supermercados en movimiento */}
-          <div className="brandbar">
-            <div className="tabs">
-              <button className={`tab ${tab==="todos"?"active":""}`} onClick={()=>setTab("todos")}>
-                🏪 Todos los productos
-              </button>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          {regiones.length > 0 && (
+            <select value={regionId||""} onChange={e=>cambiarRegion(e.target.value?Number(e.target.value):null)}
+              title="Ver precios de tu región (Carrefour, MasOnline y VEA)"
+              style={{fontSize:12,padding:"6px 10px",borderRadius:8,border:"1px solid #374151",background:"#1f2937",color:"#fff",cursor:"pointer",outline:"none",fontFamily:"inherit"}}>
+              <option value="">📍 Sin región (precio general)</option>
+              {regiones.map(r => <option key={r.id} value={r.id}>📍 {r.nombre}</option>)}
+            </select>
+          )}
+          {usuario ? (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:12,color:"#9ca3af"}}>{usuario.email}</span>
+              <button onClick={handleLogout} style={{fontSize:11,padding:"4px 10px",borderRadius:8,border:"1px solid #374151",background:"none",color:"#9ca3af",cursor:"pointer"}}>Salir</button>
             </div>
-            <div className="logos-marquee">
-              <span className="logos-label">Comparás precios en</span>
-              <div className="logos-viewport">
-                <div className="logos-track" aria-hidden="true">
-                  {[...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX, ...SUPER_VTEX].map((s, i) => (
-                    <span className="logos-item" key={i}>
-                      <SuperLogo nombre={s} size={20} bare={true}/>
-                      <span>{s}</span>
-                    </span>
+          ) : (
+            <button onClick={()=>setShowAuth(true)} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#FFD600",color:"#000",fontWeight:700,cursor:"pointer"}}>Iniciar sesión</button>
+          )}
+          <div className="stats">
+            <div className="stat" style={{cursor:"pointer"}} onClick={()=>{setTab("todos");setSuperFiltro("Todos");setCatFiltro("Todas");setSubcatFiltro("Todas");setBusqueda("");setSoloOfertas(false);window.scrollTo({top:0,behavior:"smooth"});}}>
+              <div className="stat-val" style={{color:"#FFD600"}}>{stats.total_productos||0}</div>
+              <div className="stat-lbl">Productos</div>
+            </div>
+            <div className="stat" style={{cursor:"pointer"}} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");window.scrollTo({top:0,behavior:"smooth"});}}>
+              <div className="stat-val" style={{color:"#4CAF50"}}>{stats.favoritos||0}</div>
+              <div className="stat-lbl">Favoritos</div>
+            </div>
+            <div className="stat" style={{cursor:"pointer"}} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");window.scrollTo({top:0,behavior:"smooth"});}}>
+              <div className="stat-val" style={{color:"#FFD600"}}>{totalCarrito}</div>
+              <div className="stat-lbl">Carrito</div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <div className="container">
+        <div className="tabs">
+          {[["todos","Todos los productos"],["favoritos","Mis favoritos"],["carrito","Mi carrito"]].map(([key,label]) => (
+            <button key={key} className={`tab ${tab===key?"active":""}`}
+              onClick={()=>{ if((key==="favoritos"||key==="carrito")&&!token){setShowAuth(true);return;} setTab(key); }}>
+              {label}
+              {key==="favoritos"&&stats.favoritos>0&&<span style={{marginLeft:6,background:"#E91E63",color:"#fff",borderRadius:10,fontSize:10,padding:"1px 6px"}}>{stats.favoritos}</span>}
+              {key==="carrito"&&totalCarrito>0&&<span style={{marginLeft:6,background:"#FFD600",color:"#000",borderRadius:10,fontSize:10,padding:"1px 6px",fontWeight:900}}>{totalCarrito}</span>}
+            </button>
+          ))}
+        </div>
+ 
+        {tab === "carrito" ? (
+          <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token}/>
+        ) : (
+          <>
+            <div className="search">
+              <span>🔍</span>
+              <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar producto en todos los supermercados..."/>
+            </div>
+ 
+            <div className="filters">
+              <div className="filter-row">
+                <span className="filter-label">Supermercado</span>
+                {supers.map(s => { const c=SUPER_COLORS[s]; return (<button key={s} className={`pill ${superFiltro===s?"active":""}`} style={superFiltro===s?{background:c?.bg||"#1a1a1a",color:c?.text||"#fff"}:{}} onClick={()=>setSuperFiltro(s)}>{s}</button>); })}
+              </div>
+              <div className="filter-row">
+                <span className="filter-label">Categoría</span>
+                {cats.map(c => (<button key={c} className={`pill ${catFiltro===c?"active":""}`} style={catFiltro===c?{background:"#1a1a1a",color:"#fff"}:{}} onClick={()=>handleCatFiltro(c)}>{CAT_LABELS[c]||"Todas"}</button>))}
+              </div>
+              {subcats.length > 0 && (
+                <div className="filter-row">
+                  <span className="filter-label">Subcategoría</span>
+                  <select value={subcatFiltro} onChange={e=>setSubcatFiltro(e.target.value)}
+                    style={{padding:"6px 12px",borderRadius:24,fontSize:12.5,fontWeight:700,border:"1.5px solid #e0e0e0",background:"#fff",color:"#555",cursor:"pointer",outline:"none",fontFamily:"inherit"}}>
+                    {subcats.map(s => (<option key={s} value={s}>{s==="Todas"?"Todas las subcategorías":SUBCAT_LABELS[s]||s}</option>))}
+                  </select>
+                </div>
+              )}
+              <div className="filter-row">
+                <span className="filter-label">Ordenar por</span>
+                {[["popular","Más populares"],["precio-asc","Precio ↑"],["precio-desc","Precio ↓"],["descuento","Mayor descuento"],["reciente","Más reciente"]].map(([key,label]) => (
+                  <button key={key} className={`pill ${orden===key?"active":""}`} style={orden===key?{background:"#1a1a1a",color:"#fff"}:{}} onClick={()=>setOrden(key)}>{label}</button>
+                ))}
+              </div>
+              <div className="filter-row">
+                <span className="filter-label">Ofertas</span>
+                <div onClick={()=>setSoloOfertas(!soloOfertas)} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:soloOfertas?"#FCE4EC":"#f5f5f5",border:soloOfertas?"1.5px solid #E91E63":"1.5px solid #e0e0e0",borderRadius:24,padding:"6px 14px",transition:"all .2s"}}>
+                  <div style={{width:36,height:20,borderRadius:10,position:"relative",background:soloOfertas?"#E91E63":"#ccc",transition:"background .2s"}}>
+                    <div style={{position:"absolute",top:2,left:soloOfertas?18:2,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+                  </div>
+                  <span style={{fontSize:12.5,fontWeight:700,color:soloOfertas?"#E91E63":"#555"}}>Solo ofertas y promos</span>
+                </div>
+              </div>
+            </div>
+ 
+            <div className="result-count" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+              <span>{loading?"Cargando...":`${totalProductos} producto${totalProductos!==1?"s":""} · página ${pagina} de ${totalPaginas}`}</span>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                <span style={{fontSize:11,color:"#9ca3af"}}>Por página:</span>
+                {[[28,"28"],[56,"56"],[112,"112"],[224,"224"]].map(([val,label]) => (
+                  <button key={val} onClick={()=>cambiarPorPagina(val)} className={`pill ${porPagina===val?"active":""}`} style={{padding:"3px 10px",fontSize:11,...(porPagina===val?{background:"#1a1a1a",color:"#fff",border:"none"}:{})}}>{label}</button>
+                ))}
+              </div>
+            </div>
+ 
+            {productos.length===0&&!loading ? (
+              <div className="empty"><div>🧐</div><p style={{fontSize:16,marginTop:12}}>No hay productos con esos filtros</p></div>
+            ) : (
+              <>
+                <div className="grid">
+                  {productos.map(p => (
+                    <ProductCard
+                      key={p.id}
+                      p={p}
+                      enCarrito={carritoItems.some(i => i.producto_id===p.id)}
+                      onFav={toggleFav}
+                      onCarrito={toggleCarrito}
+                      onOpen={setModalProducto}
+                    />
                   ))}
                 </div>
-              </div>
+                <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiar={cambiarPagina}/>
+              </>
+            )}
+ 
+            <div className="footer">
+              <strong>Actualización automática:</strong> todos los días a las 06:00 y 18:00 hs.
+              Tocá ❤️ para agregar a favoritos (te avisamos si baja el precio).
+              Tocá "+ Carrito" para armar tu compra y ejecutarla directo en el supermercado.
             </div>
-          </div>
-
-          {tab === "carrito" ? (
-            <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token}/>
-          ) : (
-            <>
-              {/* Stats */}
-              <div className="stats-bar">
-                <div className="stat-card" onClick={resetFilters}>
-                  <div className="stat-value accent">{stats.total_productos||0}</div>
-                  <div className="stat-label">Productos comparados</div>
-                </div>
-                <div className="stat-card" onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
-                  <div className="stat-value success">{stats.favoritos||0}</div>
-                  <div className="stat-label">En tu lista de favoritos</div>
-                </div>
-                <div className="stat-card" onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");}}>
-                  <div className="stat-value">{totalCarrito}</div>
-                  <div className="stat-label">En tu carrito</div>
-                </div>
-              </div>
-
-              {/* Sort bar */}
-              <div className="sort-bar">
-                <span className="sort-info">
-                  {loading ? "Cargando..." : <><strong>{totalProductos}</strong> producto{totalProductos!==1?"s":""} · página <strong>{pagina}</strong> de <strong>{totalPaginas}</strong></>}
-                </span>
-                <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-                  <div className="sort-options">
-                    {[ ["popular","Más populares"],["precio-asc","Precio ↑"],["precio-desc","Precio ↓"],["descuento","Mayor descuento"],["reciente","Más reciente"] ].map(([key,label]) => (
-                      <button key={key} className={`sort-btn ${orden===key?"active":""}`} onClick={()=>setOrden(key)}>{label}</button>
-                    ))}
-                  </div>
-                  <div className="per-page">
-                    <span>Mostrar:</span>
-                    {[28,56,112,224].map(val => (
-                      <button key={val} onClick={()=>cambiarPorPagina(val)} className={`sort-btn ${porPagina===val?"active":""}`} style={{padding:"4px 10px",fontSize:11}}>{val}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid */}
-              {productos.length===0 && !loading ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">🧐</div>
-                  <div className="empty-state-title">No encontramos productos</div>
-                  <div className="empty-state-desc">Probá con otros filtros o términos de búsqueda. También podés reiniciar los filtros haciendo clic en el logo.</div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid">
-                    {loading ? (
-                      Array.from({length:8}).map((_,i) => (
-                        <div key={i} className="product-card" style={{pointerEvents:"none"}}>
-                          <div className="card-image-wrap"><div className="skeleton" style={{width:"100%",height:160}}/></div>
-                          <div className="card-body">
-                            <div className="skeleton" style={{width:"40%",height:14}}/>
-                            <div className="skeleton" style={{width:"100%",height:36,marginTop:8}}/>
-                            <div className="skeleton" style={{width:"60%",height:24,marginTop:8}}/>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      productos.map(p => (
-                        <ProductCard
-                          key={p.id}
-                          p={p}
-                          enCarrito={carritoItems.some(i => i.producto_id===p.id)}
-                          onFav={toggleFav}
-                          onCarrito={toggleCarrito}
-                          onOpen={setModalProducto}
-                        />
-                      ))
-                    )}
-                  </div>
-                  <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiar={cambiarPagina}/>
-                </>
-              )}
-
-              <div className="footer">
-                <p className="footer-text">
-                  <strong>Actualización automática:</strong> todos los días a las 06:00 y 18:00 hs.<br/>
-                  Agregá productos a ❤️ <strong>favoritos</strong> para recibir alertas cuando bajen de precio.<br/>
-                  Usá 🛒 <strong>carrito</strong> para armar tu compra y ejecutarla directo en el supermercado que elijas.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
+ 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
