@@ -206,6 +206,7 @@
     .filter-chip.active .count { background: rgba(255,255,255,0.16); color: #fff; border-color: transparent; }
 
     /* Selección múltiple de supermercados (checkboxes) */
+    .filter-hint { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: -4px 4px 10px; font-weight: 500; }
     .filter-checks { display: flex; flex-direction: column; gap: 1px; }
     .filter-check {
       display: flex; align-items: center; gap: 10px; padding: 7px 10px;
@@ -1590,6 +1591,7 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
     <div>
       <div className="filter-card">
         <div className="filter-title">Supermercado</div>
+        <div className="filter-hint">Definen lo que ves y de qué supermercados recibís alertas de precio.</div>
         <div className="filter-checks">
           <label className="filter-check master">
             <input type="checkbox" checked={todosMarcados}
@@ -1650,7 +1652,11 @@ function App() {
   const [stats, setStats] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState("todos");
-  const [supersVisibles, setSupersVisibles] = React.useState(SUPER_TODOS);
+  const [supersVisibles, setSupersVisibles] = React.useState(() => {
+    // Deslogueado: recordamos la selección en localStorage. Logueado: la sobrescribe /preferencia.
+    try { const s = JSON.parse(localStorage.getItem("sp_supers")); return Array.isArray(s) && s.length ? s.filter(x => SUPER_TODOS.includes(x)) : SUPER_TODOS; }
+    catch { return SUPER_TODOS; }
+  });
   const [catFiltro, setCatFiltro] = React.useState("Todas");
   const [subcatFiltro, setSubcatFiltro] = React.useState("Todas");
   const [soloOfertas, setSoloOfertas] = React.useState(false);
@@ -1801,9 +1807,35 @@ function App() {
           setRegionId(data.region_id);
           localStorage.setItem("sp_region", data.region_id);
         }
+        // Hidratar supers preferidos (null/[] = sin configurar → dejamos SUPER_TODOS)
+        if (data && Array.isArray(data.supermercados) && data.supermercados.length) {
+          const validos = data.supermercados.filter(s => SUPER_TODOS.includes(s));
+          if (validos.length) setSupersVisibles(validos);
+        }
       })
       .catch(() => {});
   }, [token]);
+
+  // Persistir la preferencia de supers al cambiar (debounce). Se dispara SOLO por cambios de
+  // supersVisibles (token vía ref, no como dependencia) para no pisar lo guardado al loguear.
+  const tokenRef = React.useRef(token);
+  tokenRef.current = token;
+  const primerRenderSupers = React.useRef(true);
+  React.useEffect(() => {
+    if (primerRenderSupers.current) { primerRenderSupers.current = false; return; }
+    const tk = tokenRef.current;
+    if (tk) {
+      const t = setTimeout(() => {
+        fetch(`${API}/preferencia`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${tk}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ supermercados: supersVisibles }),
+        }).catch(() => {});
+      }, 600);
+      return () => clearTimeout(t);
+    }
+    localStorage.setItem("sp_supers", JSON.stringify(supersVisibles));
+  }, [supersVisibles]);
 
   React.useEffect(() => {
     if (token && tab === "carrito") cargarCarrito();
