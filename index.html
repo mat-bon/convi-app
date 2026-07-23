@@ -1962,7 +1962,8 @@ function App() {
   const totalCarrito = carritoItems.length;
 
   function resetFilters() {
-    setTab("todos"); setSupersVisibles(SUPER_TODOS); setCatFiltro("Todas"); setSubcatFiltro("Todas");
+    // No reseteamos supersVisibles: es una preferencia persistente del usuario, no un filtro transitorio.
+    setTab("todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas");
     setBusqueda(""); setSoloOfertas(false); window.scrollTo({top:0,behavior:"smooth"});
   }
 
