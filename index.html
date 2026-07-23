@@ -778,18 +778,27 @@
     .super-MasOnline { --s-bg: #E4002B; --s-text: #fff; }
     .super-Dino { --s-bg: #2E7D32; --s-text: #fff; }
 
+    /* Fila superior de la barra: tab "Todos los productos" + botón de filtros (móvil) */
+    .brandbar-top { display: flex; align-items: center; gap: 10px; }
+
     /* Responsive sidebar collapse */
     .mobile-filter-toggle {
-      display: none; width: 100%; padding: 11px;
+      display: none; padding: 11px 16px;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); font-size: 13px; font-weight: 800;
-      color: var(--text-secondary); cursor: pointer; margin-bottom: 12px;
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
       font-family: inherit; box-shadow: var(--shadow-sm);
     }
     @media (max-width: 1024px) {
-      .mobile-filter-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; }
+      .brandbar-top { width: 100%; }
+      .mobile-filter-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
       .sidebar { display: none; position: static; }
       .sidebar.open { display: block; }
+    }
+    /* En móvil, la barra de orden scrollea horizontalmente en vez de partirse en dos líneas */
+    @media (max-width: 768px) {
+      .sort-options { flex-wrap: nowrap; overflow-x: auto; flex: 1 1 100%; min-width: 0; -webkit-overflow-scrolling: touch; }
+      .sort-options .sort-btn { flex-shrink: 0; white-space: nowrap; }
     }
   </style>
 <base target="_blank">
@@ -1932,29 +1941,31 @@ function App() {
       <div className="main">
         {/* Sidebar - solo en pestañas de productos */}
         {tab !== "carrito" && (
-          <>
-            <button className="mobile-filter-toggle" onClick={()=>setSidebarOpen(!sidebarOpen)}>
-              ⚙️ {sidebarOpen ? "Ocultar filtros" : "Mostrar filtros"}
-            </button>
-            <aside className={`sidebar ${sidebarOpen?"open":""}`}>
-              <Sidebar
-                supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
-                catFiltro={catFiltro} setCatFiltro={setCatFiltro}
-                subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
-                soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
-                stats={stats}
-              />
-            </aside>
-          </>
+          <aside className={`sidebar ${sidebarOpen?"open":""}`}>
+            <Sidebar
+              supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
+              catFiltro={catFiltro} setCatFiltro={setCatFiltro}
+              subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
+              soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
+              stats={stats}
+            />
+          </aside>
         )}
 
         <div className="content">
           {/* Barra: "Todos los productos" + logos de supermercados en movimiento */}
           <div className="brandbar">
-            <div className="tabs">
-              <button className={`tab ${tab==="todos"?"active":""}`} onClick={()=>setTab("todos")}>
-                🏪 Todos los productos
-              </button>
+            <div className="brandbar-top">
+              <div className="tabs">
+                <button className={`tab ${tab==="todos"?"active":""}`} onClick={()=>setTab("todos")}>
+                  🏪 Todos los productos
+                </button>
+              </div>
+              {tab !== "carrito" && (
+                <button className="mobile-filter-toggle" onClick={()=>setSidebarOpen(!sidebarOpen)}>
+                  ⚙️ {sidebarOpen ? "Ocultar filtros" : "Mostrar filtros"}
+                </button>
+              )}
             </div>
             <div className="logos-marquee">
               <span className="logos-label">Comparás precios en</span>
