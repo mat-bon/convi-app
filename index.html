@@ -1557,11 +1557,16 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           <button className={`card-btn fav ${p.favorito?"active":""}`} onClick={e=>onFav(e,p.id)} title={p.favorito?"Quitar de favoritos":"Agregar a favoritos"}>
             {p.favorito?"❤️":"🤍"}
           </button>
-          {(esVtex || p.supermercado === "Coto") && (
+          {p._reproyectado ? (
+            <a className="card-btn primary" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
+              onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
+              Ver en {p.supermercado} →
+            </a>
+          ) : (esVtex || p.supermercado === "Coto") ? (
             <button className={`card-btn ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
               {enCarrito?"✓ En carrito":"+ Agregar"}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -1668,8 +1673,30 @@ function App() {
   // Multi-selección de supermercados: si hay exactamente uno visible lo filtramos en el
   // servidor (paginación correcta); con un subconjunto filtramos en cliente sobre lo traído.
   const superParam = supersVisibles.length === 1 ? supersVisibles[0] : "";
-  const supersSet = new Set(supersVisibles);
-  const productosVisibles = productos.filter(p => supersSet.has(p.supermercado));
+  // Reproyectamos cada producto sobre los supers visibles: si el super principal quedó
+  // destildado pero el producto existe en otro super visible, promovemos el más barato
+  // visible como principal (así la card no desaparece). Se oculta solo si ningún super visible lo tiene.
+  const productosVisibles = React.useMemo(() => {
+    const visibles = new Set(supersVisibles);
+    return productos.map(p => {
+      // Si el super principal sigue visible, la card queda intacta (ProductCard filtra
+      // los otros_supers destildados y mantiene el cartel "más barato en X" si corresponde).
+      if (visibles.has(p.supermercado)) return p;
+      // El principal quedó oculto: promovemos el mejor super visible entre los otros_supers.
+      const visiblesOtros = (p.otros_supers || []).filter(o => visibles.has(o.supermercado));
+      if (visiblesOtros.length === 0) return null; // ningún super visible tiene el producto
+      visiblesOtros.sort((a,b) => a.precio - b.precio);
+      const mejor = visiblesOtros[0];
+      const restantes = visiblesOtros.slice(1).map(o => ({ supermercado:o.supermercado, precio:o.precio, url:o.url }));
+      return {
+        ...p,
+        supermercado: mejor.supermercado, precio: mejor.precio, url: mejor.url,
+        // datos propios del super original que no conocemos del promovido: los limpiamos
+        sku_id: null, precio_original: null, descuento_pct: null, promocion: null,
+        otros_supers: restantes, _reproyectado: true,
+      };
+    }).filter(Boolean);
+  }, [productos, supersVisibles]);
 
   React.useEffect(() => {
     fetch(`${API}/regiones`).then(r => r.json())
