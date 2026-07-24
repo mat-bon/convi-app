@@ -533,6 +533,109 @@
     }
     .modal-link:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
 
+    /* Welcome / onboarding modal */
+    .welcome-modal {
+      background: var(--surface); border-radius: var(--radius-xl); position: relative;
+      width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+      box-shadow: var(--shadow-xl); animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .welcome-close { position: absolute; top: 14px; right: 14px; z-index: 2; }
+    .welcome-hero {
+      text-align: center; padding: 34px 28px 22px;
+      background:
+        radial-gradient(620px 210px at 50% -25%, rgba(255,214,0,0.28), transparent 70%),
+        linear-gradient(180deg, var(--accent-soft), var(--surface));
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .welcome-icon {
+      width: 62px; height: 62px; margin: 0 auto 14px;
+      background: linear-gradient(145deg, #FFE45C 0%, var(--accent) 45%, #FFC400 100%);
+      border-radius: 18px; display: flex; align-items: center; justify-content: center;
+      font-size: 31px; box-shadow: 0 8px 22px -4px rgba(224,178,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .welcome-title { font-size: 22px; font-weight: 900; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
+    .welcome-title span { color: var(--accent-dark); }
+    .welcome-sub { font-size: 13.5px; color: var(--text-secondary); margin: 8px auto 0; line-height: 1.55; max-width: 370px; font-weight: 500; }
+    .welcome-steps { padding: 20px 24px 4px; display: flex; flex-direction: column; gap: 13px; }
+    .welcome-step { display: flex; gap: 13px; align-items: flex-start; }
+    .welcome-step-ico {
+      flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px;
+      background: var(--surface-2); border: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: center; font-size: 19px;
+    }
+    .welcome-step-t { font-size: 14px; font-weight: 800; color: var(--text-primary); }
+    .welcome-step-d { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
+    .welcome-savings {
+      margin: 16px 24px 0; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start;
+      background: var(--success-light); border: 1px solid rgba(22,163,74,0.22); border-radius: var(--radius);
+      font-size: 12.5px; color: #166534; line-height: 1.55;
+    }
+    .welcome-savings strong { color: #14532d; font-weight: 800; }
+    .welcome-savings-emoji { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .welcome-cta {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin: 18px 24px 24px; width: calc(100% - 48px);
+      padding: 14px; border: none; border-radius: var(--radius);
+      background: var(--ink); color: var(--accent); font-size: 15px; font-weight: 800;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .welcome-cta:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
+
+    .footer-link-btn {
+      margin-top: 14px; background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: 12.5px; font-weight: 700; color: var(--text-secondary); text-decoration: underline;
+      text-underline-offset: 2px; transition: color 0.15s;
+    }
+    .footer-link-btn:hover { color: var(--accent-dark); }
+
+    .footer-legal { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .footer-legal span { color: var(--border); font-size: 11px; }
+    .footer-legal button {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-decoration: underline;
+      text-underline-offset: 2px; transition: color 0.15s; padding: 0;
+    }
+    .footer-legal button:hover { color: var(--text-primary); }
+
+    /* Legal modal */
+    .legal-modal {
+      background: var(--surface); border-radius: var(--radius-xl);
+      width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;
+      overflow: hidden; box-shadow: var(--shadow-xl); animation: slideUp 0.28s cubic-bezier(0.16,1,0.3,1);
+    }
+    .legal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px 14px;
+    }
+    .legal-title { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+    .legal-tabs {
+      display: flex; gap: 2px; padding: 0 12px; overflow-x: auto;
+      border-bottom: 1px solid var(--border-light); scrollbar-width: none;
+    }
+    .legal-tabs::-webkit-scrollbar { display: none; }
+    .legal-tab {
+      padding: 10px 12px; border: none; background: transparent; cursor: pointer;
+      font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
+      white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .legal-tab:hover { color: var(--text-primary); }
+    .legal-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .legal-body { padding: 18px 24px; overflow-y: auto; }
+    .legal-body h4 { font-size: 13px; font-weight: 800; color: var(--text-primary); margin: 16px 0 5px; }
+    .legal-body h4:first-child { margin-top: 0; }
+    .legal-body p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+    .legal-body ul { padding-left: 18px; margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
+    .legal-body li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
+    .legal-note {
+      background: var(--accent-soft); border: 1px solid #F2E08A; border-radius: var(--radius);
+      padding: 10px 13px; font-size: 12px; color: #7A5C00; line-height: 1.55; margin-bottom: 14px;
+    }
+    .legal-note strong { color: #5c4500; font-weight: 800; }
+    .legal-foot {
+      padding: 12px 24px; border-top: 1px solid var(--border-light);
+      font-size: 11px; color: var(--text-muted); background: var(--surface-2);
+    }
+
     /* Auth Modal */
     .auth-input {
       width: 100%; padding: 13px 14px; font-size: 14px; border: 1.5px solid var(--border);
@@ -824,6 +927,17 @@
 <script type="text/babel" data-presets="react">
 
 const API = "https://web-production-32c3f.up.railway.app";
+
+// ⚠️ BORRADOR / PLANTILLA LEGAL — Este contenido es un punto de partida y NO constituye
+// asesoramiento legal. Antes de publicar al público masivo: (1) completá los datos de abajo,
+// (2) reemplazá los placeholders [entre corchetes], y (3) hacelo revisar por un profesional
+// en Argentina (sobre todo los descargos de precios/scraping y el uso de marcas de terceros).
+const LEGAL = {
+  responsable:   "SuperPrecios S.A.S.",
+  email:         "info@superprecios.ar",
+  jurisdiccion:  "la Ciudad de Córdoba, Provincia de Córdoba, Argentina",
+  actualizacion: "24/07/2026",
+};
 
 const SUPER_COLORS = {
   VEA:       { bg:"#FFD600", text:"#000" },
@@ -1645,6 +1759,158 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
 }
 
 // ---------------------------------------------------------------------------
+// LegalModal — Términos, Privacidad y Descargos (borrador plantilla, revisar con abogado)
+// ---------------------------------------------------------------------------
+function LegalModal({ initialTab = "terminos", onClose }) {
+  const [tab, setTab] = React.useState(initialTab);
+  const SUPERS = SUPER_TODOS.join(", ");
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="legal-modal" onClick={e => e.stopPropagation()}>
+        <div className="legal-header">
+          <div className="legal-title">Información legal</div>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+        </div>
+        <div className="legal-tabs">
+          {[["terminos","Términos y Condiciones"],["privacidad","Política de Privacidad"],["descargos","Descargos y marcas"]].map(([k,l]) => (
+            <button key={k} className={`legal-tab ${tab===k?"active":""}`} onClick={()=>setTab(k)}>{l}</button>
+          ))}
+        </div>
+
+        <div className="legal-body">
+          {tab === "terminos" && (
+            <>
+              <h4>1. Aceptación</h4>
+              <p>Al acceder y usar SuperPrecios AR (el "Servicio") aceptás estos Términos y Condiciones. Si no estás de acuerdo, no utilices el Servicio.</p>
+              <h4>2. Descripción del Servicio</h4>
+              <p>SuperPrecios AR es una herramienta informativa que compara precios de productos publicados por distintos supermercados en Argentina, a partir de información de fuentes públicas. El Servicio no vende productos ni interviene en las compras.</p>
+              <h4>3. Uso permitido</h4>
+              <p>Te comprometés a usar el Servicio de buena fe y conforme a la ley. No podés usarlo con fines ilícitos, intentar vulnerar su seguridad, ni extraer masivamente sus datos de forma automatizada sin autorización.</p>
+              <h4>4. Cuenta de usuario</h4>
+              <p>Algunas funciones requieren registro. Sos responsable de la confidencialidad de tus credenciales y de la actividad de tu cuenta, y debés brindar información veraz.</p>
+              <h4>5. Precios orientativos</h4>
+              <p>Los precios y promociones son orientativos, provienen de fuentes públicas y pueden contener errores, demoras o diferencias con el precio real vigente en cada supermercado. Verificá siempre el precio final en el sitio oficial del comercio antes de comprar (ver "Descargos y marcas").</p>
+              <h4>6. Propiedad intelectual</h4>
+              <p>El Servicio, su diseño y su código pertenecen a {LEGAL.responsable} o sus licenciantes. Las marcas y logos de los supermercados pertenecen a sus respectivos titulares; su uso es meramente identificatorio y no implica afiliación.</p>
+              <h4>7. Limitación de responsabilidad</h4>
+              <p>El Servicio se ofrece "tal cual" y "según disponibilidad", sin garantías de exactitud, disponibilidad o adecuación a un fin. En la máxima medida permitida por la ley, {LEGAL.responsable} no será responsable por daños derivados del uso o la imposibilidad de uso del Servicio, ni por decisiones de compra basadas en la información provista.</p>
+              <h4>8. Enlaces de terceros</h4>
+              <p>El Servicio puede enlazar a sitios de supermercados u otros terceros. No controlamos ni respondemos por su contenido, disponibilidad o políticas.</p>
+              <h4>9. Modificaciones</h4>
+              <p>Podemos modificar el Servicio o estos Términos en cualquier momento. Los cambios rigen desde su publicación y el uso continuado implica su aceptación.</p>
+              <h4>10. Ley aplicable y jurisdicción</h4>
+              <p>Estos Términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de {LEGAL.jurisdiccion}, sin perjuicio de las normas de orden público aplicables a consumidores.</p>
+              <h4>11. Contacto</h4>
+              <p>Consultas: {LEGAL.email}.</p>
+            </>
+          )}
+
+          {tab === "privacidad" && (
+            <>
+              <p>Esta Política explica qué datos personales tratamos y cómo, conforme a la Ley N.° 25.326 de Protección de los Datos Personales de la República Argentina.</p>
+              <h4>1. Responsable del tratamiento</h4>
+              <p>{LEGAL.responsable}. Contacto: {LEGAL.email}.</p>
+              <h4>2. Datos que recolectamos</h4>
+              <ul>
+                <li>Datos de cuenta: email y contraseña (gestionada de forma segura por nuestro proveedor de autenticación; no se almacena en texto plano).</li>
+                <li>Preferencias: región, supermercados elegidos, productos favoritos y carrito.</li>
+                <li>Datos técnicos básicos necesarios para el funcionamiento (por ejemplo, registros del servidor).</li>
+              </ul>
+              <h4>3. Finalidades</h4>
+              <ul>
+                <li>Prestar y personalizar el Servicio.</li>
+                <li>Autenticarte y mantener tu sesión.</li>
+                <li>Enviarte alertas de baja de precio de tus favoritos por email, si tenés cuenta.</li>
+              </ul>
+              <h4>4. Base del tratamiento</h4>
+              <p>Tratamos tus datos con tu consentimiento y para la ejecución del Servicio que solicitás.</p>
+              <h4>5. Con quién los compartimos</h4>
+              <p>No vendemos tus datos personales. Podemos utilizar proveedores que actúan por nuestra cuenta (infraestructura, base de datos y envío de emails). No compartimos tus datos con los supermercados.</p>
+              <h4>6. Conservación</h4>
+              <p>Conservamos tus datos mientras mantengas tu cuenta o sean necesarios para las finalidades descriptas. Podés solicitar su supresión.</p>
+              <h4>7. Tus derechos</h4>
+              <p>Podés ejercer tus derechos de acceso, rectificación, actualización, supresión y oposición escribiendo a {LEGAL.email}. El titular puede solicitar y obtener información de sus datos personales incluidos en bancos de datos (art. 14, Ley 25.326). La Agencia de Acceso a la Información Pública (AAIP) es el órgano de control y ante ella podés presentar reclamos.</p>
+              <h4>8. Seguridad</h4>
+              <p>Adoptamos medidas razonables para proteger tus datos. Ningún sistema es completamente seguro.</p>
+              <h4>9. Menores</h4>
+              <p>El Servicio está dirigido a personas mayores de edad. No recolectamos conscientemente datos de menores.</p>
+              <h4>10. Cambios</h4>
+              <p>Podemos actualizar esta Política; publicaremos la versión vigente con su fecha.</p>
+              <h4>11. Contacto</h4>
+              <p>{LEGAL.email}.</p>
+            </>
+          )}
+
+          {tab === "descargos" && (
+            <>
+              <div className="legal-note">Los precios que ves son <strong>orientativos</strong>, provienen de fuentes públicas y pueden diferir del precio real vigente en cada supermercado. Verificá siempre el precio final en el sitio oficial antes de comprar.</div>
+              <h4>Sobre los datos de precios</h4>
+              <ul>
+                <li>Se obtienen de información de acceso público y se actualizan periódicamente; pueden existir errores, demoras o faltantes.</li>
+                <li>SuperPrecios AR no garantiza la exactitud, integridad ni disponibilidad de la información.</li>
+                <li>Es una herramienta de comparación informativa: no vende productos ni participa en las transacciones.</li>
+              </ul>
+              <h4>No afiliación</h4>
+              <p>SuperPrecios AR no está asociado, afiliado, patrocinado ni avalado por {SUPERS}, ni por ningún otro comercio mencionado.</p>
+              <h4>Marcas de terceros</h4>
+              <ul>
+                <li>Las marcas, nombres comerciales, logos e imágenes de productos pertenecen a sus respectivos titulares.</li>
+                <li>Su uso en el Servicio es meramente identificatorio (uso nominativo) para permitir la comparación, y no implica titularidad ni relación comercial.</li>
+                <li>Si sos titular de una marca y considerás que su uso es indebido, escribinos a {LEGAL.email}.</li>
+              </ul>
+            </>
+          )}
+        </div>
+
+        <div className="legal-foot">Última actualización: {LEGAL.actualizacion} · Contacto: {LEGAL.email}</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WelcomeModal — onboarding breve (primera visita)
+// ---------------------------------------------------------------------------
+function WelcomeModal({ onClose }) {
+  const pasos = [
+    { ico: "📍", t: "Elegí tu región", d: "Arriba a la izquierda. Así ves los precios y promos de tu zona." },
+    { ico: "✅", t: "Marcá tus supermercados", d: "Elegí de cuáles querés ver precios y recibir alertas." },
+    { ico: "❤️", t: "Guardá favoritos", d: "Te avisamos por email cuando un producto baja de precio." },
+    { ico: "🛒", t: "Armá tu carrito", d: "Comparás el total y comprás en el súper que más te conviene." },
+  ];
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="welcome-modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close welcome-close" onClick={onClose} aria-label="Cerrar">✕</button>
+        <div className="welcome-hero">
+          <div className="welcome-icon">🛒</div>
+          <div className="welcome-title">¡Bienvenido a <span>SuperPrecios</span> AR!</div>
+          <div className="welcome-sub">Comparamos los precios de 7 supermercados de Argentina para que compres siempre al más barato.</div>
+        </div>
+        <div className="welcome-steps">
+          {pasos.map((p, i) => (
+            <div className="welcome-step" key={i}>
+              <span className="welcome-step-ico">{p.ico}</span>
+              <div>
+                <div className="welcome-step-t">{p.t}</div>
+                <div className="welcome-step-d">{p.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="welcome-savings">
+          <span className="welcome-savings-emoji">💚</span>
+          <div>
+            <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos.
+          </div>
+        </div>
+        <button className="welcome-cta" onClick={onClose}>Empezar a ahorrar →</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 function App() {
@@ -1670,6 +1936,10 @@ function App() {
   const [usuario, setUsuario] = React.useState(() => { try { return JSON.parse(localStorage.getItem("sp_user")); } catch { return null; } });
   const [token, setToken] = React.useState(() => localStorage.getItem("sp_token") || null);
   const [showAuth, setShowAuth] = React.useState(false);
+  const [showWelcome, setShowWelcome] = React.useState(() => {
+    try { return !localStorage.getItem("sp_welcome_v1"); } catch { return false; }
+  });
+  const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
   const [carritoItems, setCarritoItems] = React.useState([]);
   const [productosMap, setProductosMap] = React.useState({});
   const [regiones, setRegiones] = React.useState([]);
@@ -1961,6 +2231,11 @@ function App() {
 
   const totalCarrito = carritoItems.length;
 
+  function cerrarWelcome() {
+    try { localStorage.setItem("sp_welcome_v1", "1"); } catch {}
+    setShowWelcome(false);
+  }
+
   function resetFilters() {
     // No reseteamos supersVisibles: es una preferencia persistente del usuario, no un filtro transitorio.
     setTab("todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas");
@@ -1969,6 +2244,8 @@ function App() {
 
   return (
     <div>
+      {showWelcome && <WelcomeModal onClose={cerrarWelcome}/>}
+      {legalTab && <LegalModal initialTab={legalTab} onClose={()=>setLegalTab(null)}/>}
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onLogin={handleLogin}/>}
       {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)} supersFiltro={supersVisibles}/>}
 
@@ -2155,6 +2432,14 @@ function App() {
                   Agregá productos a ❤️ <strong>favoritos</strong> para recibir alertas cuando bajen de precio.<br/>
                   Usá 🛒 <strong>carrito</strong> para armar tu compra y ejecutarla directo en el supermercado que elijas.
                 </p>
+                <button className="footer-link-btn" onClick={()=>setShowWelcome(true)}>💡 ¿Cómo funciona? Ver la guía rápida</button>
+                <div className="footer-legal">
+                  <button onClick={()=>setLegalTab("terminos")}>Términos y Condiciones</button>
+                  <span>·</span>
+                  <button onClick={()=>setLegalTab("privacidad")}>Política de Privacidad</button>
+                  <span>·</span>
+                  <button onClick={()=>setLegalTab("descargos")}>Descargos y marcas</button>
+                </div>
               </div>
             </>
           )}
