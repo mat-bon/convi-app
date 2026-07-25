@@ -947,10 +947,12 @@ const SUPER_COLORS = {
   Dia:       { bg:"#E30613", text:"#fff" },
   Coto:      { bg:"#E4002B", text:"#fff" },
   Disco:     { bg:"#D52B1E", text:"#fff" },
+  Cordiez:   { bg:"#004B93", text:"#fff" },
+  "La Gallega": { bg:"#5B2C86", text:"#fff" },
 };
 
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco"];
-const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco"];
+const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez"];
+const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
@@ -960,6 +962,8 @@ const SUPER_LOGOS = {
   Dia:       "https://tradeyretail.com/img/39b330a74fb0ce11006649d94eedb67c.jpg",
   Coto:      "https://static.cotodigital3.com.ar/sitios/cdigi/static/content/images/nuevositio/header/LogoCOTO.svg",
   Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
+  Cordiez:   "https://tiano.com.ar/wp-content/uploads/cordiez.png",
+  "La Gallega": "https://static.wikia.nocookie.net/logopedia/images/f/f4/La_Gallega_Supermercado_Logo_%282019%29.webp/revision/latest/scale-to-width-down/340?cb=20251005013317&path-prefix=es",
 };
 
 const SUPER_LOGOS_FALLBACK = {
@@ -974,6 +978,8 @@ const BASE_URLS = {
   Dia:       "https://diaonline.supermercadosdia.com.ar",
   Coto:      "https://www.coto.com.ar",
   Disco:     "https://www.disco.com.ar",
+  Cordiez:   "https://www.cordiez.com.ar",
+  "La Gallega": "https://www.lagallega.com.ar",
 };
 
 const CATEGORIAS = {
@@ -1130,7 +1136,9 @@ function buildCotoItemUrl(producto) {
 // Link al producto en el sitio del super. Coto se arma desde el sku_id porque
 // su `url` guardada apunta a la home (Constructor.io no da la URL absoluta).
 function urlEnSuper(p) {
-  return p.supermercado === "Coto" ? buildCotoItemUrl(p) : p.url;
+  if (p.supermercado === "Coto") return buildCotoItemUrl(p);
+  if (p.supermercado === "La Gallega") return buildLaGallegaProductUrl(p) || p.url;
+  return p.url;
 }
 
 // --- Carga automática del carrito de Coto -----------------------------------
@@ -1158,33 +1166,94 @@ function buildCotoAddUrl(producto, cantidad) {
        + `?pushSite=CotoDigital&skuId=sku${plu}&prodId=prod${plu}&quantity=${qty}&cambiaSuc=true`;
 }
 
-// Abre la pestaña y encadena las navegaciones. Devuelve el id del intervalo (para
-// poder cancelarlo) o null si el navegador bloqueó el popup.
-function cargarCarritoEnCoto(items, { onProgreso, onFin }) {
-  const urls = items.map(i => buildCotoAddUrl(i.producto, i.cantidad)).filter(Boolean);
-  if (!urls.length) return null;
+// Motor de carga encadenada, compartido por Coto y La Gallega: abre UNA pestaña y
+// le va cambiando la URL (cambiar `location` de una ventana propia sí está permitido
+// cross-origin), terminando en la página del carrito del súper.
+// `pasos` es la lista plana de URLs a visitar; `porProducto` dice cuántas URLs
+// consume cada producto, sólo para mostrar el progreso en unidades entendibles.
+// Devuelve el id del intervalo (para cancelar) o null si bloquearon el popup.
+function cargarCarritoEncadenado({ pasos, winName, urlFinal, delayMs, porProducto = 1, onProgreso, onFin }) {
+  if (!pasos.length) return null;
 
   // Debe dispararse dentro del click del usuario o el navegador lo bloquea.
-  const win = window.open(urls[0], COTO_WIN);
+  const win = window.open(pasos[0], winName);
   if (!win) return null;
 
+  const totalProds = Math.ceil(pasos.length / porProducto);
   let i = 1;
-  onProgreso(Math.min(1, urls.length), urls.length);
+  onProgreso(Math.min(1, totalProds), totalProds);
   const timer = setInterval(() => {
     // `closed` es de las pocas props legibles cross-origin: si cerró la pestaña, cortamos.
     if (win.closed) { clearInterval(timer); onFin(false); return; }
-    if (i < urls.length) {
-      win.location = urls[i];
+    if (i < pasos.length) {
+      win.location = pasos[i];
       i++;
-      onProgreso(i, urls.length);
+      onProgreso(Math.min(Math.ceil(i / porProducto), totalProds), totalProds);
     } else {
       clearInterval(timer);
-      win.location = COTO_CART_URL;
+      win.location = urlFinal;
       win.focus();
       onFin(true);
     }
-  }, COTO_ADD_DELAY_MS);
+  }, delayMs);
   return timer;
+}
+
+function cargarCarritoEnCoto(items, { onProgreso, onFin }) {
+  return cargarCarritoEncadenado({
+    pasos: items.map(i => buildCotoAddUrl(i.producto, i.cantidad)).filter(Boolean),
+    winName: COTO_WIN,
+    urlFinal: COTO_CART_URL,
+    delayMs: COTO_ADD_DELAY_MS,
+    onProgreso, onFin,
+  });
+}
+
+// --- Carga automática del carrito de La Gallega -----------------------------
+// Mismo principio que Coto (navegación GET que lleva la cookie de sesión), pero
+// su API es de dos pasos: `Acc=Agregar` CREA la línea y es INCREMENTAL (repetirlo
+// suma), mientras que `Acc=Actualizar&Ac=M` fija la cantidad exacta pero sólo
+// funciona sobre una línea que ya existe. Encadenar los dos deja el proceso
+// idempotente: si algo se repite, el paso M vuelve a fijar el valor correcto.
+// El parámetro TK que aparece en su JS no se usa (el sitio lo llama con 3 args).
+// Requiere sesión iniciada; sin login el carrito no persiste.
+const LAGALLEGA_ADD_DELAY_MS = 900;
+const LAGALLEGA_WIN = "superprecios_lagallega";
+const LAGALLEGA_LOGIN_URL = "https://www.lagallega.com.ar/login.asp";
+const LAGALLEGA_CART_URL  = "https://www.lagallega.com.ar/carrito.asp";
+
+function lagallegaCod(producto) {
+  const cod = String(producto.sku_id || "").replace(/\D/g, "");
+  return cod || null;
+}
+
+function buildLaGallegaProductUrl(producto) {
+  const cod = lagallegaCod(producto);
+  return cod ? `${BASE_URLS["La Gallega"]}/productosdet.asp?Pr=${cod}` : null;
+}
+
+// Devuelve los DOS pasos (crear + fijar cantidad) para un producto.
+function buildLaGallegaAddSteps(producto, cantidad) {
+  const cod = lagallegaCod(producto);
+  if (!cod) return [];
+  const n = Number(cantidad);
+  const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
+  const base = BASE_URLS["La Gallega"];
+  return [
+    `${base}/TheTicket_G.asp?Acc=Agregar&Prod=${cod}&C=${qty}`,
+    `${base}/TheTicket_G.asp?Acc=Actualizar&ArtModif=${cod}&c=${qty}&Ac=M`,
+  ];
+}
+
+function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
+  return cargarCarritoEncadenado({
+    pasos: items.flatMap(i => buildLaGallegaAddSteps(i.producto, i.cantidad)),
+    winName: LAGALLEGA_WIN,
+    urlFinal: LAGALLEGA_CART_URL,
+    delayMs: LAGALLEGA_ADD_DELAY_MS,
+    porProducto: 2,
+    onProgreso, onFin,
+  });
 }
 
 // true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
@@ -1388,7 +1457,7 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
-  // Carga automática de Coto: null | {actual,total} | "bloqueado" | "listo"
+  // Carga automática (Coto y La Gallega): null | {actual,total} | "bloqueado" | "listo"
   const [cotoCarga, setCotoCarga] = React.useState(null);
   const cotoTimer = React.useRef(null);
 
@@ -1397,15 +1466,20 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
+  const esLaGallega = superNombre === "La Gallega";
+
   // Sólo se pueden autocargar los que tienen sku_id; el resto queda para la lista manual.
   const cotoAutocargables = superNombre === "Coto"
     ? items.filter(i => buildCotoAddUrl(i.producto, i.cantidad))
-    : [];
+    : esLaGallega
+      ? items.filter(i => buildLaGallegaAddSteps(i.producto, i.cantidad).length)
+      : [];
 
   function handleCargarCoto() {
     if (!cotoAutocargables.length) return;
     setCotoCarga({ actual: 0, total: cotoAutocargables.length });
-    cotoTimer.current = cargarCarritoEnCoto(cotoAutocargables, {
+    const cargar = esLaGallega ? cargarCarritoEnLaGallega : cargarCarritoEnCoto;
+    cotoTimer.current = cargar(cotoAutocargables, {
       onProgreso: (actual, total) => setCotoCarga({ actual, total }),
       onFin: (completo) => { cotoTimer.current = null; setCotoCarga(completo ? "listo" : null); },
     });
@@ -1439,31 +1513,36 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     );
   }
 
-  if (superNombre === "Coto") {
+  // Coto y La Gallega comparten el mismo flujo: no tienen URL de carrito masivo,
+  // así que se cargan encadenando navegaciones sobre una pestaña ya logueada.
+  if (superNombre === "Coto" || esLaGallega) {
+    const cfg = esLaGallega
+      ? { loginUrl: LAGALLEGA_LOGIN_URL, cartUrl: LAGALLEGA_CART_URL, win: LAGALLEGA_WIN,
+          requisitos: <>La Gallega exige <strong>sesión iniciada</strong> para poder cargar el carrito. Ingresá con tu cuenta y volvé acá.</> }
+      : { loginUrl: COTO_LOGIN_URL, cartUrl: COTO_CART_URL, win: COTO_WIN,
+          requisitos: <>Coto exige sesión iniciada <strong>y opción de entrega elegida</strong> para cargar el carrito. Hacé las dos cosas y volvé acá.</> };
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
           {paso === "login" ? (
             <>
-              <div className="confirm-title">Comprar en Coto — Paso 1 de 2</div>
-              <p className="confirm-desc">
-                Coto exige sesión iniciada <strong>y opción de entrega elegida</strong> para cargar el carrito. Hacé las dos cosas y volvé acá.
-              </p>
+              <div className="confirm-title">Comprar en {superNombre} — Paso 1 de 2</div>
+              <p className="confirm-desc">{cfg.requisitos}</p>
               <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open(COTO_LOGIN_URL, COTO_WIN); setPaso("carrito"); }}>
-                  Abrir Coto para ingresar →
+                <button className="confirm-btn primary" onClick={() => { window.open(cfg.loginUrl, cfg.win); setPaso("carrito"); }}>
+                  Abrir {superNombre} para ingresar →
                 </button>
                 <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
               </div>
             </>
           ) : paso === "carrito" ? (
             <>
-              <div className="confirm-title">Comprar en Coto — Paso 2 de 2</div>
+              <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
 
               {cotoCarga && typeof cotoCarga === "object" ? (
                 <>
                   <p className="confirm-desc">
-                    Cargando en Coto… <strong>{cotoCarga.actual} de {cotoCarga.total}</strong>. No cierres la pestaña que se abrió.
+                    Cargando en {superNombre}… <strong>{cotoCarga.actual} de {cotoCarga.total}</strong>. No cierres la pestaña que se abrió.
                   </p>
                   <div style={{height:8, borderRadius:20, background:"var(--border-light)", overflow:"hidden", margin:"4px 0 14px"}}>
                     <div style={{
@@ -1482,11 +1561,11 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               ) : (
                 <>
                   <p className="confirm-desc">
-                    Cargamos todo de una en tu carrito de Coto. Tenés que estar logueado y con la opción de entrega ya elegida.
+                    Cargamos todo de una en tu carrito de {superNombre}. Tenés que tener la sesión abierta{esLaGallega ? "" : " y la opción de entrega ya elegida"}.
                   </p>
                   <div className="confirm-btns" style={{marginBottom:6}}>
                     <button className="confirm-btn primary" onClick={handleCargarCoto} disabled={!cotoAutocargables.length}>
-                      ⚡ Cargar {cotoAutocargables.length === 1 ? "el producto" : `los ${cotoAutocargables.length} productos`} en Coto →
+                      ⚡ Cargar {cotoAutocargables.length === 1 ? "el producto" : `los ${cotoAutocargables.length} productos`} en {superNombre} →
                     </button>
                   </div>
 
@@ -1498,12 +1577,12 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 
                   {cotoCarga === "bloqueado" && (
                     <div className="confirm-warning">
-                      ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para coto.com.ar y probá de nuevo, o cargá los productos uno por uno acá abajo.
+                      ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para {esLaGallega ? "lagallega.com.ar" : "coto.com.ar"} y probá de nuevo, o cargá los productos uno por uno acá abajo.
                     </div>
                   )}
                   {cotoCarga === "listo" && (
                     <div className="confirm-warning">
-                      ✅ Listo. Revisá el carrito en la pestaña de Coto — si algún producto no entró, agregalo desde la lista de abajo.
+                      ✅ Listo. Revisá el carrito en la pestaña de {superNombre} — si algún producto no entró, agregalo desde la lista de abajo.
                     </div>
                   )}
 
@@ -1512,11 +1591,13 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                   </div>
                   <div className="confirm-item-list">
                     {items.map((i, idx) => {
-                      const exacto = !!buildCotoProductUrl(i.producto);
+                      const exacto = esLaGallega
+                        ? !!buildLaGallegaProductUrl(i.producto)
+                        : !!buildCotoProductUrl(i.producto);
                       return (
                         <div key={idx} className="confirm-item-row">
                           <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                          <button className="confirm-item-btn" onClick={() => window.open(buildCotoItemUrl(i.producto), "_blank", "noopener,noreferrer")}>
+                          <button className="confirm-item-btn" onClick={() => window.open(urlEnSuper(i.producto), "_blank", "noopener,noreferrer")}>
                             {exacto ? "Abrir ficha →" : "Buscar →"}
                           </button>
                         </div>
@@ -1524,8 +1605,8 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                     })}
                   </div>
                   <div className="confirm-btns">
-                    <button className="confirm-btn primary" onClick={() => { window.open(COTO_CART_URL, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
-                      Ver el carrito en Coto →
+                    <button className="confirm-btn primary" onClick={() => { window.open(cfg.cartUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
+                      Ver el carrito en {superNombre} →
                     </button>
                     <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
                   </div>
@@ -1538,7 +1619,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
               <div className="confirm-btns">
                 <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
-                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Coto</button>
+                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
               </div>
             </>
           )}
@@ -1689,12 +1770,13 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const esVtex = SUPER_VTEX.includes(superNombre);
         const esDino = superNombre === "Dino";
         const esCoto = superNombre === "Coto";
+        const esLaGallega = superNombre === "La Gallega";
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
-        const puedeComprar = esVtex || esDino || esCoto;
+        const puedeComprar = esVtex || esDino || esCoto || esLaGallega;
 
         return (
           <div key={superNombre} className="cart-section">
