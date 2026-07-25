@@ -972,7 +972,7 @@ const BASE_URLS = {
   MasOnline: "https://www.masonline.com.ar",
   Dino:      "https://www.dinoonline.com.ar",
   Dia:       "https://diaonline.supermercadosdia.com.ar",
-  Coto:      "https://www.cotodigital3.com.ar",
+  Coto:      "https://www.coto.com.ar",
   Disco:     "https://www.disco.com.ar",
 };
 
@@ -1087,10 +1087,104 @@ function buildDinoCartUrl(producto, cantidad) {
   return url.toString();
 }
 
-// Coto no expone carrito ni URL de producto (Constructor.io): abrimos su buscador por nombre
+// Coto (ATG, no VTEX): su API de carrito exige sesión iniciada y no admite
+// llamadas cross-origin con credenciales (responde `Access-Control-Allow-Origin: *`
+// sin `Allow-Credentials`), así que no hay forma de precargar el carrito desde acá.
+// Lo que sí funciona es el deep-link a la ficha exacta del producto: el PLU va
+// dentro del sku_id que ya guardamos (ej. "sku00014450") y la ruta de Coto es
+// /productos/<slug>/_/R-<plu>-<plu>-200 (el slug es decorativo, Coto lo ignora).
+const COTO_LOGIN_URL = "https://www.coto.com.ar/ingresar";
+const COTO_CART_URL  = "https://www.coto.com.ar/carrito";
+
+function cotoPlu(producto) {
+  const digits = String(producto.sku_id || "").replace(/\D/g, "");
+  return digits ? digits.padStart(8, "0") : null;
+}
+
+function cotoSlug(nombre) {
+  const slug = (nombre || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return slug || "producto";
+}
+
+// Ficha exacta del producto en Coto. null si todavía no tenemos su PLU.
+function buildCotoProductUrl(producto) {
+  const plu = cotoPlu(producto);
+  if (!plu) return null;
+  return `${BASE_URLS.Coto}/productos/${cotoSlug(producto.nombre)}/_/R-${plu}-${plu}-200`;
+}
+
+// Fallback por nombre cuando falta el sku_id (ruta /productos/:searchTerm).
 function buildCotoSearchUrl(producto) {
-  const q = encodeURIComponent(producto.nombre || "");
-  return `https://www.cotodigital3.com.ar/sitios/cdigi/browse?Ntt=${q}`;
+  return `${BASE_URLS.Coto}/productos/${encodeURIComponent(producto.nombre || "")}`;
+}
+
+function buildCotoItemUrl(producto) {
+  return buildCotoProductUrl(producto) || buildCotoSearchUrl(producto);
+}
+
+// Link al producto en el sitio del super. Coto se arma desde el sku_id porque
+// su `url` guardada apunta a la home (Constructor.io no da la URL absoluta).
+function urlEnSuper(p) {
+  return p.supermercado === "Coto" ? buildCotoItemUrl(p) : p.url;
+}
+
+// --- Carga automática del carrito de Coto -----------------------------------
+// Coto no tiene una URL de carrito masivo como VTEX (`/checkout/cart/add?sku=...`):
+// su endpoint agrega UN producto por request. Pero acepta GET, y una navegación
+// de primer nivel SÍ manda la cookie de sesión (SameSite=Lax las permite; un
+// fetch/POST cross-site no). Así que abrimos una pestaña y la vamos redirigiendo
+// producto por producto. Requiere que el usuario ya esté logueado y con opción de
+// entrega elegida, si no Coto responde codigoError 2.
+// `cambiaSuc=true` es obligatorio y `sucPickUp` debe ir OMITIDO (vacío da error 3).
+// La cantidad es absoluta, no incremental: repetir un ítem lo fija, no lo duplica,
+// así que reintentar es seguro.
+const COTO_ADD_DELAY_MS = 900;
+// Nombre de ventana compartido: el login y la carga apuntan a la misma pestaña, así
+// el usuario no termina con dos. Por eso el login NO puede usar `noopener` (perderíamos
+// el handle para redirigirla después).
+const COTO_WIN = "superprecios_coto";
+
+function buildCotoAddUrl(producto, cantidad) {
+  const plu = cotoPlu(producto);
+  if (!plu) return null;
+  const n = Number(cantidad);
+  const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
+  return `${BASE_URLS.Coto}/rest/model/atg/actors/cCarritoActor/addOrRemoveItemToOrderV2`
+       + `?pushSite=CotoDigital&skuId=sku${plu}&prodId=prod${plu}&quantity=${qty}&cambiaSuc=true`;
+}
+
+// Abre la pestaña y encadena las navegaciones. Devuelve el id del intervalo (para
+// poder cancelarlo) o null si el navegador bloqueó el popup.
+function cargarCarritoEnCoto(items, { onProgreso, onFin }) {
+  const urls = items.map(i => buildCotoAddUrl(i.producto, i.cantidad)).filter(Boolean);
+  if (!urls.length) return null;
+
+  // Debe dispararse dentro del click del usuario o el navegador lo bloquea.
+  const win = window.open(urls[0], COTO_WIN);
+  if (!win) return null;
+
+  let i = 1;
+  onProgreso(Math.min(1, urls.length), urls.length);
+  const timer = setInterval(() => {
+    // `closed` es de las pocas props legibles cross-origin: si cerró la pestaña, cortamos.
+    if (win.closed) { clearInterval(timer); onFin(false); return; }
+    if (i < urls.length) {
+      win.location = urls[i];
+      i++;
+      onProgreso(i, urls.length);
+    } else {
+      clearInterval(timer);
+      win.location = COTO_CART_URL;
+      win.focus();
+      onFin(true);
+    }
+  }, COTO_ADD_DELAY_MS);
+  return timer;
 }
 
 // true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
@@ -1192,7 +1286,7 @@ function Modal({ producto, onClose, onCambiarSuper, supersFiltro }) {
                       {contenido}
                     </button>
                   ) : (
-                    <a key={o.supermercado} href={o.url} target="_blank" rel="noopener noreferrer" style={estilo}>
+                    <a key={o.supermercado} href={urlEnSuper(o)} target="_blank" rel="noopener noreferrer" style={estilo}>
                       {contenido}
                     </a>
                   );
@@ -1206,7 +1300,7 @@ function Modal({ producto, onClose, onCambiarSuper, supersFiltro }) {
             : historial.length < 2 ? <div style={{textAlign:"center",padding:24,color:"var(--text-muted)",fontSize:13}}>No hay suficiente historial aún — volvé en unos días 📅</div>
             : <><MiniChart data={historial}/><div style={{display:"flex",gap:20,marginTop:10,fontSize:12,color:"var(--text-secondary)"}}><span>📉 Mínimo: <strong style={{color:"var(--success)"}}>{fmt(minP)}</strong></span><span>📈 Máximo: <strong style={{color:"var(--danger)"}}>{fmt(maxP)}</strong></span></div></>
           }
-          <a href={producto.url} target="_blank" rel="noopener noreferrer" className="modal-link">Ver en {producto.supermercado} →</a>
+          <a href={urlEnSuper(producto)} target="_blank" rel="noopener noreferrer" className="modal-link">Ver en {producto.supermercado} →</a>
         </div>
       </div>
     </div>
@@ -1294,8 +1388,29 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
+  // Carga automática de Coto: null | {actual,total} | "bloqueado" | "listo"
+  const [cotoCarga, setCotoCarga] = React.useState(null);
+  const cotoTimer = React.useRef(null);
+
+  // Si el usuario cierra el modal a mitad de la carga, cortamos el encadenado.
+  React.useEffect(() => () => { if (cotoTimer.current) clearInterval(cotoTimer.current); }, []);
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
+
+  // Sólo se pueden autocargar los que tienen sku_id; el resto queda para la lista manual.
+  const cotoAutocargables = superNombre === "Coto"
+    ? items.filter(i => buildCotoAddUrl(i.producto, i.cantidad))
+    : [];
+
+  function handleCargarCoto() {
+    if (!cotoAutocargables.length) return;
+    setCotoCarga({ actual: 0, total: cotoAutocargables.length });
+    cotoTimer.current = cargarCarritoEnCoto(cotoAutocargables, {
+      onProgreso: (actual, total) => setCotoCarga({ actual, total }),
+      onFin: (completo) => { cotoTimer.current = null; setCotoCarga(completo ? "listo" : null); },
+    });
+    if (!cotoTimer.current) setCotoCarga("bloqueado");
+  }
 
   if (superNombre === "VEA") {
     return (
@@ -1328,24 +1443,105 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-title">Comprar en Coto</div>
-          <p className="confirm-desc">
-            Coto no permite cargar el carrito automáticamente. Abrí cada producto en su buscador y agregalo desde el sitio de Coto.
-          </p>
-          <div className="confirm-item-list">
-            {items.map((i, idx) => (
-              <div key={idx} className="confirm-item-row">
-                <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                <button className="confirm-item-btn" onClick={() => window.open(buildCotoSearchUrl(i.producto), "_blank", "noopener,noreferrer")}>
-                  Buscar en Coto →
+          {paso === "login" ? (
+            <>
+              <div className="confirm-title">Comprar en Coto — Paso 1 de 2</div>
+              <p className="confirm-desc">
+                Coto exige sesión iniciada <strong>y opción de entrega elegida</strong> para cargar el carrito. Hacé las dos cosas y volvé acá.
+              </p>
+              <div className="confirm-btns">
+                <button className="confirm-btn primary" onClick={() => { window.open(COTO_LOGIN_URL, COTO_WIN); setPaso("carrito"); }}>
+                  Abrir Coto para ingresar →
                 </button>
+                <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
               </div>
-            ))}
-          </div>
-          <div className="confirm-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Coto</button>
-            <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
-          </div>
+            </>
+          ) : paso === "carrito" ? (
+            <>
+              <div className="confirm-title">Comprar en Coto — Paso 2 de 2</div>
+
+              {cotoCarga && typeof cotoCarga === "object" ? (
+                <>
+                  <p className="confirm-desc">
+                    Cargando en Coto… <strong>{cotoCarga.actual} de {cotoCarga.total}</strong>. No cierres la pestaña que se abrió.
+                  </p>
+                  <div style={{height:8, borderRadius:20, background:"var(--border-light)", overflow:"hidden", margin:"4px 0 14px"}}>
+                    <div style={{
+                      height:"100%", borderRadius:20, background:"var(--success)", transition:"width .3s ease",
+                      width: `${Math.round((cotoCarga.actual / Math.max(1, cotoCarga.total)) * 100)}%`
+                    }}/>
+                  </div>
+                  <div className="confirm-btns">
+                    <button className="confirm-btn secondary" onClick={() => {
+                      if (cotoTimer.current) clearInterval(cotoTimer.current);
+                      cotoTimer.current = null;
+                      setCotoCarga(null);
+                    }}>Cancelar carga</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="confirm-desc">
+                    Cargamos todo de una en tu carrito de Coto. Tenés que estar logueado y con la opción de entrega ya elegida.
+                  </p>
+                  <div className="confirm-btns" style={{marginBottom:6}}>
+                    <button className="confirm-btn primary" onClick={handleCargarCoto} disabled={!cotoAutocargables.length}>
+                      ⚡ Cargar {cotoAutocargables.length === 1 ? "el producto" : `los ${cotoAutocargables.length} productos`} en Coto →
+                    </button>
+                  </div>
+
+                  {cotoAutocargables.length < items.length && (
+                    <div className="confirm-warning">
+                      ⚠️ {items.length - cotoAutocargables.length} de {items.length} todavía no tienen SKU y no se pueden cargar solos — agregalos desde la lista de abajo.
+                    </div>
+                  )}
+
+                  {cotoCarga === "bloqueado" && (
+                    <div className="confirm-warning">
+                      ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para coto.com.ar y probá de nuevo, o cargá los productos uno por uno acá abajo.
+                    </div>
+                  )}
+                  {cotoCarga === "listo" && (
+                    <div className="confirm-warning">
+                      ✅ Listo. Revisá el carrito en la pestaña de Coto — si algún producto no entró, agregalo desde la lista de abajo.
+                    </div>
+                  )}
+
+                  <div className="confirm-section-label" style={{fontSize:12, fontWeight:800, color:"var(--text-secondary)", margin:"14px 0 8px"}}>
+                    O agregalos uno por uno
+                  </div>
+                  <div className="confirm-item-list">
+                    {items.map((i, idx) => {
+                      const exacto = !!buildCotoProductUrl(i.producto);
+                      return (
+                        <div key={idx} className="confirm-item-row">
+                          <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
+                          <button className="confirm-item-btn" onClick={() => window.open(buildCotoItemUrl(i.producto), "_blank", "noopener,noreferrer")}>
+                            {exacto ? "Abrir ficha →" : "Buscar →"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="confirm-btns">
+                    <button className="confirm-btn primary" onClick={() => { window.open(COTO_CART_URL, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
+                      Ver el carrito en Coto →
+                    </button>
+                    <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
+              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
+              <div className="confirm-btns">
+                <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
+                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Coto</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -1557,7 +1753,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                       onClick={() => onUpdateCantidad(item.producto_id, cantidad + 1)}>+</button>
                   </div>
                   {(!esVtex && !esDino) && (
-                    <a href={esCoto ? buildCotoSearchUrl(p) : p.url} target="_blank" rel="noopener noreferrer"
+                    <a href={urlEnSuper(p)} target="_blank" rel="noopener noreferrer"
                       style={{fontSize:11,color:"var(--info)",fontWeight:700,textDecoration:"none",marginLeft:4,whiteSpace:"nowrap"}}>
                       Ver →
                     </a>
