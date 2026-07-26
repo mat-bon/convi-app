@@ -456,6 +456,15 @@
       /* Con tres botones en el header, el email no entra y empujaba a "Salir"
          fuera de pantalla (.header-actions no hace wrap). */
       .header-user-email { display: none; }
+
+      /* Las TARJETAS son la excepción: acá las etiquetas se quedan. Un 🛒 pelado
+         se lee como "ir al carrito", no como "agregar", y agregar es la acción
+         principal de la tarjeta. Como a 2 tarjetas por fila (~146px útiles) no
+         entran tres botones con texto, dejamos que la fila envuelva: favorito y
+         lista arriba, agregar al carrito a lo ancho abajo. */
+      .card-actions { flex-wrap: wrap; }
+      .card-btn.buy { flex: 1 1 100%; }
+      .card-btn .btn-label { display: inline; }
     }
     .card-btn.fav { flex: 0 0 42px; padding: 10px 0; font-size: 14px; }
     .card-btn.fav:hover { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
@@ -2417,12 +2426,12 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
             📋<span className="btn-label">{enLista?"En lista":"Lista"}</span>
           </button>
           {p._reproyectado ? (
-            <a className="card-btn primary" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
+            <a className="card-btn primary buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
               Ver en {p.supermercado} →
             </a>
           ) : (esVtex || p.supermercado === "Coto") ? (
-            <button className={`card-btn ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
+            <button className={`card-btn buy ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
               🛒<span className="btn-label">{enCarrito?"En carrito":"Agregar"}</span>
             </button>
           ) : null}
@@ -2620,7 +2629,8 @@ function WelcomeModal({ onClose }) {
     { ico: "📍", t: "Elegí tu región", d: "Arriba a la izquierda. Así ves los precios y promos de tu zona." },
     { ico: "✅", t: "Marcá tus supermercados", d: "Elegí de cuáles querés ver precios y recibir alertas." },
     { ico: "❤️", t: "Guardá favoritos", d: "Te avisamos por email cuando un producto baja de precio." },
-    { ico: "🛒", t: "Armá tu carrito", d: "Comparás el total y comprás en el súper que más te conviene." },
+    { ico: "📋", t: "Armá tu lista", d: "Cargá lo que comprás siempre y te mostramos cuánto sale la lista completa en cada supermercado." },
+    { ico: "🛒", t: "Comprá donde conviene", d: "Pasás la lista al carrito del súper más barato y terminás la compra en su sitio." },
   ];
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -2629,7 +2639,7 @@ function WelcomeModal({ onClose }) {
         <div className="welcome-hero">
           <div className="welcome-icon">🛒</div>
           <div className="welcome-title">¡Bienvenido a <span>SuperPrecios</span> AR!</div>
-          <div className="welcome-sub">Comparamos los precios de 7 supermercados de Argentina para que compres siempre al más barato.</div>
+          <div className="welcome-sub">Comparamos los precios de 9 supermercados de Argentina para que compres siempre al más barato.</div>
         </div>
         <div className="welcome-steps">
           {pasos.map((p, i) => (
@@ -3084,7 +3094,7 @@ function App() {
             <div className="header-brand-icon">🛒</div>
             <div className="header-brand-text">
               <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 7 supermercados</div>
+              <div className="header-brand-sub">Compará precios entre 9 supermercados</div>
             </div>
           </a>
 
