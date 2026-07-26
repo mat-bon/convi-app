@@ -2425,7 +2425,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
             title={enLista?"Quitar de mi lista":"Agregar a mi lista"}>
             📋<span className="btn-label">{enLista?"En lista":"Lista"}</span>
           </button>
-          {p._reproyectado ? (
+          {p._sinIdPropio ? (
             <a className="card-btn primary buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
               Ver en {p.supermercado} →
@@ -2723,12 +2723,19 @@ function App() {
       visiblesOtros.sort((a,b) => a.precio - b.precio);
       const mejor = visiblesOtros[0];
       const restantes = visiblesOtros.slice(1).map(o => ({ supermercado:o.supermercado, precio:o.precio, url:o.url }));
+      // El backend manda el id (y sku_id) de cada alternativa, así que el producto
+      // promovido es una fila real y se puede agregar al carrito como cualquier otro.
+      // Si no viniera (backend viejo), no sabemos qué fila es y hay que caer al link
+      // "Ver en X" — agregar usaría el id del super destildado.
+      const sinIdPropio = mejor.id == null;
       return {
         ...p,
+        id: sinIdPropio ? p.id : mejor.id,
         supermercado: mejor.supermercado, precio: mejor.precio, url: mejor.url,
-        // datos propios del super original que no conocemos del promovido: los limpiamos
-        sku_id: null, precio_original: null, descuento_pct: null, promocion: null,
-        otros_supers: restantes, _reproyectado: true,
+        sku_id: mejor.sku_id != null ? mejor.sku_id : null,
+        // promo/descuento son propios del super original: no aplican al promovido
+        precio_original: null, descuento_pct: null, promocion: null,
+        otros_supers: restantes, _reproyectado: true, _sinIdPropio: sinIdPropio,
       };
     }).filter(Boolean);
   }, [productos, supersVisibles]);
