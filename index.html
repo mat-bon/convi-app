@@ -445,6 +445,18 @@
       background: var(--accent); color: #1b1600; border-color: var(--accent);
     }
     .card-btn.accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 14px -4px rgba(224,178,0,0.5); }
+    /* Utilidad: texto que solo aparece cuando hay ancho. En desktop la tarjeta
+       arranca en 258px y sobran ~88px por botón (alcanza para una palabra); a
+       <=640px la grilla pasa a 2 tarjetas por fila (~170px) y ahí NO entra
+       texto, así que quedan como íconos. Mismo truco que .logos-label.
+       También la usan los botones del header y los de la grilla de listas. */
+    .btn-label { white-space: nowrap; }
+    @media (max-width: 640px) {
+      .btn-label { display: none; }
+      /* Con tres botones en el header, el email no entra y empujaba a "Salir"
+         fuera de pantalla (.header-actions no hace wrap). */
+      .header-user-email { display: none; }
+    }
     .card-btn.fav { flex: 0 0 42px; padding: 10px 0; font-size: 14px; }
     .card-btn.fav:hover { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
     .card-btn.fav.active { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
@@ -757,6 +769,124 @@
       background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius);
       padding: 10px 14px; font-size: 12px; color: #92400E; margin-bottom: 16px;
       font-weight: 500;
+    }
+
+    /* --- Lista de compras: grilla producto x supermercado ------------------ */
+    .lista-toolbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .lista-select {
+      padding: 8px 12px; border-radius: var(--radius); border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 13px; font-weight: 700;
+      color: var(--text-primary); font-family: inherit; cursor: pointer; max-width: 240px;
+    }
+    .lista-btn {
+      padding: 8px 12px; border-radius: var(--radius); border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 12.5px; font-weight: 800;
+      color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .lista-btn:hover { background: var(--surface-2); color: var(--text-primary); }
+    .lista-btn.danger:hover { background: var(--danger-light); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+
+    /* Resumen: va FUERA del scroll horizontal a propósito. Como las columnas se
+       ordenan por cobertura y no por precio, el súper más barato puede quedar
+       fuera de pantalla a la derecha; acá siempre se ve. */
+    .lista-resumen {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 14px 18px; margin-bottom: 12px; box-shadow: var(--shadow-sm);
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .lista-resumen-linea { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+    .lista-resumen-linea strong { color: var(--text-primary); font-weight: 900; }
+    .lista-resumen-linea.mixta { color: var(--success, #059669); }
+
+    /* Un ÚNICO contenedor de scroll para toda la grilla: si scrollease cada fila
+       por su cuenta, la fila de totales se desalinearía de las columnas.
+       overflow-x:auto fuerza overflow-y a auto, así que el max-height es lo que
+       hace que el thead/tfoot sticky se peguen al panel. Con listas cortas ni
+       se llega al tope y no hay scroll vertical anidado. */
+    .lista-grid-wrap {
+      overflow: auto; max-height: 75vh;
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--surface); box-shadow: var(--shadow-sm);
+      -webkit-overflow-scrolling: touch;
+    }
+    .lista-grid { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+    .lista-grid th, .lista-grid td { border-bottom: 1px solid var(--border); }
+
+    /* Columna de producto: fija al scrollear en horizontal. */
+    .lg-prod, .lg-corner, .lg-corner-bottom {
+      position: sticky; left: 0; background: var(--surface);
+      text-align: left; min-width: 210px; max-width: 260px;
+      box-shadow: 1px 0 0 var(--border);
+    }
+    .lg-prod { z-index: 2; padding: 10px 14px; }
+    .lg-corner { z-index: 4; top: 0; padding: 10px 14px; }
+    .lg-corner-bottom { z-index: 4; bottom: 0; background: var(--surface-2); padding: 10px 14px; }
+
+    /* Header de súpers: fijo arriba. */
+    .lg-super {
+      position: sticky; top: 0; z-index: 3; background: var(--surface);
+      min-width: 116px; padding: 10px 12px; text-align: center;
+      font-size: 11.5px; font-weight: 800; color: var(--text-secondary);
+    }
+    .lg-super-inner { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+    /* Fila de totales: fija abajo. */
+    .lg-total {
+      position: sticky; bottom: 0; z-index: 3; background: var(--surface-2);
+      padding: 10px 12px; text-align: center; min-width: 116px;
+    }
+    .lg-total-monto { font-size: 15px; font-weight: 900; color: var(--text-primary); }
+    .lg-total-nota { font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+    .lg-total-nota.completa { color: var(--success, #059669); }
+    .lg-total-btn {
+      margin-top: 7px; width: 100%; padding: 6px 8px; border-radius: 8px; border: none;
+      font-size: 10.5px; font-weight: 800; cursor: pointer; font-family: inherit;
+      background: var(--ink); color: #fff; transition: opacity 0.15s; white-space: nowrap;
+    }
+    .lg-total-btn:hover { opacity: 0.85; }
+    .lg-total-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .lg-prod-row { display: flex; align-items: center; gap: 10px; }
+    .lg-prod-img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #fff; border: 1px solid var(--border); flex-shrink: 0; }
+    .lg-prod-nombre {
+      font-size: 12.5px; font-weight: 700; color: var(--text-primary); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    /* La cantidad vive acá, en la columna fija: si estuviera a la derecha
+       desaparecería apenas se scrollean los precios. */
+    .lg-prod-bottom { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .lg-prod-nocomp { font-size: 10px; font-weight: 700; color: var(--text-muted); font-style: italic; }
+
+    /* Celda de precio: toda la celda es el botón de "agregar al carrito". */
+    .lg-cell {
+      min-width: 116px; padding: 0; text-align: center; vertical-align: middle;
+    }
+    .lg-cell-btn {
+      width: 100%; min-height: 56px; border: none; background: transparent;
+      font-family: inherit; font-size: 13.5px; font-weight: 800; color: var(--text-primary);
+      cursor: pointer; padding: 10px 8px; transition: background 0.14s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    }
+    .lg-cell-btn:hover { background: var(--surface-2); }
+    .lg-cell-btn:disabled { cursor: default; color: var(--text-muted); font-weight: 600; }
+    .lg-cell-btn:disabled:hover { background: transparent; }
+    .lg-cell.mejor .lg-cell-btn { background: #ECFDF5; color: #065F46; }
+    .lg-cell.mejor .lg-cell-btn:hover { background: #D1FAE5; }
+    .lg-cell.en-carrito .lg-cell-btn { background: var(--accent); color: #1b1600; }
+    .lg-cell-tag { font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.75; }
+    .lg-cell-add { font-size: 9.5px; font-weight: 800; opacity: 0; transition: opacity 0.14s; }
+    .lg-cell-btn:hover .lg-cell-add { opacity: 0.6; }
+
+    @media (max-width: 640px) {
+      .lg-prod, .lg-corner, .lg-corner-bottom { min-width: 150px; max-width: 170px; }
+      .lg-prod { padding: 9px 10px; }
+      .lg-prod-img { width: 32px; height: 32px; }
+      .lg-prod-nombre { font-size: 11.5px; }
+      .lg-super, .lg-cell, .lg-total { min-width: 96px; }
+      /* En móvil el "+" del hover no existe: la celda se toca y listo. */
+      .lg-cell-add { display: none; }
     }
 
     /* Confirm Modal */
@@ -1857,9 +1987,338 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
 }
 
 // ---------------------------------------------------------------------------
+// ListaView — grilla producto x supermercado
+// ---------------------------------------------------------------------------
+// Una fila por producto, una columna por súper. Las columnas vienen ordenadas
+// del backend: primero los que tienen la lista completa, después por cuántos
+// productos les faltan, y recién ahí por precio.
+function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
+                     setListaActivaId, onListasChange, carritoIds, onCarritoChange }) {
+  const [data, setData]         = React.useState(null);
+  const [cargando, setCargando] = React.useState(true);
+  const [error, setError]       = React.useState(null);
+  const [ocupado, setOcupado]   = React.useState(null);
+  const [aviso, setAviso]       = React.useState(null);
+
+  const supersKey = supersVisibles.join(",");
+
+  const cargar = React.useCallback(() => {
+    if (!token || !listaActivaId) { setData(null); setCargando(false); return; }
+    const params = new URLSearchParams();
+    if (regionId) params.append("region_id", regionId);
+    // Las columnas son los supers que el usuario tiene tildados en el filtro.
+    // Si están todos, no mandamos nada y el backend usa el universo completo.
+    const elegidos = supersKey ? supersKey.split(",") : [];
+    if (elegidos.length && elegidos.length < SUPER_TODOS.length) {
+      params.append("supermercados", supersKey);
+    }
+    fetch(`${API}/listas/${listaActivaId}/comparar?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => { setData(d); setError(null); })
+      .catch(() => setError("No pudimos cargar la comparación de la lista"))
+      .finally(() => setCargando(false));
+  }, [token, listaActivaId, regionId, supersKey]);
+
+  React.useEffect(() => { setCargando(true); cargar(); }, [cargar]);
+
+  const authJson = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  async function cambiarCantidad(item, cantidad) {
+    if (cantidad < 1 || cantidad > 99) return;
+    // Optimista sobre el número; los totales los recalcula el backend al releer
+    // (replicar acá la lógica de estimación sería duplicarla y desincronizarla).
+    setData(d => d && ({ ...d, items: d.items.map(i => i.id === item.id ? { ...i, cantidad } : i) }));
+    try {
+      await fetch(`${API}/listas/${listaActivaId}/items/${item.id}`, {
+        method: "PUT", headers: authJson, body: JSON.stringify({ cantidad }),
+      });
+    } catch (e) {}
+    cargar();
+  }
+
+  async function quitar(item) {
+    setData(d => d && ({ ...d, items: d.items.filter(i => i.id !== item.id) }));
+    try {
+      await fetch(`${API}/listas/${listaActivaId}/items/${item.id}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (e) {}
+    cargar(); onListasChange();
+  }
+
+  // Celda tocable: agrega ESE producto de ESE súper al carrito. El backend
+  // desplaza al equivalente de otro súper si ya estaba, así no queda duplicado.
+  async function agregarCelda(fila, celda) {
+    setOcupado(`c${fila.id}`);
+    try {
+      await fetch(`${API}/carrito/desde-lista/${celda.producto_id}`, {
+        method: "POST", headers: authJson, body: JSON.stringify({ cantidad: fila.cantidad }),
+      });
+    } catch (e) {}
+    setOcupado(null); onCarritoChange();
+  }
+
+  async function volcar(supermercado) {
+    setOcupado(supermercado || "mixta");
+    try {
+      const res = await fetch(`${API}/listas/${listaActivaId}/al-carrito`, {
+        method: "POST", headers: authJson,
+        body: JSON.stringify({
+          supermercado: supermercado || null,
+          region_id: regionId || null,
+          // El mismo universo de columnas que se usó para la comparación, para
+          // que la compra mixta cargue exactamente el total que se está viendo.
+          supermercados: supersVisibles,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) setAviso(d.detail || "No se pudo cargar el carrito");
+      else setAviso(
+        `Cargamos ${d.agregados} producto${d.agregados !== 1 ? "s" : ""} al carrito` +
+        (d.sin_disponibilidad ? ` (${d.sin_disponibilidad} sin disponibilidad ahí)` : "")
+      );
+    } catch (e) { setAviso("No se pudo cargar el carrito"); }
+    setOcupado(null); onCarritoChange();
+    setTimeout(() => setAviso(null), 5000);
+  }
+
+  async function nuevaLista() {
+    const nombre = window.prompt("Nombre de la lista", "Mi lista");
+    if (!nombre || !nombre.trim()) return;
+    try {
+      const res = await fetch(`${API}/listas`, {
+        method: "POST", headers: authJson, body: JSON.stringify({ nombre: nombre.trim().slice(0, 60) }),
+      });
+      const d = await res.json();
+      if (res.ok) { onListasChange(); setListaActivaId(d.id); }
+      else setAviso(d.detail || "No se pudo crear la lista");
+    } catch (e) {}
+  }
+
+  async function borrarLista() {
+    if (!window.confirm("¿Borrar esta lista? No se puede deshacer.")) return;
+    try {
+      await fetch(`${API}/listas/${listaActivaId}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (e) {}
+    setListaActivaId(null); onListasChange();
+  }
+
+  const toolbar = (
+    <div className="lista-toolbar">
+      {listas.length > 0 && (
+        <select className="lista-select" value={listaActivaId || ""}
+          onChange={e => setListaActivaId(e.target.value ? Number(e.target.value) : null)}>
+          {listas.map(l => (
+            <option key={l.id} value={l.id}>{l.nombre} ({l.total_items})</option>
+          ))}
+        </select>
+      )}
+      <button className="lista-btn" onClick={nuevaLista}>+ Nueva lista</button>
+      {listaActivaId && <button className="lista-btn danger" onClick={borrarLista}>Borrar</button>}
+      {aviso && <span style={{fontSize:12,fontWeight:700,color:"var(--info)"}}>{aviso}</span>}
+    </div>
+  );
+
+  if (listas.length === 0 && !cargando) {
+    return (
+      <div>
+        {toolbar}
+        <div className="cart-empty">
+          <div style={{fontSize:56}}>📋</div>
+          <p style={{fontSize:17,marginTop:14,fontWeight:800,color:"var(--text-primary)"}}>Todavía no tenés listas</p>
+          <p style={{fontSize:13.5,marginTop:6,color:"var(--text-secondary)",maxWidth:340,lineHeight:1.6}}>
+            Creá una lista, agregale productos con el botón 📋 y te decimos cuánto te sale la compra completa en cada supermercado.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (cargando) return <div>{toolbar}<div className="cart-empty"><p>Calculando precios…</p></div></div>;
+  if (error)    return <div>{toolbar}<div className="cart-empty"><p>{error}</p></div></div>;
+  if (!data)    return <div>{toolbar}</div>;
+
+  const items  = data.items  || [];
+  const supers = data.supers || [];
+
+  if (items.length === 0) {
+    return (
+      <div>
+        {toolbar}
+        <div className="cart-empty">
+          <div style={{fontSize:56}}>📋</div>
+          <p style={{fontSize:17,marginTop:14,fontWeight:800,color:"var(--text-primary)"}}>Esta lista está vacía</p>
+          <p style={{fontSize:13.5,marginTop:6,color:"var(--text-secondary)",maxWidth:340,lineHeight:1.6}}>
+            Agregá productos con el botón 📋 de cada tarjeta en la pestaña de productos.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Resumen: como las columnas se ordenan por cobertura, el más barato puede
+  // quedar fuera de pantalla. Acá se nombra siempre, scrollee o no el usuario.
+  const completos   = supers.filter(s => s.faltantes === 0);
+  const mejorComp   = completos[0] || null;                       // ya vienen ordenados por precio
+  const masBarato   = supers.reduce((a, b) => (!a || b.total_estimado < a.total_estimado ? b : a), null);
+  const mixta       = data.compra_mixta;
+  const ahorroMixta = mejorComp && mixta ? mejorComp.total_estimado - mixta.total : 0;
+
+  return (
+    <div>
+      {toolbar}
+
+      <div className="lista-resumen">
+        {mejorComp ? (
+          <div className="lista-resumen-linea">
+            ✅ Compra completa más barata: <strong>{mejorComp.supermercado} {fmt(mejorComp.total_estimado)}</strong>
+          </div>
+        ) : (
+          <div className="lista-resumen-linea">
+            ⚠️ Ningún supermercado tiene la lista completa — los totales incluyen una estimación de lo que falta.
+          </div>
+        )}
+        {masBarato && mejorComp && masBarato.supermercado !== mejorComp.supermercado && (
+          <div className="lista-resumen-linea">
+            🔻 El total más bajo es <strong>{masBarato.supermercado} {fmt(masBarato.total_estimado)}</strong>, pero
+            le falta{masBarato.faltantes > 1 ? "n" : ""} {masBarato.faltantes} producto{masBarato.faltantes > 1 ? "s" : ""}.
+          </div>
+        )}
+        {mixta && (
+          <div className="lista-resumen-linea mixta">
+            💚 Comprando cada cosa donde está más barata: <strong>{fmt(mixta.total)}</strong>
+            {ahorroMixta > 0 && <> — ahorrás {fmt(ahorroMixta)} contra el mejor súper único</>}
+          </div>
+        )}
+        {data.sin_precio > 0 && (
+          <div className="lista-resumen-linea">
+            ℹ️ {data.sin_precio} producto{data.sin_precio > 1 ? "s" : ""} sin precio en ningún súper visible — no entra{data.sin_precio > 1 ? "n" : ""} en los totales.
+          </div>
+        )}
+      </div>
+
+      <div className="lista-grid-wrap">
+        <table className="lista-grid">
+          <thead>
+            <tr>
+              <th className="lg-corner">
+                <span style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5,color:"var(--text-muted)"}}>
+                  {items.length} producto{items.length !== 1 ? "s" : ""}
+                </span>
+              </th>
+              {supers.map(s => (
+                <th className="lg-super" key={s.supermercado}>
+                  <div className="lg-super-inner">
+                    <SuperBadge nombre={s.supermercado} size={28} bare={true}/>
+                    <span>{s.supermercado}</span>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {items.map(fila => (
+              <tr key={fila.id}>
+                <th className="lg-prod">
+                  <div className="lg-prod-row">
+                    {fila.imagen_url
+                      ? <img src={fila.imagen_url} alt={fila.nombre} className="lg-prod-img"/>
+                      : <div className="lg-prod-img" style={{display:"flex",alignItems:"center",justifyContent:"center"}}>🛍️</div>}
+                    <div style={{minWidth:0,flex:1}}>
+                      <div className="lg-prod-nombre" title={fila.nombre}>{fila.nombre}</div>
+                      <div className="lg-prod-bottom">
+                        <div className="qty-control">
+                          <button className="qty-btn" disabled={fila.cantidad <= 1}
+                            onClick={() => cambiarCantidad(fila, fila.cantidad - 1)}>−</button>
+                          <span className="qty-val">{fila.cantidad}</span>
+                          <button className="qty-btn" disabled={fila.cantidad >= 99}
+                            onClick={() => cambiarCantidad(fila, fila.cantidad + 1)}>+</button>
+                        </div>
+                        <button className="cart-item-remove" title="Quitar de la lista"
+                          onClick={() => quitar(fila)}>✕</button>
+                      </div>
+                      {!fila.comparable && (
+                        <div className="lg-prod-nocomp">sin código de barras — no comparable</div>
+                      )}
+                    </div>
+                  </div>
+                </th>
+
+                {supers.map(s => {
+                  const celda     = fila.precios[s.supermercado];
+                  const esMejor   = celda && fila.mas_barato === s.supermercado;
+                  const enCarrito = celda && carritoIds.has(celda.producto_id);
+                  return (
+                    <td key={s.supermercado}
+                        className={`lg-cell ${esMejor ? "mejor" : ""} ${enCarrito ? "en-carrito" : ""}`}>
+                      <button className="lg-cell-btn" disabled={!celda || ocupado === `c${fila.id}`}
+                        onClick={() => agregarCelda(fila, celda)}
+                        title={celda
+                          ? `Agregar al carrito desde ${s.supermercado}`
+                          : `${s.supermercado} no tiene este producto`}>
+                        {celda ? (
+                          <>
+                            <span>{fmt(celda.precio * fila.cantidad)}</span>
+                            {enCarrito
+                              ? <span className="lg-cell-tag">✓ en carrito</span>
+                              : celda.precio_regional
+                                ? <span className="lg-cell-tag">📍 tu región</span>
+                                : <span className="lg-cell-add">+ carrito</span>}
+                          </>
+                        ) : "—"}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <th className="lg-corner-bottom">
+                <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5,color:"var(--text-muted)"}}>
+                  Total de la lista
+                </div>
+                {mixta && (
+                  <button className="lg-total-btn" disabled={ocupado === "mixta"}
+                    style={{background:"#059669"}} onClick={() => volcar(null)}>
+                    {ocupado === "mixta" ? "…" : <>💚<span className="btn-label"> Compra mixta</span> {fmt(mixta.total)}</>}
+                  </button>
+                )}
+              </th>
+              {supers.map(s => (
+                <td className="lg-total" key={s.supermercado}>
+                  <div className="lg-total-monto">{fmt(s.total_estimado)}</div>
+                  <div className={`lg-total-nota ${s.faltantes === 0 ? "completa" : ""}`}
+                    title={s.faltantes
+                      ? `Incluye ${fmt(s.estimado_faltantes)} estimados en ${s.faltantes} producto${s.faltantes > 1 ? "s" : ""} que ${s.supermercado} no tiene. Lo que sí tiene suma ${fmt(s.total_real)}.`
+                      : "Tiene todos los productos de la lista"}>
+                    {s.faltantes === 0
+                      ? "lista completa"
+                      : `estimado — falta${s.faltantes > 1 ? "n" : ""} ${s.faltantes}`}
+                  </div>
+                  <button className="lg-total-btn" disabled={ocupado === s.supermercado || s.cubiertos === 0}
+                    onClick={() => volcar(s.supermercado)}>
+                    {ocupado === s.supermercado ? "…" : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
+                  </button>
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ProductCard
 // ---------------------------------------------------------------------------
-const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCarrito, onOpen, supersVisibles }) {
+const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onFav, onCarrito, onLista, onOpen, supersVisibles }) {
   const hasOffer = p.descuento_pct || p.promocion;
   const esVtex = SUPER_VTEX.includes(p.supermercado);
   // Ocultar de la comparación los supers que el usuario destildó en el filtro
@@ -1950,6 +2409,13 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
           <button className={`card-btn fav ${p.favorito?"active":""}`} onClick={e=>onFav(e,p.id)} title={p.favorito?"Quitar de favoritos":"Agregar a favoritos"}>
             {p.favorito?"❤️":"🤍"}
           </button>
+          {/* La lista es planificación, no compra: va para TODOS los supers, también
+              los que no tienen flujo de carga de carrito (Dino, La Gallega, etc.).
+              Por eso queda FUERA del condicional VTEX/Coto de acá abajo. */}
+          <button className={`card-btn ${enLista?"accent":""}`} onClick={e=>onLista(e,p)}
+            title={enLista?"Quitar de mi lista":"Agregar a mi lista"}>
+            📋<span className="btn-label">{enLista?"En lista":"Lista"}</span>
+          </button>
           {p._reproyectado ? (
             <a className="card-btn primary" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
@@ -1957,7 +2423,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, onFav, onCar
             </a>
           ) : (esVtex || p.supermercado === "Coto") ? (
             <button className={`card-btn ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
-              {enCarrito?"✓ En carrito":"+ Agregar"}
+              🛒<span className="btn-label">{enCarrito?"En carrito":"Agregar"}</span>
             </button>
           ) : null}
         </div>
@@ -2163,7 +2629,7 @@ function WelcomeModal({ onClose }) {
         <div className="welcome-hero">
           <div className="welcome-icon">🛒</div>
           <div className="welcome-title">¡Bienvenido a <span>SuperPrecios</span> AR!</div>
-          <div className="welcome-sub">Comparamos los precios de 9 supermercados de Argentina para que compres siempre al más barato.</div>
+          <div className="welcome-sub">Comparamos los precios de 7 supermercados de Argentina para que compres siempre al más barato.</div>
         </div>
         <div className="welcome-steps">
           {pasos.map((p, i) => (
@@ -2219,6 +2685,11 @@ function App() {
   });
   const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
   const [carritoItems, setCarritoItems] = React.useState([]);
+  const [listas, setListas] = React.useState([]);
+  const [listaActivaId, setListaActivaId] = React.useState(() => {
+    const saved = localStorage.getItem("sp_lista"); return saved ? Number(saved) : null;
+  });
+  const [listaItems, setListaItems] = React.useState([]);
   const [productosMap, setProductosMap] = React.useState({});
   const [regiones, setRegiones] = React.useState([]);
   const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
@@ -2301,6 +2772,7 @@ function App() {
   }
   function handleLogout() {
     setToken(null); setUsuario(null); setCarritoItems([]); setProductosMap({});
+    setListas([]); setListaItems([]);
     localStorage.removeItem("sp_token"); localStorage.removeItem("sp_refresh"); localStorage.removeItem("sp_user");
   }
 
@@ -2345,9 +2817,87 @@ function App() {
       .catch(() => {});
   }
 
+  // --- Listas de compras ----------------------------------------------------
+  function cargarListas() {
+    if (!token) return;
+    fetch(`${API}/listas`, { headers:{Authorization:`Bearer ${token}`} })
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        setListas(data);
+        // Si la lista guardada ya no existe (o nunca hubo), caemos a la primera.
+        setListaActivaId(prev => (prev && data.some(l => l.id === prev)) ? prev : (data[0]?.id ?? null));
+      })
+      .catch(() => {});
+  }
+
+  // Items de la lista activa: solo se usan para pintar el estado "En lista" de
+  // las tarjetas. La comparación con precios la pide ListaView por su cuenta.
+  function cargarListaItems() {
+    if (!token || !listaActivaId) { setListaItems([]); return; }
+    fetch(`${API}/listas/${listaActivaId}/items`, { headers:{Authorization:`Bearer ${token}`} })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setListaItems(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }
+
   React.useEffect(() => {
-    if (!token) { setCarritoItems([]); return; }
+    if (listaActivaId) localStorage.setItem("sp_lista", listaActivaId);
+    else localStorage.removeItem("sp_lista");
+    cargarListaItems();
+  }, [listaActivaId, token]);
+
+  // La identidad del item es el EAN cuando lo hay, el producto_id cuando no
+  // (mismo criterio que database._buscar_item).
+  const listaEans = React.useMemo(
+    () => new Set(listaItems.filter(i => i.ean).map(i => i.ean)), [listaItems]);
+  const listaPids = React.useMemo(
+    () => new Set(listaItems.filter(i => !i.ean).map(i => i.producto_id)), [listaItems]);
+  const carritoIds = React.useMemo(
+    () => new Set(carritoItems.map(i => i.producto_id)), [carritoItems]);
+
+  const toggleLista = React.useCallback(async (e, producto) => {
+    e.stopPropagation();
+    if (!token) { setShowAuth(true); return; }
+
+    // Sin lista todavía: creamos una al vuelo para no frenar al usuario con un
+    // formulario en el medio de agregar su primer producto.
+    let listaId = listaActivaId;
+    if (!listaId) {
+      try {
+        const res = await fetch(`${API}/listas`, {
+          method:"POST",
+          headers:{Authorization:`Bearer ${token}`, "Content-Type":"application/json"},
+          body: JSON.stringify({ nombre: "Mi lista" }),
+        });
+        if (!res.ok) return;
+        listaId = (await res.json()).id;
+        setListaActivaId(listaId);
+      } catch (err) { return; }
+    }
+
+    const ean = producto.ean;
+    const yaEsta = (ean && listaEans.has(ean)) || listaPids.has(producto.id);
+    // Optimista: el backend guarda por EAN, así que replicamos esa identidad.
+    setListaItems(prev => yaEsta
+      ? prev.filter(i => !(ean ? i.ean === ean : i.producto_id === producto.id))
+      : [...prev, { id:`tmp-${producto.id}`, ean: ean||null, producto_id: producto.id, cantidad:1 }]);
+    try {
+      const res = await fetch(`${API}/listas/${listaId}/items/${producto.id}`, {
+        method:"POST", headers:{Authorization:`Bearer ${token}`},
+      });
+      if (!res.ok) throw new Error();
+      cargarListas();
+      cargarListaItems();
+    } catch (err) {
+      cargarListaItems();  // revertimos releyendo el estado real
+    }
+  }, [token, listaActivaId, listaEans, listaPids]);
+
+  React.useEffect(() => {
+    if (!token) { setCarritoItems([]); setListas([]); setListaItems([]); return; }
     cargarCarrito();
+    cargarListas();
     fetch(`${API}/preferencia`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
@@ -2433,7 +2983,7 @@ function App() {
   }, [token]);
 
   React.useEffect(() => {
-    if (tab === "carrito") return;
+    if (tab === "carrito" || tab === "lista") return;
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
@@ -2534,7 +3084,7 @@ function App() {
             <div className="header-brand-icon">🛒</div>
             <div className="header-brand-text">
               <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 9 supermercados</div>
+              <div className="header-brand-sub">Compará precios entre 7 supermercados</div>
             </div>
           </a>
 
@@ -2553,12 +3103,17 @@ function App() {
             )}
 
             <button className={`header-btn ${tab==="favoritos"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
-              ❤️ Favoritos
+              ❤️<span className="btn-label">Favoritos</span>
               {stats.favoritos > 0 && <span className="header-btn-badge pink">{stats.favoritos}</span>}
             </button>
 
+            <button className={`header-btn ${tab==="lista"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("lista");}}>
+              📋<span className="btn-label">Mi lista</span>
+              {listaItems.length > 0 && <span className="header-btn-badge">{listaItems.length}</span>}
+            </button>
+
             <button className={`header-btn ${tab==="carrito"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");}}>
-              🛒 Carrito
+              🛒<span className="btn-label">Carrito</span>
               {totalCarrito > 0 && <span className="header-btn-badge yellow">{totalCarrito}</span>}
             </button>
 
@@ -2621,6 +3176,18 @@ function App() {
 
           {tab === "carrito" ? (
             <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token}/>
+          ) : tab === "lista" ? (
+            <ListaView
+              token={token}
+              regionId={regionId}
+              supersVisibles={supersVisibles}
+              listas={listas}
+              listaActivaId={listaActivaId}
+              setListaActivaId={setListaActivaId}
+              onListasChange={() => { cargarListas(); cargarListaItems(); }}
+              carritoIds={carritoIds}
+              onCarritoChange={cargarCarrito}
+            />
           ) : (
             <>
               {/* Stats */}
@@ -2692,8 +3259,10 @@ function App() {
                           key={p.id}
                           p={p}
                           enCarrito={carritoItems.some(i => i.producto_id===p.id)}
+                          enLista={(p.ean && listaEans.has(p.ean)) || listaPids.has(p.id)}
                           onFav={toggleFav}
                           onCarrito={toggleCarrito}
+                          onLista={toggleLista}
                           onOpen={setModalProducto}
                           supersVisibles={supersVisibles}
                         />
