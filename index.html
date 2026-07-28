@@ -808,6 +808,63 @@
     .lista-resumen-linea { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
     .lista-resumen-linea strong { color: var(--text-primary); font-weight: 900; }
     .lista-resumen-linea.mixta { color: var(--success, #059669); }
+    .lista-resumen-linea.pago { color: #7C3AED; }
+    /* La aclaración del tope no es decorativa: sin ella prometemos un ahorro que
+       el usuario puede no tener si ya consumió el tope del mes. */
+    .lista-resumen-nota {
+      font-size: 11.5px; color: var(--text-muted); font-weight: 600; line-height: 1.5;
+    }
+
+    /* Badge de promo bancaria en la fila de totales. El total de góndola queda
+       como número principal: el descuento depende de con qué pagues, así que no
+       puede pisar el precio que ve todo el mundo. */
+    .lg-promo {
+      margin-top: 7px; padding: 6px 7px; border-radius: 8px;
+      background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.18);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .lg-promo-ent {
+      font-size: 10px; font-weight: 800; color: #7C3AED;
+      text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.3;
+    }
+    .lg-promo-final { font-size: 13.5px; font-weight: 900; color: var(--text-primary); }
+    .lg-promo-det { font-size: 10px; font-weight: 700; color: var(--text-muted); line-height: 1.35; }
+    .lg-promo.pendiente { background: var(--surface); border-style: dashed; }
+    /* El ancho de la columna lo define su contenido: sin un width fijo acá, el
+       texto del badge la estiraría de 116 a ~205px y con 9 súperes la grilla
+       pasaría a scrollear el doble. Con el ancho clavado al de la columna, el
+       texto envuelve adentro. El min-height iguala todas las variantes para que
+       los botones "Cargar al carrito" queden alineados entre columnas. */
+    .lg-promo { width: 116px; min-height: 92px; justify-content: center; }
+    .lg-promo.vacia {
+      background: transparent; border-color: transparent; border-style: dashed;
+    }
+    .lg-promo.vacia .lg-promo-det { color: var(--text-muted); opacity: 0.75; }
+
+    /* Selector de medios de pago */
+    .mp-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
+      border-radius: var(--radius); border: 1.5px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all 0.15s; text-align: left;
+      width: 100%; font-family: inherit;
+    }
+    .mp-item:hover { border-color: #D3D8DF; background: var(--surface-2); }
+    .mp-item.on { border-color: #7C3AED; background: rgba(124,58,237,0.06); }
+    .mp-item-check {
+      width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border);
+      flex-shrink: 0; margin-top: 1px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; color: #fff; font-weight: 900;
+    }
+    .mp-item.on .mp-item-check { background: #7C3AED; border-color: #7C3AED; }
+    .mp-item-nombre { font-size: 13px; font-weight: 800; color: var(--text-primary); }
+    .mp-item-supers { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+    .mp-lista { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+    .mp-save {
+      margin-top: 14px; width: 100%; padding: 11px; border-radius: var(--radius);
+      border: none; background: #7C3AED; color: #fff; font-size: 13.5px;
+      font-weight: 800; cursor: pointer; font-family: inherit;
+    }
+    .mp-save:disabled { opacity: 0.6; cursor: default; }
 
     /* Un ÚNICO contenedor de scroll para toda la grilla: si scrollease cada fila
        por su cuenta, la fila de totales se desalinearía de las columnas.
@@ -894,6 +951,8 @@
       .lg-prod-img { width: 32px; height: 32px; }
       .lg-prod-nombre { font-size: 11.5px; }
       .lg-super, .lg-cell, .lg-total { min-width: 96px; }
+      .lg-promo { width: 96px; min-height: 104px; }
+      .lg-promo-det { font-size: 9.5px; }
       /* En móvil el "+" del hover no existe: la celda se toca y listo. */
       .lg-cell-add { display: none; }
     }
@@ -1996,6 +2055,164 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
 }
 
 // ---------------------------------------------------------------------------
+// PromoBadge — el descuento bancario en la fila de totales
+// ---------------------------------------------------------------------------
+// Descuento y reintegro se muestran SEPARADOS: "pagás $42.000 y te devuelven
+// $6.000" no es lo mismo que "pagás $36.000", y meterlos en un solo número
+// haría que la columna mienta sobre lo que sale del bolsillo ese día.
+function PromoBadge({ promo }) {
+  if (!promo) return null;
+  const { reintegro, paga_en_caja, costo_final, promos, pendientes } = promo;
+
+  // Carrefour: la promo existe y es real, pero su elegibilidad se decide por SKU
+  // y todavía no la scrapeamos. Se anuncia sin monto antes que estimarla mal.
+  if (!promos.length && pendientes && pendientes.length) {
+    const p = pendientes[0];
+    return (
+      <div className="lg-promo pendiente" title={`${p.entidad}: ${p.motivo}`}>
+        <span className="lg-promo-ent" style={{color:"var(--text-muted)"}}>💳 {p.entidad} {p.pct}%</span>
+        <span className="lg-promo-det">sobre productos adheridos</span>
+      </div>
+    );
+  }
+  // Sin promo pero con tarjetas cargadas: se dibuja igual, en gris. Dos motivos
+  // — mantiene los botones "Cargar al carrito" alineados entre columnas, y le
+  // dice al usuario que acá sus tarjetas no suman en vez de dejarlo adivinando.
+  if (!promos.length) {
+    return (
+      <div className="lg-promo vacia">
+        <span className="lg-promo-det">sin promo con tus medios de pago</span>
+      </div>
+    );
+  }
+
+  const detalle = promos
+    .map(p => `${p.entidad} ${p.pct}%${p.membresia ? ` (${p.membresia})` : ""}`
+            + (p.elegible != null && p.elegible < promo.total_gondola - 1
+               ? ` — aplica sobre ${fmt(p.elegible)} de ${fmt(promo.total_gondola)}` : "")
+            + (p.motivo ? ` — ${p.motivo}` : ""))
+    .join("\n");
+
+  // Cobertura parcial: sólo se muestra con UNA promo, porque con varias el
+  // "elegible" es de cada una y un único número no representaría a ninguna.
+  const parcial = (promos.length === 1 && promos[0].elegible != null
+                   && promos[0].elegible < promo.total_gondola - 1)
+    ? promos[0].elegible : null;
+
+  return (
+    <div className="lg-promo" title={detalle}>
+      <span className="lg-promo-ent">💳 {promos.map(p => `${p.entidad} ${p.pct}%`).join(" + ")}</span>
+      <span className="lg-promo-final">{fmt(costo_final)}</span>
+      {/* Una sola línea de detalle, por orden de importancia. Que la promo no
+          cubra todo el carrito hay que decirlo — si no, el usuario ve "40%" y
+          espera un ahorro cuatro veces más grande —, pero el reintegro manda:
+          es la diferencia entre lo que paga hoy y lo que recupera después. La
+          cobertura parcial queda igual en el tooltip. */}
+      <span className="lg-promo-det">
+        {reintegro > 0
+          ? <>pagás {fmt(paga_en_caja)} · te devuelven {fmt(reintegro)}</>
+          : parcial
+            ? <>sobre {fmt(parcial)} del carrito</>
+            : <>ya con el descuento aplicado</>}
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MediosPagoModal — qué tarjetas/billeteras tiene el usuario
+// ---------------------------------------------------------------------------
+// El catálogo sale de las promos activas y no de una tabla fija: si una entidad
+// no tiene promo en ningún súper, tildarla no cambiaría ningún total y sólo
+// haría más larga la lista.
+function MediosPagoModal({ token, onClose, onGuardado }) {
+  const [entidades, setEntidades] = React.useState([]);
+  const [elegidas, setElegidas]   = React.useState(null);   // null = todavía cargando
+  const [guardando, setGuardando] = React.useState(false);
+
+  React.useEffect(() => {
+    Promise.all([
+      fetch(`${API}/medios-pago`).then(r => r.json()),
+      fetch(`${API}/mis-medios-pago`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ])
+      .then(([cat, mias]) => {
+        setEntidades(cat.entidades || []);
+        setElegidas(new Set(mias.entidades || []));
+      })
+      .catch(() => { setEntidades([]); setElegidas(new Set()); });
+  }, [token]);
+
+  function toggle(ent) {
+    setElegidas(prev => {
+      const s = new Set(prev);
+      s.has(ent) ? s.delete(ent) : s.add(ent);
+      return s;
+    });
+  }
+
+  async function guardar() {
+    setGuardando(true);
+    try {
+      await fetch(`${API}/mis-medios-pago`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ entidades: [...elegidas] }),
+      });
+      onGuardado([...elegidas]);
+      onClose();
+    } catch (e) {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">💳 Mis medios de pago</div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p style={{fontSize:12.5,color:"var(--text-secondary)",lineHeight:1.6,marginBottom:14}}>
+            Tildá los bancos, billeteras y tarjetas que usás. Con eso calculamos cuánto te
+            sale <strong>a vos</strong> la lista en cada súper, con los descuentos del día aplicados.
+          </p>
+
+          {elegidas === null ? (
+            <p style={{fontSize:13,color:"var(--text-muted)"}}>Cargando…</p>
+          ) : entidades.length === 0 ? (
+            <p style={{fontSize:13,color:"var(--text-muted)"}}>No hay promociones cargadas por ahora.</p>
+          ) : (
+            <div className="mp-lista">
+              {entidades.map(e => {
+                const on = elegidas.has(e.entidad);
+                return (
+                  <button key={e.entidad} className={`mp-item ${on ? "on" : ""}`}
+                    onClick={() => toggle(e.entidad)}>
+                    <span className="mp-item-check">{on ? "✓" : ""}</span>
+                    <span style={{minWidth:0}}>
+                      <span className="mp-item-nombre">{e.entidad}</span>
+                      <div className="mp-item-supers">
+                        {e.supers.join(" · ")}
+                        {e.membresias.length > 0 && <> — requiere {e.membresias.join(" o ")}</>}
+                      </div>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <button className="mp-save" disabled={guardando || elegidas === null} onClick={guardar}>
+            {guardando ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ListaView — grilla producto x supermercado
 // ---------------------------------------------------------------------------
 // Una fila por producto, una columna por súper. Las columnas vienen ordenadas
@@ -2008,8 +2225,20 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
   const [error, setError]       = React.useState(null);
   const [ocupado, setOcupado]   = React.useState(null);
   const [aviso, setAviso]       = React.useState(null);
+  const [showPagos, setShowPagos] = React.useState(false);
+  const [misPagos, setMisPagos]   = React.useState([]);
 
   const supersKey = supersVisibles.join(",");
+
+  // El backend ya usa los medios de pago guardados sin que se los mandemos; esto
+  // es sólo para el contador del botón y para saber si hay que invitar a cargarlos.
+  React.useEffect(() => {
+    if (!token) { setMisPagos([]); return; }
+    fetch(`${API}/mis-medios-pago`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => setMisPagos(d.entidades || []))
+      .catch(() => {});
+  }, [token]);
 
   const cargar = React.useCallback(() => {
     if (!token || !listaActivaId) { setData(null); setCargando(false); return; }
@@ -2126,7 +2355,20 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
       )}
       <button className="lista-btn" onClick={nuevaLista}>+ Nueva lista</button>
       {listaActivaId && <button className="lista-btn danger" onClick={borrarLista}>Borrar</button>}
+      <button className="lista-btn" onClick={() => setShowPagos(true)}
+        style={misPagos.length ? {borderColor:"rgba(124,58,237,0.35)", color:"#7C3AED"} : null}
+        title="Elegí tus tarjetas para ver los descuentos bancarios aplicados">
+        💳<span className="btn-label"> Medios de pago</span>
+        {misPagos.length > 0 && <> ({misPagos.length})</>}
+      </button>
       {aviso && <span style={{fontSize:12,fontWeight:700,color:"var(--info)"}}>{aviso}</span>}
+      {/* Va acá dentro y no en el return final porque el botón que lo abre está
+          en este toolbar, que también se renderiza en los estados de vacío,
+          carga y error — ahí el modal tiene que poder abrirse igual. */}
+      {showPagos && (
+        <MediosPagoModal token={token} onClose={() => setShowPagos(false)}
+          onGuardado={ents => { setMisPagos(ents); cargar(); }}/>
+      )}
     </div>
   );
 
@@ -2175,6 +2417,14 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
   const mixta       = data.compra_mixta;
   const ahorroMixta = mejorComp && mixta ? mejorComp.total_estimado - mixta.total : 0;
 
+  // Con medios de pago cargados hay DOS respuestas a "cuál conviene": la de
+  // góndola (la de arriba, que vale para cualquiera) y la de este usuario con
+  // sus tarjetas. Se muestran las dos y sólo cuando difieren, para no repetir.
+  const costoFinal  = s => (s.promo_bancaria ? s.promo_bancaria.costo_final : s.total_estimado);
+  const mejorPago   = completos.reduce((a, b) => (!a || costoFinal(b) < costoFinal(a) ? b : a), null);
+  const ahorroPago  = mejorComp && mejorPago ? mejorComp.total_estimado - costoFinal(mejorPago) : 0;
+  const hayTope     = supers.some(s => (s.promo_bancaria?.promos || []).some(p => p.motivo?.includes("tope")));
+
   return (
     <div>
       {toolbar}
@@ -2195,6 +2445,22 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
             le falta{masBarato.faltantes > 1 ? "n" : ""} {masBarato.faltantes} producto{masBarato.faltantes > 1 ? "s" : ""}.
           </div>
         )}
+        {mejorPago && ahorroPago > 0 && (
+          <div className="lista-resumen-linea pago">
+            💳 Pagando con {(mejorPago.promo_bancaria.promos || []).map(p => `${p.entidad} ${p.pct}%`).join(" + ")}
+            {" "}te sale <strong>{fmt(costoFinal(mejorPago))}</strong> en {mejorPago.supermercado}
+            {mejorComp && mejorPago.supermercado !== mejorComp.supermercado
+              ? <> — {fmt(ahorroPago)} menos que {mejorComp.supermercado}, que es el más barato de góndola</>
+              : <> — ahorrás {fmt(ahorroPago)}</>}
+          </div>
+        )}
+        {misPagos.length === 0 && (
+          <div className="lista-resumen-linea">
+            💳 <button className="lista-btn" style={{padding:"2px 8px",fontSize:12}}
+              onClick={() => setShowPagos(true)}>Cargá tus medios de pago</button>
+            {" "}y te decimos cuánto te sale con tus descuentos bancarios.
+          </div>
+        )}
         {mixta && (
           <div className="lista-resumen-linea mixta">
             💚 Comprando cada cosa donde está más barata: <strong>{fmt(mixta.total)}</strong>
@@ -2204,6 +2470,12 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
         {data.sin_precio > 0 && (
           <div className="lista-resumen-linea">
             ℹ️ {data.sin_precio} producto{data.sin_precio > 1 ? "s" : ""} sin precio en ningún súper visible — no entra{data.sin_precio > 1 ? "n" : ""} en los totales.
+          </div>
+        )}
+        {hayTope && (
+          <div className="lista-resumen-nota">
+            Los topes de reintegro son por mes o por semana y por cuenta: calculamos suponiendo
+            que todavía no lo usaste. Si ya lo consumiste, el ahorro real va a ser menor.
           </div>
         )}
       </div>
@@ -2310,6 +2582,7 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
                       ? "lista completa"
                       : `estimado — falta${s.faltantes > 1 ? "n" : ""} ${s.faltantes}`}
                   </div>
+                  <PromoBadge promo={s.promo_bancaria}/>
                   <button className="lg-total-btn" disabled={ocupado === s.supermercado || s.cubiertos === 0}
                     onClick={() => volcar(s.supermercado)}>
                     {ocupado === s.supermercado ? "…" : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
