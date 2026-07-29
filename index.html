@@ -1084,7 +1084,7 @@
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
       mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
     }
-    .logos-track { display: flex; align-items: center; gap: 30px; width: max-content; animation: marquee 30s linear infinite; }
+    .logos-track { display: flex; align-items: center; gap: 38px; width: max-content; animation: marquee 30s linear infinite; }
     .logos-marquee:hover .logos-track { animation-play-state: paused; }
     .logos-item { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; }
     .logos-item > span { font-size: 12.5px; font-weight: 800; color: var(--text-secondary); white-space: nowrap; }
@@ -1258,11 +1258,29 @@ function useLogoSources(nombre) {
   return { src, onError };
 }
 
-function SuperLogo({ nombre, size = 22, bare = false }) {
+// `ancho` rompe la caja cuadrada. Casi todos los logos son wordmarks apaisados
+// y con `object-fit: contain` adentro de un cuadrado el que manda es el ancho:
+// subir el lado de 28 a 44 px casi no se nota y solo agrega aire arriba y abajo.
+// Dándole el ancho disponible ("100%" en la grilla, "auto" en el marquee) el
+// logo se ve al doble con el mismo alto.
+// `recorte`: el archivo de Cordiez es un wordmark (284x46) metido en un lienzo
+// CUADRADO de 300x300 con relleno arriba y abajo — medido a pixel con un canvas,
+// el contenido real ocupa apenas el 15% de la altura del archivo. `contain` lo
+// respeta tal cual y por más que se agrande la caja, ese relleno se agranda con
+// él. Pasando un `recorte` (relación ancho/alto de la franja útil) se cambia a
+// `object-fit: cover`, que rellena la caja entera y recorta el sobrante arriba y
+// abajo en vez de encogerse para que quepa. Al estar el contenido centrado
+// verticalmente en el archivo, el recorte cae simétrico y no corta el texto.
+function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = null, recorte = null }) {
   const { src, onError } = useLogoSources(nombre);
   if (!src) return null;
   if (bare) {
-    return <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:size, height:size, objectFit:"contain", display:"block"}}/>;
+    return <img src={src} alt={nombre} loading="lazy" onError={onError}
+      style={recorte
+        ? {width:ancho || size, aspectRatio:recorte, maxWidth:maxAncho || undefined,
+           objectFit:"cover", objectPosition:"center", display:"block"}
+        : {width:ancho || size, height:size, maxWidth:maxAncho || undefined,
+           objectFit:"contain", display:"block"}}/>;
   }
   const pad = Math.round(size * 0.1);
   return (
@@ -1272,11 +1290,17 @@ function SuperLogo({ nombre, size = 22, bare = false }) {
   );
 }
 
-function SuperBadge({ nombre, size = 20, showText = true, bare = false }) {
+function SuperBadge({ nombre, size = 20, showText = true, bare = false, ancho = null, recorte = null }) {
   const { src, onError } = useLogoSources(nombre);
   const showLogo = !!src;
   if (showLogo && bare) {
-    return <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>;
+    // Ver el comentario de `recorte` en SuperLogo: Cordiez necesita `cover` en
+    // vez de `contain` porque su archivo tiene relleno vertical baked-in.
+    return <img src={src} alt={nombre} loading="lazy" onError={onError}
+      style={recorte
+        ? {width:ancho || size, aspectRatio:recorte, objectFit:"cover",
+           objectPosition:"center", display:"block", flexShrink:0}
+        : {width:ancho || size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>;
   }
   return (
     <span style={{display:"inline-flex", alignItems:"center", gap:5}}>
@@ -1290,6 +1314,25 @@ function SuperBadge({ nombre, size = 20, showText = true, bare = false }) {
       {showLogo && showText && <span style={{fontSize:12, fontWeight:800, color:"#374151"}}>{nombre}</span>}
     </span>
   );
+}
+
+// Sin el nombre al lado, el logo es la única forma de identificar la columna.
+// Los wordmarks apaisados (Carrefour, Coto, MasOnline...) ya llegan a su tamaño
+// máximo con ancho:100% — el ancho de la columna los limita antes que la altura,
+// así que pedirles más alto no cambia nada.
+//
+// VEA y Disco son logos CUADRADOS de borde a borde: con altura chica (60) el
+// límite pasaba a ser la altura, no la columna, y quedaban más chicos de lo que
+// el espacio disponible permite. Cordiez es un caso aparte: el archivo es un
+// wordmark horizontal exportado en un lienzo cuadrado con relleno arriba y
+// abajo, así que a la MISMA altura que VEA/Disco se ve más chico — no hay
+// forma de agrandarlo sin agrandar también el lienzo entero.
+//
+// Por eso a las tres se les pide una altura bien por encima de la columna:
+// así el límite pasa a ser siempre el ancho, que es el máximo real disponible.
+const _LOGOS_LIMITADOS_POR_ANCHO = new Set(["VEA", "Disco", "Cordiez"]);
+function _ALTO_LOGO_GRILLA(nombre) {
+  return _LOGOS_LIMITADOS_POR_ANCHO.has(nombre) ? 200 : 44;
 }
 
 function promoColor(promo) {
@@ -2590,8 +2633,8 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
               {supers.map(s => (
                 <th className="lg-super" key={s.supermercado}>
                   <div className="lg-super-inner">
-                    <SuperBadge nombre={s.supermercado} size={28} bare={true}/>
-                    <span>{s.supermercado}</span>
+                    <SuperBadge nombre={s.supermercado} size={_ALTO_LOGO_GRILLA(s.supermercado)} ancho="100%"
+                      recorte={s.supermercado === "Cordiez" ? 4.3 : null} bare={true}/>
                   </div>
                 </th>
               ))}
@@ -3553,8 +3596,13 @@ function App() {
                 <div className="logos-track" aria-hidden="true">
                   {[...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS].map((s, i) => (
                     <span className="logos-item" key={i}>
-                      <SuperLogo nombre={s} size={20} bare={true}/>
-                      <span>{s}</span>
+                      {/* Cordiez usa `recorte`: es un wordmark metido en un lienzo
+                          cuadrado con relleno arriba y abajo (ver comentario en
+                          SuperLogo), así que necesita `cover` en vez de más altura —
+                          más altura solo agranda el relleno junto con el texto. */}
+                      {s === "Cordiez"
+                        ? <SuperLogo nombre={s} ancho={110} recorte={4.3} bare={true}/>
+                        : <SuperLogo nombre={s} size={38} ancho="auto" maxAncho={130} bare={true}/>}
                     </span>
                   ))}
                 </div>
