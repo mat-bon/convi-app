@@ -834,22 +834,56 @@
        texto del badge la estiraría de 116 a ~205px y con 9 súperes la grilla
        pasaría a scrollear el doble. Con el ancho clavado al de la columna, el
        texto envuelve adentro. El min-height iguala todas las variantes para que
-       los botones "Cargar al carrito" queden alineados entre columnas. */
-    .lg-promo { width: 116px; min-height: 92px; justify-content: center; }
+       los botones "Cargar al carrito" queden alineados entre columnas: está
+       calculado para el peor caso, que es la línea de detalle en dos renglones
+       ("sólo con Plan Sueldo Singular"). Si se achica, esa variante crece sola
+       y desalinea su columna. */
+    .lg-promo { width: 116px; min-height: 106px; justify-content: center; }
     .lg-promo.vacia {
       background: transparent; border-color: transparent; border-style: dashed;
     }
     .lg-promo.vacia .lg-promo-det { color: var(--text-muted); opacity: 0.75; }
 
     /* Selector de medios de pago */
+    /* .mp-item dejó de ser un <button> al meterle adentro los chips de
+       categoría: un botón no puede contener otro botón. Ahora es el contenedor
+       y el clickable es .mp-item-head. */
     .mp-item {
-      display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
       border-radius: var(--radius); border: 1.5px solid var(--border);
-      background: var(--surface); cursor: pointer; transition: all 0.15s; text-align: left;
-      width: 100%; font-family: inherit;
+      background: var(--surface); transition: all 0.15s; overflow: hidden;
+      /* .mp-lista es flex column con max-height: sin esto los items se achican
+         para entrar y `overflow: hidden` recorta la segunda fila de chips. Antes
+         no se notaba porque todos medían lo mismo. */
+      flex-shrink: 0;
     }
-    .mp-item:hover { border-color: #D3D8DF; background: var(--surface-2); }
+    .mp-item:hover { border-color: #D3D8DF; }
     .mp-item.on { border-color: #7C3AED; background: rgba(124,58,237,0.06); }
+    .mp-item-head {
+      display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
+      background: none; border: none; cursor: pointer; transition: background 0.15s;
+      text-align: left; width: 100%; font-family: inherit;
+    }
+    .mp-item:not(.on) .mp-item-head:hover { background: var(--surface-2); }
+    /* 38px = 10 de padding + 18 del check + 10 del gap: los chips arrancan
+       alineados con el nombre del banco, no con el tilde. */
+    .mp-tramos { padding: 0 10px 9px 38px; }
+    .mp-tramos-tit {
+      font-size: 10.5px; font-weight: 700; color: var(--text-muted);
+      margin-bottom: 6px; line-height: 1.45;
+    }
+    /* Entidades sin tramo base (NaranjaX): mientras no elija categoría el
+       usuario no ve ningún descuento, así que el aviso no puede ser gris de
+       fondo como el de las que igual dan algo. */
+    .mp-tramos-tit.obligatoria { color: var(--warning); }
+    .mp-tramos-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .mp-tramo {
+      padding: 5px 9px; border-radius: 999px; border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 11.5px; font-weight: 700;
+      color: var(--text-secondary); cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .mp-tramo:hover { border-color: #B79BEE; }
+    .mp-tramo.on { border-color: #7C3AED; background: #7C3AED; color: #fff; }
     .mp-item-check {
       width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border);
       flex-shrink: 0; margin-top: 1px; display: flex; align-items: center;
@@ -951,7 +985,7 @@
       .lg-prod-img { width: 32px; height: 32px; }
       .lg-prod-nombre { font-size: 11.5px; }
       .lg-super, .lg-cell, .lg-total { min-width: 96px; }
-      .lg-promo { width: 96px; min-height: 104px; }
+      .lg-promo { width: 96px; min-height: 122px; }
       .lg-promo-det { font-size: 9.5px; }
       /* En móvil el "+" del hover no existe: la celda se toca y listo. */
       .lg-cell-add { display: none; }
@@ -2064,14 +2098,16 @@ function PromoBadge({ promo }) {
   if (!promo) return null;
   const { reintegro, paga_en_caja, costo_final, promos, pendientes } = promo;
 
-  // Carrefour: la promo existe y es real, pero su elegibilidad se decide por SKU
-  // y todavía no la scrapeamos. Se anuncia sin monto antes que estimarla mal.
+  // La promo existe y es real, pero todavía no se puede poner un número: o su
+  // elegibilidad se decide por SKU y no la scrapeamos (Carrefour), o depende de
+  // una categoría de cliente que el usuario no declaró (NaranjaX, que no tiene
+  // tramo base). Se anuncia sin monto antes que estimarla mal.
   if (!promos.length && pendientes && pendientes.length) {
     const p = pendientes[0];
     return (
       <div className="lg-promo pendiente" title={`${p.entidad}: ${p.motivo}`}>
         <span className="lg-promo-ent" style={{color:"var(--text-muted)"}}>💳 {p.entidad} {p.pct}%</span>
-        <span className="lg-promo-det">sobre productos adheridos</span>
+        <span className="lg-promo-det">{p.detalle || "sobre productos adheridos"}</span>
       </div>
     );
   }
@@ -2099,21 +2135,32 @@ function PromoBadge({ promo }) {
                    && promos[0].elegible < promo.total_gondola - 1)
     ? promos[0].elegible : null;
 
+  // El back ya prefiere las promos sin requisito, así que si igual quedó una
+  // con membresía es porque no había alternativa: hay que decirlo. Sin esto el
+  // badge muestra "35%" a cualquiera que tenga Patagonia, cuando ese tramo es
+  // sólo para plan sueldo Singular.
+  const requisitos = [...new Set(promos.map(p => p.membresia).filter(Boolean))];
+
   return (
     <div className="lg-promo" title={detalle}>
       <span className="lg-promo-ent">💳 {promos.map(p => `${p.entidad} ${p.pct}%`).join(" + ")}</span>
       <span className="lg-promo-final">{fmt(costo_final)}</span>
-      {/* Una sola línea de detalle, por orden de importancia. Que la promo no
-          cubra todo el carrito hay que decirlo — si no, el usuario ve "40%" y
-          espera un ahorro cuatro veces más grande —, pero el reintegro manda:
-          es la diferencia entre lo que paga hoy y lo que recupera después. La
-          cobertura parcial queda igual en el tooltip. */}
+      {/* Una sola línea de detalle, por orden de importancia — y una sola para
+          que todos los badges midan igual y los botones de abajo queden
+          alineados. El requisito va primero: si el usuario no tiene esa
+          membresía el ahorro no es menor, es cero, y eso pesa más que saber si
+          se cobra en caja o después. Después el reintegro, que es la diferencia
+          entre lo que paga hoy y lo que recupera. Y por último la cobertura
+          parcial — si no, el usuario ve "40%" y espera cuatro veces más. Lo que
+          no entra en la línea sigue estando en el tooltip. */}
       <span className="lg-promo-det">
-        {reintegro > 0
-          ? <>pagás {fmt(paga_en_caja)} · te devuelven {fmt(reintegro)}</>
-          : parcial
-            ? <>sobre {fmt(parcial)} del carrito</>
-            : <>ya con el descuento aplicado</>}
+        {requisitos.length
+          ? <>sólo con {requisitos.join(" y ")}</>
+          : reintegro > 0
+            ? <>pagás {fmt(paga_en_caja)} · te devuelven {fmt(reintegro)}</>
+            : parcial
+              ? <>sobre {fmt(parcial)} del carrito</>
+              : <>ya con el descuento aplicado</>}
       </span>
     </div>
   );
@@ -2128,6 +2175,7 @@ function PromoBadge({ promo }) {
 function MediosPagoModal({ token, onClose, onGuardado }) {
   const [entidades, setEntidades] = React.useState([]);
   const [elegidas, setElegidas]   = React.useState(null);   // null = todavía cargando
+  const [tramos, setTramos]       = React.useState({});     // {entidad: [categoría]}
   const [guardando, setGuardando] = React.useState(false);
 
   React.useEffect(() => {
@@ -2138,15 +2186,29 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
       .then(([cat, mias]) => {
         setEntidades(cat.entidades || []);
         setElegidas(new Set(mias.entidades || []));
+        setTramos(mias.membresias || {});
       })
-      .catch(() => { setEntidades([]); setElegidas(new Set()); });
+      .catch(() => { setEntidades([]); setElegidas(new Set()); setTramos({}); });
   }, [token]);
 
   function toggle(ent) {
+    const estaba = elegidas.has(ent);
     setElegidas(prev => {
       const s = new Set(prev);
-      s.has(ent) ? s.delete(ent) : s.add(ent);
+      estaba ? s.delete(ent) : s.add(ent);
       return s;
+    });
+    // Destildar el banco se lleva su categoría: si no, volver a tildarlo
+    // reviviría un escalón viejo que el usuario ya no está mirando.
+    if (estaba) setTramos(prev => { const n = { ...prev }; delete n[ent]; return n; });
+  }
+
+  function toggleTramo(ent, cat) {
+    setTramos(prev => {
+      const actuales = prev[ent] || [];
+      return { ...prev, [ent]: actuales.includes(cat)
+        ? actuales.filter(c => c !== cat)
+        : [...actuales, cat] };
     });
   }
 
@@ -2156,7 +2218,7 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
       await fetch(`${API}/mis-medios-pago`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ entidades: [...elegidas] }),
+        body: JSON.stringify({ entidades: [...elegidas], membresias: tramos }),
       });
       onGuardado([...elegidas]);
       onClose();
@@ -2176,6 +2238,7 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
           <p style={{fontSize:12.5,color:"var(--text-secondary)",lineHeight:1.6,marginBottom:14}}>
             Tildá los bancos, billeteras y tarjetas que usás. Con eso calculamos cuánto te
             sale <strong>a vos</strong> la lista en cada súper, con los descuentos del día aplicados.
+            Donde el banco dé distinto descuento según el tipo de cliente, elegí también tu categoría.
           </p>
 
           {elegidas === null ? (
@@ -2185,19 +2248,44 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
           ) : (
             <div className="mp-lista">
               {entidades.map(e => {
-                const on = elegidas.has(e.entidad);
+                const on    = elegidas.has(e.entidad);
+                const mias  = tramos[e.entidad] || [];
+                // Varios bancos dan distinto descuento según la categoría del
+                // cliente. Los chips aparecen sólo con el banco tildado: si no,
+                // la lista entera se llena de opciones que no vienen al caso.
+                const hayCat = on && e.membresias.length > 0;
                 return (
-                  <button key={e.entidad} className={`mp-item ${on ? "on" : ""}`}
-                    onClick={() => toggle(e.entidad)}>
-                    <span className="mp-item-check">{on ? "✓" : ""}</span>
-                    <span style={{minWidth:0}}>
-                      <span className="mp-item-nombre">{e.entidad}</span>
-                      <div className="mp-item-supers">
-                        {e.supers.join(" · ")}
-                        {e.membresias.length > 0 && <> — requiere {e.membresias.join(" o ")}</>}
+                  <div key={e.entidad} className={`mp-item ${on ? "on" : ""}`}>
+                    <button className="mp-item-head" onClick={() => toggle(e.entidad)}>
+                      <span className="mp-item-check">{on ? "✓" : ""}</span>
+                      <span style={{minWidth:0}}>
+                        <span className="mp-item-nombre">{e.entidad}</span>
+                        <div className="mp-item-supers">
+                          {e.supers.join(" · ")}
+                          {!on && e.membresias.length > 0 && <> — con categorías</>}
+                        </div>
+                      </span>
+                    </button>
+                    {hayCat && (
+                      <div className="mp-tramos">
+                        <div className={`mp-tramos-tit ${
+                              e.solo_con_membresia && mias.length === 0 ? "obligatoria" : ""}`}>
+                          {e.solo_con_membresia
+                            ? "Acá todos los descuentos dependen de la categoría — sin elegirla no podemos calcularlos."
+                            : "¿Tenés alguna de estas? Suelen tener más descuento."}
+                        </div>
+                        <div className="mp-tramos-chips">
+                          {e.membresias.map(cat => (
+                            <button key={cat}
+                              className={`mp-tramo ${mias.includes(cat) ? "on" : ""}`}
+                              onClick={() => toggleTramo(e.entidad, cat)}>
+                              {mias.includes(cat) ? "✓ " : ""}{cat}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </span>
-                  </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -2448,6 +2536,16 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
         {mejorPago && ahorroPago > 0 && (
           <div className="lista-resumen-linea pago">
             💳 Pagando con {(mejorPago.promo_bancaria.promos || []).map(p => `${p.entidad} ${p.pct}%`).join(" + ")}
+            {/* Mismo motivo que en el badge: esta línea es la que decide a qué
+                súper va el usuario, así que no puede prometer un tramo que
+                depende de una cartera que quizá no tenga. Va acá, pegado a la
+                entidad, y no al final: al final se lee como una condición del
+                ahorro contra el otro súper, que es otra cosa. */}
+            {(() => {
+              const req = [...new Set((mejorPago.promo_bancaria.promos || [])
+                .map(p => p.membresia).filter(Boolean))];
+              return req.length ? <> (sólo con {req.join(" y ")})</> : null;
+            })()}
             {" "}te sale <strong>{fmt(costoFinal(mejorPago))}</strong> en {mejorPago.supermercado}
             {mejorComp && mejorPago.supermercado !== mejorComp.supermercado
               ? <> — {fmt(ahorroPago)} menos que {mejorComp.supermercado}, que es el más barato de góndola</>
