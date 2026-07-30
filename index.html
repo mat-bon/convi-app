@@ -1277,12 +1277,23 @@ const SUPER_LOGOS_FALLBACK = {
 // o más, salvo las marcadas 32px, que quedan un poco blandas en pantalla retina
 // pero siguen leyéndose mejor que una inicial suelta.
 //
-// De las 33 entidades activas hay 14 sin entrada, y no es por olvido:
-//   · Columbia, Coinag, Galicia, Municipal, Ciudad, Nación, ICBC y Cuenta DNI
-//     no publican un ícono usable — o el sitio no responde, o el único favicon
-//     que hay es de 16px y se ve deshecho a este tamaño.
+// SEGUNDA FUENTE — el ícono de la app (bloque de abajo, `mzstatic.com`). Los
+// bancos que no publican un favicon usable sí publican su app, y el ícono de la
+// app es justo lo que uno reconoce del banco. Sale del catálogo de la App Store
+// (`itunes.apple.com/search`, público y sin clave), que devuelve el arte que
+// subió la propia marca: es fuente primaria, no la copia de un tercero, y ya
+// viene cuadrado. Se pide a 128px —el chip mide 24, o sea 72 en retina— y se
+// verificó de cada uno que el VENDEDOR sea el banco y no una app homónima.
+// Si algún día Apple cambia la ruta del arte, el onError de PagoLogo lo baja al
+// monograma solo; no hay que hacer nada.
+//
+// De las 33 entidades activas quedan 5 sin entrada, y no es por olvido:
 //   · "Jubilados y pensionados", "Todos los medios de pago", "Billeteras
 //     virtuales" y "Ciudadanía Porteña" no son una marca: no hay logo que poner.
+//   · "Tarjeta Dino" no tiene ícono propio y ninguna de las dos vías sirve: el
+//     logo de la cadena es el wordmark apaisado de SUPER MAMI, que dentro del
+//     cuadrado de 24px queda en una mancha, y la app de Dinosaurio S.A. ("Dini")
+//     es otra submarca — una "d" lima que nadie asocia con Tarjeta Dino.
 // Todas ésas caen al monograma de PagoLogo, igual que cualquier entidad nueva
 // que aparezca sola después de un scrape (el catálogo es dinámico).
 const _ICONO_CARREFOUR = "https://carrefourar.vtexassets.com/assets/vtex/assets-builder/carrefourar.theme/17.1.1/logo/isotipo___6ef9d993a624c69c95cffe86770b1517.svg";
@@ -1310,6 +1321,19 @@ const PAGO_LOGOS = {
   "Banco Patagonia":   "https://www.bancopatagonia.com.ar/favicon.ico",                                  //  32
   "Banco Credicoop":   "https://www.bancocredicoop.coop/favicon.ico",                                    //  32
   "Beneficios ANSES":  "https://www.anses.gob.ar/themes/custom/ansessite/favicon25.png",                 //  32
+
+  // Ícono de la app oficial (ver "SEGUNDA FUENTE" arriba). Al lado, la app y el
+  // vendedor con el que se verificó que fuera la del banco correcto.
+  "Banco Ciudad":      "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/f3/41/98/f341987e-3c0c-53bd-a128-114fee56d0fd/AppIcon-0-1x_U007emarketing-0-8-0-sRGB-85-220-0.png/128x128bb.png", // Banca Móvil Ciudad — Banco Ciudad de Buenos Aires
+  "Banco Nación":      "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/70/1a/2c/701a2ca4-3f74-aa67-9efb-b572b87e9bd1/AppIcon-1x_U007emarketing-0-11-0-85-220-0.png/128x128bb.png",      // Nueva BNA+ — Banco de la Nación Argentina. Es la app nueva a propósito: el ícono de la vieja "BNA+" es celeste sobre blanco y a 24px se lava
+  "Banco Galicia":     "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f7/53/d6/f753d6de-5365-9e45-1d13-d4dd5ee7db3b/AppIcon-0-0-1x_U007emarketing-0-8-0-sRGB-85-220.png/128x128bb.png", // Galicia - El banco en tu celu — Banco de Galicia y Buenos Aires
+  "Banco Columbia":    "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/98/53/1e/98531e9e-a717-81fd-216c-83ea58640dc3/AppIcon-1x_U007emarketing-0-8-0-85-220-0.png/128x128bb.png",       // Columbia - Banco Móvil — Banco Columbia
+  "Banco Coinag":      "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bb/4e/70/bb4e70e9-34ff-4f10-f8b4-e036a91e9e7e/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/128x128bb.png",        // Coinapp — Banco Coinag
+  "Banco Municipal":   "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/db/aa/af/dbaaaf92-aa63-1399-305a-72fd4b10c23c/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/128x128bb.png",        // Munibanking — Banco Municipal de Rosario. La otra app del banco (MuniAPP) trae el mismo isotipo pero sobre blanco: a 24px pesa menos
+  "ICBC":              "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ad/37/75/ad37750e-f2d1-b762-b15a-6e7304f54711/AppIcon-0-0-1x_U007emarketing-0-11-0-0-85-220.png/128x128bb.png",  // ICBC Mobile Banking (Argentina) — ICBC Argentina, no el ICBC de Hong Kong
+  "Cuenta DNI":        "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/3b/af/27/3baf27cd-e71e-e451-6f2b-6b1236c62bed/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png",     // Cuenta DNI — Banco de la Provincia de Buenos Aires
+  "Billetera Santa Fe / Plus Pagos":
+                       "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/41/27/cd/4127cd70-2e23-8cac-55c3-87f70597782f/SantaFeIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png", // Billetera Santa Fe — Administradora San Juan (Plus Pagos)
 };
 
 const BASE_URLS = {
