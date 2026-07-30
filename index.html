@@ -897,6 +897,11 @@
       text-align: left; width: 100%; font-family: inherit;
     }
     .mp-item:not(.on) .mp-item-head:hover { background: var(--surface-2); }
+    /* La entidad que aplica siempre va deshabilitada, pero NO atenuada: no está
+       "no disponible", está concedida. Bajarle la opacidad como a un control
+       inactivo diría lo contrario de lo que pasa. Solo se le saca el cursor de
+       mano, que es lo que prometería que hay algo para tocar. */
+    .mp-item.fija .mp-item-head { cursor: default; opacity: 1; }
     /* Los chips arrancan alineados con el NOMBRE del banco, no con el tilde. La
        sangría se escribe sumada en vez de resuelta (era un 38px pelado) porque
        depende de tres medidas de .mp-item-head: si cambia el chip del logo o el
@@ -2533,22 +2538,33 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
           ) : (
             <div className="mp-lista">
               {entidades.map(e => {
-                const on    = elegidas.has(e.entidad);
+                // `sin_requisito` no es una opción sino un hecho: la promo
+                // aplica pagues como pagues, así que va tildada y no se puede
+                // destildar — destildarla solo serviría para esconderse un
+                // descuento propio. El motor la aplica igual (no depende de lo
+                // que se guarde acá), pero si la pantalla la mostrara en blanco
+                // parecería que falta tildar algo para tenerla.
+                const fija  = !!e.sin_requisito;
+                const on    = fija || elegidas.has(e.entidad);
                 const mias  = tramos[e.entidad] || [];
                 // Varios bancos dan distinto descuento según la categoría del
                 // cliente. Los chips aparecen sólo con el banco tildado: si no,
                 // la lista entera se llena de opciones que no vienen al caso.
                 const hayCat = on && e.membresias.length > 0;
                 return (
-                  <div key={e.entidad} className={`mp-item ${on ? "on" : ""}`}>
-                    <button className="mp-item-head" onClick={() => toggle(e.entidad)}>
+                  <div key={e.entidad} className={`mp-item ${on ? "on" : ""} ${fija ? "fija" : ""}`}>
+                    <button className="mp-item-head" disabled={fija}
+                            title={fija ? "Aplica con cualquier medio de pago: no hay nada que tildar" : undefined}
+                            onClick={() => { if (!fija) toggle(e.entidad); }}>
                       <span className="mp-item-check">{on ? "✓" : ""}</span>
                       <PagoLogo nombre={e.entidad}/>
                       <span style={{minWidth:0}}>
                         <span className="mp-item-nombre">{e.entidad}</span>
                         <div className="mp-item-supers">
                           {e.supers.join(" · ")}
-                          {!on && e.membresias.length > 0 && <> — con categorías</>}
+                          {fija
+                            ? <> — <strong>siempre aplicado</strong>, pagues como pagues</>
+                            : !on && e.membresias.length > 0 && <> — con categorías</>}
                         </div>
                       </span>
                     </button>
