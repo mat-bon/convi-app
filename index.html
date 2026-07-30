@@ -1250,10 +1250,11 @@ const SUPER_COLORS = {
   Disco:     { bg:"#D52B1E", text:"#fff" },
   Cordiez:   { bg:"#004B93", text:"#fff" },
   "La Gallega": { bg:"#5B2C86", text:"#fff" },
+  "La Anónima": { bg:"#034D8E", text:"#fff" },
 };
 
 const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez"];
-const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega"];
+const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
@@ -1265,10 +1266,17 @@ const SUPER_LOGOS = {
   Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
   Cordiez:   "https://tiano.com.ar/wp-content/uploads/cordiez.png",
   "La Gallega": "https://static.wikia.nocookie.net/logopedia/images/f/f4/La_Gallega_Supermercado_Logo_%282019%29.webp/revision/latest/scale-to-width-down/340?cb=20251005013317&path-prefix=es",
+  // El isotipo, NO el wordmark del cabezal: `logo-anonima.svg` está entintado
+  // en blanco puro (#FFFFFF) porque vive sobre la barra azul del sitio, y acá
+  // el logo va sobre fondo blanco — se vería vacío. Este trae el monograma en
+  // el azul de la marca sobre transparente.
+  "La Anónima": "https://www.laanonima.com.ar/imagenes/2025/svg/iso-la.svg",
 };
 
 const SUPER_LOGOS_FALLBACK = {
   Dino: ["https://statics.dinoonline.com.ar/img/dino-online_sm.png"],
+  // Mismo isotipo en PNG, por si el SVG no carga.
+  "La Anónima": ["https://www.laanonima.com.ar/imagenes/2025/png/152x152-la.png"],
 };
 
 // Ícono de cada entidad de pago, para el selector de medios de pago.
@@ -1351,6 +1359,7 @@ const BASE_URLS = {
   Disco:     "https://www.disco.com.ar",
   Cordiez:   "https://www.cordiez.com.ar",
   "La Gallega": "https://www.lagallega.com.ar",
+  "La Anónima": "https://www.laanonima.com.ar",
 };
 
 const CATEGORIAS = {
@@ -1542,6 +1551,7 @@ const LOGO_CONTENIDO = {
   "Disco":      [ 489,  488,  441,  441],
   "Cordiez":    [ 300,  300,  285,   47],
   "La Gallega": [ 340,  114,  336,  111],
+  "La Anónima": [ 256,  256,  211,  211],
 };
 
 // El área objetivo sale de la propia grilla: la columna deja 92 px útiles, y un
@@ -3332,7 +3342,7 @@ function WelcomeModal({ onClose }) {
         <div className="welcome-hero">
           <div className="welcome-icon">🛒</div>
           <div className="welcome-title">¡Bienvenido a <span>SuperPrecios</span> AR!</div>
-          <div className="welcome-sub">Comparamos los precios de 9 supermercados de Argentina para que compres siempre al más barato.</div>
+          <div className="welcome-sub">Comparamos los precios de {SUPER_TODOS.length} supermercados de Argentina para que compres siempre al más barato.</div>
         </div>
         <div className="welcome-steps">
           {pasos.map((p, i) => (
@@ -3797,7 +3807,7 @@ function App() {
             <div className="header-brand-icon">🛒</div>
             <div className="header-brand-text">
               <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre 9 supermercados</div>
+              <div className="header-brand-sub">Compará precios entre {SUPER_TODOS.length} supermercados</div>
             </div>
           </a>
 
