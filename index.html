@@ -985,6 +985,9 @@
       .lg-prod-img { width: 32px; height: 32px; }
       .lg-prod-nombre { font-size: 11.5px; }
       .lg-super, .lg-cell, .lg-total { min-width: 96px; }
+      /* La columna pasa de 92 a 72 px útiles: los logos siguen esa proporción
+         todos juntos, así el equilibrio de áreas no se rompe (ver _cajaLogoGrilla). */
+      .lg-super-inner { --k-logo: 0.78; }
       .lg-promo { width: 96px; min-height: 122px; }
       .lg-promo-det { font-size: 9.5px; }
       /* En móvil el "+" del hover no existe: la celda se toca y listo. */
@@ -1263,24 +1266,27 @@ function useLogoSources(nombre) {
 // subir el lado de 28 a 44 px casi no se nota y solo agrega aire arriba y abajo.
 // Dándole el ancho disponible ("100%" en la grilla, "auto" en el marquee) el
 // logo se ve al doble con el mismo alto.
-// `recorte`: el archivo de Cordiez es un wordmark (284x46) metido en un lienzo
-// CUADRADO de 300x300 con relleno arriba y abajo — medido a pixel con un canvas,
-// el contenido real ocupa apenas el 15% de la altura del archivo. `contain` lo
-// respeta tal cual y por más que se agrande la caja, ese relleno se agranda con
-// él. Pasando un `recorte` (relación ancho/alto de la franja útil) se cambia a
-// `object-fit: cover`, que rellena la caja entera y recorta el sobrante arriba y
-// abajo en vez de encogerse para que quepa. Al estar el contenido centrado
-// verticalmente en el archivo, el recorte cae simétrico y no corta el texto.
-function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = null, recorte = null }) {
+// Tres formas de dar el alto de la caja, según lo que sepa quien la usa:
+//   `size`       — alto fijo en px. El marquee, donde la tira tiene un alto dado.
+//   `proporcion` — relación ancho/alto. La caja sale del ancho, así que sigue a
+//                  la columna cuando cambia (ver `_cajaLogoGrilla`).
+//   `recorte`    — igual que `proporcion` pero con `object-fit: cover`: en vez de
+//                  encogerse para entrar, la imagen llena la caja y se le recorta
+//                  el sobrante de arriba y abajo. Es para los archivos con relleno
+//                  baked-in, donde `contain` respeta ese aire y lo agranda junto
+//                  con el logo. Al estar el contenido centrado verticalmente en el
+//                  archivo, el recorte cae simétrico y no corta el texto.
+function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = null, proporcion = null, recorte = null }) {
   const { src, onError } = useLogoSources(nombre);
   if (!src) return null;
   if (bare) {
+    const caja = recorte
+      ? {width:ancho || size, aspectRatio:recorte, objectFit:"cover", objectPosition:"center"}
+      : proporcion
+        ? {width:ancho || size, aspectRatio:proporcion, objectFit:"contain"}
+        : {width:ancho || size, height:size, objectFit:"contain"};
     return <img src={src} alt={nombre} loading="lazy" onError={onError}
-      style={recorte
-        ? {width:ancho || size, aspectRatio:recorte, maxWidth:maxAncho || undefined,
-           objectFit:"cover", objectPosition:"center", display:"block"}
-        : {width:ancho || size, height:size, maxWidth:maxAncho || undefined,
-           objectFit:"contain", display:"block"}}/>;
+      style={{...caja, maxWidth:maxAncho || undefined, display:"block"}}/>;
   }
   const pad = Math.round(size * 0.1);
   return (
@@ -1290,17 +1296,18 @@ function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = n
   );
 }
 
-function SuperBadge({ nombre, size = 20, showText = true, bare = false, ancho = null, recorte = null }) {
+function SuperBadge({ nombre, size = 20, showText = true, bare = false, ancho = null, proporcion = null, recorte = null }) {
   const { src, onError } = useLogoSources(nombre);
   const showLogo = !!src;
   if (showLogo && bare) {
-    // Ver el comentario de `recorte` en SuperLogo: Cordiez necesita `cover` en
-    // vez de `contain` porque su archivo tiene relleno vertical baked-in.
+    // `size` / `proporcion` / `recorte`: ver el comentario en SuperLogo.
+    const caja = recorte
+      ? {width:ancho || size, aspectRatio:recorte, objectFit:"cover", objectPosition:"center"}
+      : proporcion
+        ? {width:ancho || size, aspectRatio:proporcion, objectFit:"contain"}
+        : {width:ancho || size, height:size, objectFit:"contain"};
     return <img src={src} alt={nombre} loading="lazy" onError={onError}
-      style={recorte
-        ? {width:ancho || size, aspectRatio:recorte, objectFit:"cover",
-           objectPosition:"center", display:"block", flexShrink:0}
-        : {width:ancho || size, height:size, objectFit:"contain", display:"block", flexShrink:0}}/>;
+      style={{...caja, display:"block", flexShrink:0}}/>;
   }
   return (
     <span style={{display:"inline-flex", alignItems:"center", gap:5}}>
@@ -1316,23 +1323,67 @@ function SuperBadge({ nombre, size = 20, showText = true, bare = false, ancho = 
   );
 }
 
-// Sin el nombre al lado, el logo es la única forma de identificar la columna.
-// Los wordmarks apaisados (Carrefour, Coto, MasOnline...) ya llegan a su tamaño
-// máximo con ancho:100% — el ancho de la columna los limita antes que la altura,
-// así que pedirles más alto no cambia nada.
+// Sin el nombre al lado, el logo es lo único que identifica la columna, así que
+// los nueve tienen que pesar visualmente lo mismo. Y no lo hacen solos: hay
+// logos cuadrados (VEA, Disco, Dia), wordmarks de 3:1 (Coto, Dino, La Gallega)
+// y de 5:1 (Carrefour, MasOnline). Dándoles a todos el ancho de la columna, el
+// cuadrado ocupa 92x92 y el apaisado 92x20 — cuatro veces más superficie para
+// el mismo lugar, que es lo que se veía en la grilla.
 //
-// VEA y Disco son logos CUADRADOS de borde a borde: con altura chica (60) el
-// límite pasaba a ser la altura, no la columna, y quedaban más chicos de lo que
-// el espacio disponible permite. Cordiez es un caso aparte: el archivo es un
-// wordmark horizontal exportado en un lienzo cuadrado con relleno arriba y
-// abajo, así que a la MISMA altura que VEA/Disco se ve más chico — no hay
-// forma de agrandarlo sin agrandar también el lienzo entero.
-//
-// Por eso a las tres se les pide una altura bien por encima de la columna:
-// así el límite pasa a ser siempre el ancho, que es el máximo real disponible.
-const _LOGOS_LIMITADOS_POR_ANCHO = new Set(["VEA", "Disco", "Cordiez"]);
-function _ALTO_LOGO_GRILLA(nombre) {
-  return _LOGOS_LIMITADOS_POR_ANCHO.has(nombre) ? 200 : 44;
+// Lo que iguala logos de proporciones distintas no es el alto ni el ancho: es
+// el ÁREA de tinta. Estas medidas son el rectángulo REAL del contenido de cada
+// archivo, sacado a pixel con un canvas — no las dimensiones nominales, que
+// mienten: el lienzo de Cordiez es cuadrado pero el texto ocupa el 16% del alto
+// y el de VEA trae 7% de aire por lado.
+//                   [ancho archivo, alto archivo, ancho tinta, alto tinta]
+const LOGO_CONTENIDO = {
+  "VEA":        [1419, 1418, 1212, 1212],
+  "Carrefour":  [ 143,   32,  143,   32],
+  "MasOnline":  [ 300,   57,  299,   57],
+  "Dino":       [ 492,  197,  488,  194],
+  "Dia":        [1080, 1036, 1080, 1036],
+  "Coto":       [ 420,  151,  400,  133],
+  "Disco":      [ 489,  488,  441,  441],
+  "Cordiez":    [ 300,  300,  285,   47],
+  "La Gallega": [ 340,  114,  336,  111],
+};
+
+// El área objetivo sale de la propia grilla: la columna deja 92 px útiles, y un
+// wordmark a sangre que los use enteros (Carrefour, 143x32 → 92x20,6) da unos
+// 1900 px². Ese es el techo real del espacio disponible, así que se toma de
+// referencia y el resto se iguala a eso.
+const _AREA_TINTA = 1900, _ANCHO_COL = 92;
+
+// El ancho va en px y no en %: la tabla es `width: max-content`, así que el ancho
+// de la columna lo decide el contenido y un % se resuelve contra el tamaño
+// intrínseco de la imagen — VEA pedía 780 px y estiraba la columna con él.
+// Para que en móvil (columna de 72 px en vez de 92) los nueve se achiquen juntos
+// y la proporción aguante, el px se multiplica por `--k-logo`, que la media query
+// de `.lg-super-inner` baja a 0,78.
+function _cajaLogoGrilla(nombre) {
+  const medidas = LOGO_CONTENIDO[nombre];
+  const px = n => "calc(" + Math.round(n) + "px * var(--k-logo, 1))";
+  if (!medidas) return { ancho: px(_ANCHO_COL), size: 26 };
+  const [anchoArch, altoArch, anchoTinta, altoTinta] = medidas;
+
+  if (altoTinta / altoArch < 0.5) {
+    // El contenido no llega ni a la mitad del alto del archivo: es un wordmark
+    // exportado en un lienzo mucho más grande (Cordiez). Con `contain` la caja
+    // tendría que medir 113 px de alto para que el texto midiera 14 — cien
+    // píxeles de aire que además estiran toda la fila. Se recorta con `cover`,
+    // dándole al texto un 50% de aire y nada más.
+    const altoVisible = altoTinta * (_ANCHO_COL / anchoArch);
+    return { ancho: px(_ANCHO_COL), recorte: +(_ANCHO_COL / (altoVisible * 1.5)).toFixed(2) };
+  }
+
+  // Escala que hace que la tinta ocupe el área objetivo, y de ahí el ancho de la
+  // caja. La proporción es la del archivo: así la caja calza justo con la imagen
+  // y `contain` no agrega bandas.
+  const escala = Math.sqrt(_AREA_TINTA / (anchoTinta * altoTinta));
+  return {
+    ancho: px(Math.min(_ANCHO_COL, anchoArch * escala)),
+    proporcion: +(anchoArch / altoArch).toFixed(3),
+  };
 }
 
 function promoColor(promo) {
@@ -2633,8 +2684,7 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
               {supers.map(s => (
                 <th className="lg-super" key={s.supermercado}>
                   <div className="lg-super-inner">
-                    <SuperBadge nombre={s.supermercado} size={_ALTO_LOGO_GRILLA(s.supermercado)} ancho="100%"
-                      recorte={s.supermercado === "Cordiez" ? 4.3 : null} bare={true}/>
+                    <SuperBadge nombre={s.supermercado} bare={true} {..._cajaLogoGrilla(s.supermercado)}/>
                   </div>
                 </th>
               ))}
