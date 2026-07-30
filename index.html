@@ -1251,10 +1251,11 @@ const SUPER_COLORS = {
   Cordiez:   { bg:"#004B93", text:"#fff" },
   "La Gallega": { bg:"#5B2C86", text:"#fff" },
   "La Anónima": { bg:"#034D8E", text:"#fff" },
+  Jumbo:     { bg:"#2DC850", text:"#fff" },
 };
 
-const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez"];
-const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima"];
+const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez", "Jumbo"];
+const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
@@ -1271,6 +1272,15 @@ const SUPER_LOGOS = {
   // el logo va sobre fondo blanco — se vería vacío. Este trae el monograma en
   // el azul de la marca sobre transparente.
   "La Anónima": "https://www.laanonima.com.ar/imagenes/2025/svg/iso-la.svg",
+  // Mismo caso que La Anónima al revés: el `logo-jumbo.svg` del cabezal trae el
+  // disco Y el wordmark en blanco puro (sólo las hojas del isotipo van en verde)
+  // porque vive sobre la barra verde del sitio — acá quedaría casi vacío. Este
+  // otro es la variante invertida: disco verde con "JUMBO" en blanco, que es la
+  // que se lee sobre el fondo blanco del badge.
+  // Va por /arquivos/ (el file-manager, igual que VEA y Disco) y no por la ruta
+  // del tema, que lleva la versión adentro — `.../store-theme/7.0.76/...` se
+  // rompe sola en el próximo deploy de Jumbo.
+  Jumbo:     "https://jumboargentinaio.vtexassets.com/arquivos/logo-jumbo.png",
 };
 
 const SUPER_LOGOS_FALLBACK = {
@@ -1360,6 +1370,7 @@ const BASE_URLS = {
   Cordiez:   "https://www.cordiez.com.ar",
   "La Gallega": "https://www.lagallega.com.ar",
   "La Anónima": "https://www.laanonima.com.ar",
+  Jumbo:     "https://www.jumbo.com.ar",
 };
 
 const CATEGORIAS = {
@@ -1529,8 +1540,8 @@ function PagoLogo({ nombre, size = 24 }) {
 }
 
 // Sin el nombre al lado, el logo es lo único que identifica la columna, así que
-// los nueve tienen que pesar visualmente lo mismo. Y no lo hacen solos: hay
-// logos cuadrados (VEA, Disco, Dia), wordmarks de 3:1 (Coto, Dino, La Gallega)
+// todos tienen que pesar visualmente lo mismo. Y no lo hacen solos: hay
+// logos cuadrados (VEA, Disco, Dia, Jumbo), wordmarks de 3:1 (Coto, Dino, La Gallega)
 // y de 5:1 (Carrefour, MasOnline). Dándoles a todos el ancho de la columna, el
 // cuadrado ocupa 92x92 y el apaisado 92x20 — cuatro veces más superficie para
 // el mismo lugar, que es lo que se veía en la grilla.
@@ -1552,6 +1563,9 @@ const LOGO_CONTENIDO = {
   "Cordiez":    [ 300,  300,  285,   47],
   "La Gallega": [ 340,  114,  336,  111],
   "La Anónima": [ 256,  256,  211,  211],
+  // Disco verde a sangre: la tinta ocupa el lienzo entero (79% opaco = el área
+  // del círculo inscripto, sin margen).
+  "Jumbo":      [1000, 1000, 1000, 1000],
 };
 
 // El área objetivo sale de la propia grilla: la columna deja 92 px útiles, y un
@@ -1563,7 +1577,7 @@ const _AREA_TINTA = 1900, _ANCHO_COL = 92;
 // El ancho va en px y no en %: la tabla es `width: max-content`, así que el ancho
 // de la columna lo decide el contenido y un % se resuelve contra el tamaño
 // intrínseco de la imagen — VEA pedía 780 px y estiraba la columna con él.
-// Para que en móvil (columna de 72 px en vez de 92) los nueve se achiquen juntos
+// Para que en móvil (columna de 72 px en vez de 92) se achiquen todos juntos
 // y la proporción aguante, el px se multiplica por `--k-logo`, que la media query
 // de `.lg-super-inner` baja a 0,78.
 function _cajaLogoGrilla(nombre) {
