@@ -166,6 +166,33 @@
       .header-inner { flex-wrap: wrap; }
       .header-search-wrap { order: 3; max-width: 100%; width: 100%; }
       .main { padding: 12px; }
+
+      /* Desde acá .header-actions cae en su propia fila, pero se seguía midiendo
+         por su contenido y se desbordaba de la pantalla: es un flex item y sin
+         min-width:0 no baja de su min-content, así que ningún hijo renegocia el
+         ancho. Con esto la fila manda y el sobrante se reparte abajo.
+         El email es lo primero que sale: es el dato menos accionable de la fila
+         y el que más ancho pide (hasta 170px). Sin él entra todo sin recortar
+         hasta 640px, donde además se caen las etiquetas de los botones.
+         Quien cede después es el <select>, único con texto elástico y el que
+         mejor tolera el recorte (el nombre completo se ve al desplegarlo). Los
+         botones de sesión NO ceden: al encogerse, "Iniciar sesión" parte en dos
+         renglones y agranda toda la fila. */
+      .header-user-email { display: none; }
+      .header-actions { min-width: 0; }
+      .region-select { min-width: 0; }
+      .header-user, .header-user-btn { flex-shrink: 0; white-space: nowrap; }
+    }
+    /* Piso del encogimiento del <select>. Deslogueado el botón "Iniciar sesión"
+       ocupa 110px, así que al select le quedan (ancho - 287)px: a 375px son 88 y
+       todavía se lee "📍 Santa F", pero a 360 —un Android muy común— caen a 73 y
+       a 320 a 33, donde ni el 📍 entra y el control queda como una flechita sola.
+       Debajo de 360 la fila directamente no da para cinco controles, así que el
+       select se lleva un renglón entero y los íconos + sesión quedan abajo
+       (mismo criterio que .card-actions). Los íconos sí se reconocen sueltos. */
+    @media (max-width: 360px) {
+      .header-actions { flex-wrap: wrap; }
+      .region-select { flex: 1 1 100%; }
     }
 
     /* Sidebar filters — scrollea junto con la página (no queda fijo), así los
@@ -453,9 +480,15 @@
     .btn-label { white-space: nowrap; }
     @media (max-width: 640px) {
       .btn-label { display: none; }
-      /* Con tres botones en el header, el email no entra y empujaba a "Salir"
-         fuera de pantalla (.header-actions no hace wrap). */
-      .header-user-email { display: none; }
+
+      /* El header ya viene acomodado desde 768px (ver ese bloque); acá solo
+         apretamos un poco para que al <select> le quede más texto visible: a
+         375px eran 335px útiles contra 388px pedidos. Los 14px laterales del
+         botón estaban calculados para el botón CON etiqueta, y a esta altura la
+         etiqueta ya no está — los 6px que devuelve cada uno, más los 2px por
+         gap, se los lleva el nombre de la región. */
+      .header-actions { gap: 6px; }
+      .header-btn { padding: 9px 11px; }
 
       /* Las TARJETAS son la excepción: acá las etiquetas se quedan. Un 🛒 pelado
          se lee como "ir al carrito", no como "agregar", y agregar es la acción
@@ -864,9 +897,17 @@
       text-align: left; width: 100%; font-family: inherit;
     }
     .mp-item:not(.on) .mp-item-head:hover { background: var(--surface-2); }
-    /* 38px = 10 de padding + 18 del check + 10 del gap: los chips arrancan
-       alineados con el nombre del banco, no con el tilde. */
-    .mp-tramos { padding: 0 10px 9px 38px; }
+    /* Los chips arrancan alineados con el NOMBRE del banco, no con el tilde. La
+       sangría se escribe sumada en vez de resuelta (era un 38px pelado) porque
+       depende de tres medidas de .mp-item-head: si cambia el chip del logo o el
+       gap, acá se ve cuál término hay que tocar. */
+    .mp-tramos {
+      padding: 0 10px 9px calc(10px  /* padding izq. de .mp-item-head */
+                             + 18px  /* .mp-item-check */
+                             + 10px  /* gap */
+                             + 24px  /* PagoLogo */
+                             + 10px  /* gap */);
+    }
     .mp-tramos-tit {
       font-size: 10.5px; font-weight: 700; color: var(--text-muted);
       margin-bottom: 6px; line-height: 1.45;
@@ -975,9 +1016,22 @@
     .lg-cell.mejor .lg-cell-btn { background: #ECFDF5; color: #065F46; }
     .lg-cell.mejor .lg-cell-btn:hover { background: #D1FAE5; }
     .lg-cell.en-carrito .lg-cell-btn { background: var(--accent); color: #1b1600; }
+    /* "En el carrito" tiene que ganarle a "más barato" también en hover: con la
+       regla de .mejor la celda perdía el ámbar justo al apuntarle para sacarla,
+       o sea que el color decía lo contrario de lo que el clic iba a hacer. */
+    .lg-cell.en-carrito .lg-cell-btn:hover { background: var(--accent); filter: brightness(0.94); }
     .lg-cell-tag { font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.75; }
     .lg-cell-add { font-size: 9.5px; font-weight: 800; opacity: 0; transition: opacity 0.14s; }
     .lg-cell-btn:hover .lg-cell-add { opacity: 0.6; }
+    /* La celda que ya está en el carrito se vuelve a tocar para sacar el
+       producto. Los dos carteles se apilan en la misma celda de grilla y se
+       cruzan en hover: así la segunda acción se anuncia antes del clic sin que
+       la fila cambie de alto al pasar el mouse. */
+    .lg-cell-swap { display: grid; }
+    .lg-cell-swap > * { grid-area: 1 / 1; transition: opacity 0.14s; }
+    .lg-swap-quitar { opacity: 0; }
+    .lg-cell-btn:hover .lg-swap-puesto { opacity: 0; }
+    .lg-cell-btn:hover .lg-swap-quitar { opacity: 1; }
 
     @media (max-width: 640px) {
       .lg-prod, .lg-corner, .lg-corner-bottom { min-width: 150px; max-width: 170px; }
@@ -1205,6 +1259,52 @@ const SUPER_LOGOS_FALLBACK = {
   Dino: ["https://statics.dinoonline.com.ar/img/dino-online_sm.png"],
 };
 
+// Ícono de cada entidad de pago, para el selector de medios de pago.
+//
+// Salen del apple-touch-icon o el favicon del sitio de la propia marca, y no
+// del logo de la home, por dos razones: son CUADRADOS —así entran todos en el
+// mismo chip sin la pelea de proporciones que dieron los logos de los súperes,
+// ver LOGO_CONTENIDO— y los sirve el dominio de la marca, no el de un tercero.
+//
+// Cada URL se verificó cargándola en el navegador: todas resuelven y miden 48px
+// o más, salvo las marcadas 32px, que quedan un poco blandas en pantalla retina
+// pero siguen leyéndose mejor que una inicial suelta.
+//
+// De las 33 entidades activas hay 14 sin entrada, y no es por olvido:
+//   · Columbia, Coinag, Galicia, Municipal, Ciudad, Nación, ICBC y Cuenta DNI
+//     no publican un ícono usable — o el sitio no responde, o el único favicon
+//     que hay es de 16px y se ve deshecho a este tamaño.
+//   · "Jubilados y pensionados", "Todos los medios de pago", "Billeteras
+//     virtuales" y "Ciudadanía Porteña" no son una marca: no hay logo que poner.
+// Todas ésas caen al monograma de PagoLogo, igual que cualquier entidad nueva
+// que aparezca sola después de un scrape (el catálogo es dinámico).
+const _ICONO_CARREFOUR = "https://carrefourar.vtexassets.com/assets/vtex/assets-builder/carrefourar.theme/17.1.1/logo/isotipo___6ef9d993a624c69c95cffe86770b1517.svg";
+const _ICONO_COTO      = "https://www.coto.com.ar/favicon.ico";
+
+const PAGO_LOGOS = {
+  "Banco Supervielle": "https://www.supervielle.com.ar/static/favicon.png",                              // 128
+  "Banco Comafi":      "https://www.comafi.com.ar/apple-touch-icon.png",                                 // 180
+  "Banco Hipotecario": "https://www.hipotecario.com.ar/wp-content/uploads/2019/07/favicon_bh.png",       // 150
+  "Banco Santa Fe":    "https://www.bancosantafe.com.ar/assets/favicon/santa-fe/apple-touch-icon.png",   // 180
+  "NaranjaX":          "https://www.naranjax.com/favicon.ico",                                           //  48
+  "MODO":              "https://www.modo.com.ar/static/images/favicon.ico",                              //  48
+  "Tarjeta Sol":       "https://www.tarjetasol.com.ar/img/logos/minitsol.ico",                           // 256
+  "Yoy":               "https://www.yoy.com.ar/favicon.ico",                                             // 256
+  "Club La Nación":    "https://club.lanacion.com.ar/assets/favicon/apple-icon-180x180.png",             // 180
+  "MasClub":           "https://masonlineprod.vtexassets.com/arquivos/ids/358760",                       // 256
+  "Mercado Pago":      "https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/7.4.9/mercadopago/favicon.svg", // vectorial
+  // Programas de una cadena: va el isotipo de la cadena, que es lo que el
+  // usuario reconoce — las tres tarjetas de Carrefour son la misma marca.
+  "Mi Carrefour":             _ICONO_CARREFOUR,
+  "Tarjeta Carrefour":        _ICONO_CARREFOUR,
+  "Cuenta Digital Carrefour": _ICONO_CARREFOUR,
+  "Comunidad Coto":    _ICONO_COTO,                                                                      //  32
+  "Tarjeta Coto TCI":  _ICONO_COTO,                                                                      //  32
+  "Banco Patagonia":   "https://www.bancopatagonia.com.ar/favicon.ico",                                  //  32
+  "Banco Credicoop":   "https://www.bancocredicoop.coop/favicon.ico",                                    //  32
+  "Beneficios ANSES":  "https://www.anses.gob.ar/themes/custom/ansessite/favicon25.png",                 //  32
+};
+
 const BASE_URLS = {
   VEA:       "https://www.vea.com.ar",
   Carrefour: "https://www.carrefour.com.ar",
@@ -1319,6 +1419,59 @@ function SuperBadge({ nombre, size = 20, showText = true, bare = false, ancho = 
         <span style={{fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:20, background:SUPER_COLORS[nombre]?.bg||"#888", color:SUPER_COLORS[nombre]?.text||"#fff"}}>{nombre}</span>
       )}
       {showLogo && showText && <span style={{fontSize:12, fontWeight:800, color:"#374151"}}>{nombre}</span>}
+    </span>
+  );
+}
+
+// Monograma: lo que se dibuja cuando la entidad no tiene ícono en PAGO_LOGOS.
+// La lista del selector tiene 33 entidades y más de la mitad arranca con
+// "Banco", así que la inicial cruda no distingue nada: primero se tira la
+// palabra genérica y recién después se sacan las letras.
+const _PAGO_GENERICAS = new Set(["banco", "tarjeta", "billetera", "billeteras",
+                                 "beneficios", "cuenta", "club", "comunidad"]);
+const _PAGO_VACIAS    = new Set(["y", "de", "del", "la", "las", "los", "el"]);
+
+function _pagoMonograma(nombre) {
+  let palabras = nombre.split(/[\s/]+/).filter(p => p && !_PAGO_VACIAS.has(p.toLowerCase()));
+  if (palabras.length > 1 && _PAGO_GENERICAS.has(palabras[0].toLowerCase())) palabras = palabras.slice(1);
+  const letras = palabras.length > 1
+    ? palabras[0][0] + palabras[1][0]     // "Ciudadanía Porteña" → CP
+    : (palabras[0] || nombre).slice(0, 2); // "Banco Columbia"     → CO
+  return letras.toUpperCase();
+}
+
+// El color sale de un hash del nombre y no de una tabla: la lista es dinámica
+// —sale de las promos activas, así que un banco nuevo puede aparecer cualquier
+// mañana— y una tabla a mano dejaría a ése sin color. Al ser determinístico, la
+// entidad conserva su color entre sesiones, que es lo que hace que la lista se
+// pueda barrer con la vista.
+const _PAGO_COLORES = ["#0F766E", "#B45309", "#1D4ED8", "#9D174D", "#3F6212",
+                       "#7C2D12", "#155E75", "#4338CA", "#86198F", "#9F1239"];
+function _pagoColor(nombre) {
+  let h = 0;
+  for (let i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) >>> 0;
+  return _PAGO_COLORES[h % _PAGO_COLORES.length];
+}
+
+// Chip cuadrado de una entidad de pago. No necesita nada del malabarismo de
+// SuperLogo porque las fuentes de PAGO_LOGOS son todas cuadradas.
+//
+// `alt=""` y `aria-hidden` a propósito: el nombre de la entidad está al lado en
+// texto, así que anunciarlo dos veces solo molesta a quien usa lector.
+function PagoLogo({ nombre, size = 24 }) {
+  const [fallo, setFallo] = React.useState(false);
+  const src = PAGO_LOGOS[nombre];
+  const caja = { width: size, height: size, borderRadius: 6, flexShrink: 0 };
+  if (src && !fallo) {
+    return <img src={src} alt="" aria-hidden="true" loading="lazy" onError={() => setFallo(true)}
+      style={{...caja, objectFit:"contain", background:"#fff",
+              border:"1px solid var(--border)", display:"block"}}/>;
+  }
+  return (
+    <span aria-hidden="true" style={{...caja, background:_pagoColor(nombre), color:"#fff",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize:Math.round(size * 0.4), fontWeight:900, letterSpacing:0.2}}>
+      {_pagoMonograma(nombre)}
     </span>
   );
 }
@@ -2352,6 +2505,7 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
                   <div key={e.entidad} className={`mp-item ${on ? "on" : ""}`}>
                     <button className="mp-item-head" onClick={() => toggle(e.entidad)}>
                       <span className="mp-item-check">{on ? "✓" : ""}</span>
+                      <PagoLogo nombre={e.entidad}/>
                       <span style={{minWidth:0}}>
                         <span className="mp-item-nombre">{e.entidad}</span>
                         <div className="mp-item-supers">
@@ -2466,16 +2620,32 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
     cargar(); onListasChange();
   }
 
-  // Celda tocable: agrega ESE producto de ESE súper al carrito. El backend
-  // desplaza al equivalente de otro súper si ya estaba, así no queda duplicado.
-  async function agregarCelda(fila, celda) {
+  // Celda tocable: agrega ESE producto de ESE súper al carrito, y si ya estaba
+  // lo saca. Son dos endpoints distintos a propósito:
+  //   alta  — `desde-lista`, que desplaza al equivalente de otro súper si el
+  //           producto ya estaba cargado (elegir el precio de Coto para algo que
+  //           venía de Dia lo reemplaza en vez de duplicarlo).
+  //   baja  — el toggle general, el mismo que usa el carrito para sacar un item.
+  //
+  // El `await onCarritoChange()` antes de soltar el botón no es cosmético: la
+  // celda decide alta o baja mirando `carritoIds`, así que si se reabilitara
+  // antes de que ese estado se refresque, un segundo clic rápido leería el valor
+  // viejo y volvería a agregar lo que se acababa de sacar.
+  async function toggleCelda(fila, celda, enCarrito) {
     setOcupado(`c${fila.id}`);
     try {
-      await fetch(`${API}/carrito/desde-lista/${celda.producto_id}`, {
-        method: "POST", headers: authJson, body: JSON.stringify({ cantidad: fila.cantidad }),
-      });
+      if (enCarrito) {
+        await fetch(`${API}/carrito/${celda.producto_id}`, {
+          method: "POST", headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await fetch(`${API}/carrito/desde-lista/${celda.producto_id}`, {
+          method: "POST", headers: authJson, body: JSON.stringify({ cantidad: fila.cantidad }),
+        });
+      }
     } catch (e) {}
-    setOcupado(null); onCarritoChange();
+    await onCarritoChange();
+    setOcupado(null);
   }
 
   async function volcar(supermercado) {
@@ -2727,15 +2897,20 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
                     <td key={s.supermercado}
                         className={`lg-cell ${esMejor ? "mejor" : ""} ${enCarrito ? "en-carrito" : ""}`}>
                       <button className="lg-cell-btn" disabled={!celda || ocupado === `c${fila.id}`}
-                        onClick={() => agregarCelda(fila, celda)}
+                        onClick={() => toggleCelda(fila, celda, enCarrito)}
                         title={celda
-                          ? `Agregar al carrito desde ${s.supermercado}`
+                          ? (enCarrito
+                              ? `Quitar del carrito`
+                              : `Agregar al carrito desde ${s.supermercado}`)
                           : `${s.supermercado} no tiene este producto`}>
                         {celda ? (
                           <>
                             <span>{fmt(celda.precio * fila.cantidad)}</span>
                             {enCarrito
-                              ? <span className="lg-cell-tag">✓ en carrito</span>
+                              ? <span className="lg-cell-swap">
+                                  <span className="lg-cell-tag lg-swap-puesto">✓ en carrito</span>
+                                  <span className="lg-cell-tag lg-swap-quitar">− quitar</span>
+                                </span>
                               : celda.precio_regional
                                 ? <span className="lg-cell-tag">📍 tu región</span>
                                 : <span className="lg-cell-add">+ carrito</span>}
@@ -3281,10 +3456,13 @@ function App() {
     } catch(e) { handleLogout(); }
   }
 
+  // Devuelve la promesa (nunca rechaza) para que quien necesite esperar al
+  // refresco pueda hacerlo: la grilla de listas decide agregar o quitar mirando
+  // este estado, así que no puede reabilitar la celda antes de tenerlo al día.
   function cargarCarrito() {
-    if (!token) return;
+    if (!token) return Promise.resolve();
     const qs = regionId ? `?region_id=${regionId}` : "";
-    fetch(`${API}/carrito${qs}`, { headers:{Authorization:`Bearer ${token}`} })
+    return fetch(`${API}/carrito${qs}`, { headers:{Authorization:`Bearer ${token}`} })
       .then(r => r.json())
       .then(data => {
         if (!Array.isArray(data)) return;
