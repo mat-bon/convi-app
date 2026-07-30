@@ -1141,9 +1141,16 @@
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
       mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
     }
-    .logos-track { display: flex; align-items: center; gap: 38px; width: max-content; animation: marquee 30s linear infinite; }
+    /* La separación va como margin-right de cada ítem y NO como `gap` del track:
+       con `gap` hay un hueco MENOS que ítems (no hay hueco después del último),
+       así que el 50% del ancho no cae en el borde de una copia sino 19px antes
+       —medio hueco— y el reinicio pega un salto. Con margin cada ítem mide lo
+       mismo (logo + 38), el ancho es múltiplo exacto de la copia y el -50% cierra
+       redondo. El margin sobrante del último ítem nunca se ve: la cinta se
+       reinicia mucho antes de llegar al final. */
+    .logos-track { display: flex; align-items: center; width: max-content; animation: marquee 30s linear infinite; }
     .logos-marquee:hover .logos-track { animation-play-state: paused; }
-    .logos-item { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .logos-item { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; margin-right: 38px; }
     .logos-item > span { font-size: 12.5px; font-weight: 800; color: var(--text-secondary); white-space: nowrap; }
     @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     @media (max-width: 680px) { .logos-label { display: none; } .logos-marquee { min-width: 100%; } }
@@ -1376,22 +1383,29 @@ function useLogoSources(nombre) {
 //                  baked-in, donde `contain` respeta ese aire y lo agranda junto
 //                  con el logo. Al estar el contenido centrado verticalmente en el
 //                  archivo, el recorte cae simétrico y no corta el texto.
-function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = null, proporcion = null, recorte = null }) {
+// `ya` desactiva el lazy-load. Hace falta donde el ancho de la caja lo pone la
+// imagen (`ancho="auto"`): hasta que no carga, un <img loading="lazy"> mide CERO,
+// y si además está fuera de la ventana el navegador nunca la pide. En una lista
+// normal eso no se ve porque el scroll la trae; en el marquee no hay scroll —
+// la cinta se mueve por transform, que NO dispara el lazy-load — así que las
+// copias de más a la derecha se quedaban vacías para siempre.
+function SuperLogo({ nombre, size = 22, bare = false, ancho = null, maxAncho = null, proporcion = null, recorte = null, ya = false }) {
   const { src, onError } = useLogoSources(nombre);
   if (!src) return null;
+  const carga = ya ? "eager" : "lazy";
   if (bare) {
     const caja = recorte
       ? {width:ancho || size, aspectRatio:recorte, objectFit:"cover", objectPosition:"center"}
       : proporcion
         ? {width:ancho || size, aspectRatio:proporcion, objectFit:"contain"}
         : {width:ancho || size, height:size, objectFit:"contain"};
-    return <img src={src} alt={nombre} loading="lazy" onError={onError}
+    return <img src={src} alt={nombre} loading={carga} onError={onError}
       style={{...caja, maxWidth:maxAncho || undefined, display:"block"}}/>;
   }
   const pad = Math.round(size * 0.1);
   return (
     <span style={{width:size, height:size, padding:pad, borderRadius:"50%", background:"#fff", display:"inline-flex", alignItems:"center", justifyContent:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.1)", overflow:"hidden", flexShrink:0}}>
-      <img src={src} alt={nombre} loading="lazy" onError={onError} style={{width:"100%", height:"100%", objectFit:"contain", display:"block"}}/>
+      <img src={src} alt={nombre} loading={carga} onError={onError} style={{width:"100%", height:"100%", objectFit:"contain", display:"block"}}/>
     </span>
   );
 }
@@ -3822,15 +3836,19 @@ function App() {
               <span className="logos-label">Comparás precios en</span>
               <div className="logos-viewport">
                 <div className="logos-track" aria-hidden="true">
-                  {[...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS].map((s, i) => (
+                  {/* Cuatro copias: la animación corre hasta -50%, o sea dos copias
+                      exactas, y las otras dos son las que quedan llenando a la
+                      derecha hasta el reinicio. Tiene que ser un número PAR o el
+                      -50% cae en el medio de una copia y el salto se ve. */}
+                  {[...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS, ...SUPER_TODOS].map((s, i) => (
                     <span className="logos-item" key={i}>
                       {/* Cordiez usa `recorte`: es un wordmark metido en un lienzo
                           cuadrado con relleno arriba y abajo (ver comentario en
                           SuperLogo), así que necesita `cover` en vez de más altura —
                           más altura solo agranda el relleno junto con el texto. */}
                       {s === "Cordiez"
-                        ? <SuperLogo nombre={s} ancho={110} recorte={4.3} bare={true}/>
-                        : <SuperLogo nombre={s} size={38} ancho="auto" maxAncho={130} bare={true}/>}
+                        ? <SuperLogo nombre={s} ancho={110} recorte={4.3} bare={true} ya={true}/>
+                        : <SuperLogo nombre={s} size={38} ancho="auto" maxAncho={130} bare={true} ya={true}/>}
                     </span>
                   ))}
                 </div>
