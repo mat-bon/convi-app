@@ -1628,9 +1628,18 @@ function promoColor(promo) {
   return "#C62828";
 }
 
+// Sales channel del checkout por supermercado. En las cuentas de Cencosud el
+// canal 1 está INACTIVO y cada sitio tiene el suyo: con sc=1 el checkout acepta
+// la URL pero descarta todos los ítems ("no encontrado o no disponible") y el
+// carrito queda vacío. El resto de los VTEX (Carrefour, MasOnline, Dia, Cordiez)
+// sí usan el 1. Verificado sondeando los canales 1..60 de cada cuenta: los
+// inactivos responden "sc is inactive" y los ajenos "sc N is not available".
+const VTEX_SALES_CHANNEL = { VEA: 34, Disco: 33, Jumbo: 32 };
+
 function buildVtexCartUrl(superNombre, items) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
+  const sc = VTEX_SALES_CHANNEL[superNombre] || 1;
   const params = items
     .filter(i => i.sku_id)
     .map(i => {
@@ -1640,18 +1649,7 @@ function buildVtexCartUrl(superNombre, items) {
     })
     .join("&");
   if (!params) return null;
-  return `${baseUrl}/checkout/cart/add?sc=1&${params}`;
-}
-
-function buildDinoCartUrl(producto, cantidad) {
-  const productId = producto.product_id || producto.sku_id;
-  if (!producto.url || !producto.sku_id || !productId) return null;
-  const url = new URL(producto.url);
-  url.searchParams.set('dcs_action', 'additemtocart');
-  url.searchParams.set('url_catalog_ref_id', producto.sku_id);
-  url.searchParams.set('url_product_id', productId);
-  url.searchParams.set('url_quantity', cantidad);
-  return url.toString();
+  return `${baseUrl}/checkout/cart/add?sc=${sc}&${params}`;
 }
 
 // Coto (ATG, no VTEX): su API de carrito exige sesión iniciada y no admite
@@ -1873,6 +1871,50 @@ function cargarCarritoEnAtomo(items, { onProgreso, onFin }) {
   });
 }
 
+// --- Carga automática del carrito de Dino -----------------------------------
+// Dino corre Oracle ATG (no VTEX, pese a estar en SUPER_VTEX por cómo se scrapea),
+// y `dcs_action=additemtocart` procesa UN ítem por request: probamos comas y
+// parámetros repetidos y ATG toma sólo el primer valor, y su propio JS también
+// agrega de a uno vía CartModifierFormHandler. No existe endpoint batch, así que
+// va por el mismo encadenado que Coto. `/super/carrito/` agrega y deja al usuario
+// parado en el carrito, y respeta `url_quantity`.
+//
+// EL PREFIJO `prod` NO ES OPCIONAL. Dino identifica cada producto con dos ids: el
+// sku (`2320444`) y el de producto, que es `prod` + sku (`prod2320444`) — se ve en
+// el `product.repositoryId` de su propio catálogo. En la base todos los productos
+// de Dino tienen `product_id` vacío, así que el fallback mandaba el sku pelado:
+// ATG lo aceptaba igual pero creaba un ítem con la referencia rota (sin foto, sin
+// link) y ese ítem corrupto después hacía fallar los agregados hechos desde la
+// propia página de Dino. Por eso normalizamos el id acá.
+//
+// Requiere sesión iniciada: sin login `/super/carrito/` redirige a `/super/login`.
+// A diferencia de Coto (cantidad absoluta), no pudimos verificar si repetir un
+// producto suma o fija la cantidad — Dino no deja ver el carrito sin cuenta.
+const DINO_ADD_DELAY_MS = 3500;   // ATG es lento; con menos, algunos adds se pisan
+const DINO_WIN = "superprecios_dino";
+const DINO_LOGIN_URL = `${BASE_URLS.Dino}/super/login`;
+const DINO_CART_URL  = `${BASE_URLS.Dino}/super/carrito/`;
+
+function buildDinoCartUrl(producto, cantidad) {
+  if (!producto.sku_id) return null;
+  const rawId = String(producto.product_id || producto.sku_id);
+  const productId = rawId.startsWith("prod") ? rawId : `prod${rawId}`;
+  const n = Number(cantidad);
+  const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
+  return `${DINO_CART_URL}?dcs_action=additemtocart`
+       + `&url_catalog_ref_id=${producto.sku_id}&url_product_id=${productId}&url_quantity=${qty}`;
+}
+
+function cargarCarritoEnDino(items, { onProgreso, onFin }) {
+  return cargarCarritoEncadenado({
+    pasos: items.map(i => buildDinoCartUrl(i.producto, i.cantidad)).filter(Boolean),
+    winName: DINO_WIN,
+    urlFinal: DINO_CART_URL,
+    delayMs: DINO_ADD_DELAY_MS,
+    onProgreso, onFin,
+  });
+}
+
 // true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
 function esPromoDescuento(promo) {
   if (!promo) return false;
@@ -2074,72 +2116,50 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
-  // Carga automática (Coto, La Gallega y Átomo): null | {actual,total} | "bloqueado" | "listo"
-  const [cotoCarga, setCotoCarga] = React.useState(null);
-  const cotoTimer = React.useRef(null);
+  // Carga encadenada (Coto, La Gallega, Átomo y Dino): null | {actual,total} | "bloqueado" | "listo"
+  const [carga, setCarga] = React.useState(null);
+  const cargaTimer = React.useRef(null);
 
   // Si el usuario cierra el modal a mitad de la carga, cortamos el encadenado.
-  React.useEffect(() => () => { if (cotoTimer.current) clearInterval(cotoTimer.current); }, []);
+  React.useEffect(() => () => { if (cargaTimer.current) clearInterval(cargaTimer.current); }, []);
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
   const esLaGallega = superNombre === "La Gallega";
   const esAtomo     = superNombre === "Atomo";
+  const esDino      = superNombre === "Dino";
 
   // Sólo se pueden autocargar los que tienen sku_id; el resto queda para la lista manual.
-  const cotoAutocargables = superNombre === "Coto"
+  const autocargables = superNombre === "Coto"
     ? items.filter(i => buildCotoAddUrl(i.producto, i.cantidad))
     : esLaGallega
       ? items.filter(i => buildLaGallegaAddSteps(i.producto, i.cantidad).length)
       : esAtomo
         ? items.filter(i => buildAtomoAddSteps(i.producto, i.cantidad).length)
-        : [];
+        : esDino
+          ? items.filter(i => buildDinoCartUrl(i.producto, i.cantidad))
+          : [];
 
-  function handleCargarCoto() {
-    if (!cotoAutocargables.length) return;
-    setCotoCarga({ actual: 0, total: cotoAutocargables.length });
+  function handleCargar() {
+    if (!autocargables.length) return;
+    setCarga({ actual: 0, total: autocargables.length });
     const cargar = esLaGallega ? cargarCarritoEnLaGallega
                  : esAtomo     ? cargarCarritoEnAtomo
+                 : esDino      ? cargarCarritoEnDino
                  : cargarCarritoEnCoto;
-    cotoTimer.current = cargar(cotoAutocargables, {
-      onProgreso: (actual, total) => setCotoCarga({ actual, total }),
-      onFin: (completo) => { cotoTimer.current = null; setCotoCarga(completo ? "listo" : null); },
+    cargaTimer.current = cargar(autocargables, {
+      onProgreso: (actual, total) => setCarga({ actual, total }),
+      onFin: (completo) => { cargaTimer.current = null; setCarga(completo ? "listo" : null); },
     });
-    if (!cotoTimer.current) setCotoCarga("bloqueado");
+    if (!cargaTimer.current) setCarga("bloqueado");
   }
 
-  if (superNombre === "VEA") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          <div className="confirm-title">Comprar en VEA</div>
-          <p className="confirm-desc">
-            Abrí el primer producto para iniciar sesión en VEA, luego añadí el resto.
-          </p>
-          <div className="confirm-item-list">
-            {items.map((i, idx) => (
-              <div key={idx} className="confirm-item-row">
-                <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                <button className="confirm-item-btn" onClick={() => window.open(i.producto.url, "_blank", "noopener,noreferrer")}>
-                  Ver en VEA →
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="confirm-btns">
-            <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de VEA</button>
-            <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Coto, La Gallega y Átomo comparten el mismo flujo: no tienen URL de carrito
-  // masivo, así que se cargan encadenando navegaciones sobre una misma pestaña.
-  // Coto y La Gallega la necesitan logueada; Átomo no, pero igual conviene abrir
-  // la tienda antes para que PrestaShop cree la sesión (ver cargarCarritoEnAtomo).
-  if (superNombre === "Coto" || esLaGallega || esAtomo) {
+  // Coto, La Gallega, Átomo y Dino comparten el mismo flujo: no tienen URL de
+  // carrito masivo, así que se cargan encadenando navegaciones sobre una misma
+  // pestaña. Coto, La Gallega y Dino la necesitan logueada; Átomo no, pero igual
+  // conviene abrir la tienda antes para que PrestaShop cree la sesión (ver
+  // cargarCarritoEnAtomo).
+  if (superNombre === "Coto" || esLaGallega || esAtomo || esDino) {
     const cfg = esLaGallega
       ? { loginUrl: LAGALLEGA_LOGIN_URL, cartUrl: LAGALLEGA_CART_URL, win: LAGALLEGA_WIN,
           dominio: "lagallega.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
@@ -2150,6 +2170,13 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           dominio: "atomoconviene.com", botonPaso1: `Abrir ${superNombre} →`,
           recordatorio: <>Dejá abierta la pestaña de {superNombre} mientras carga.</>,
           requisitos: <>Átomo <strong>no pide cuenta</strong>: alcanza con abrir la tienda para que arranque la sesión, y después cargamos todo de una.</> }
+      : esDino
+      ? { loginUrl: DINO_LOGIN_URL, cartUrl: DINO_CART_URL, win: DINO_WIN,
+          dominio: "dinoonline.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
+          recordatorio: <>Tarda unos segundos por producto: dejá abierta la pestaña hasta que termine.</>,
+          requisitos: <>Dino exige <strong>sesión iniciada</strong>. Si es tu primera compra configurá también la <strong>dirección de entrega</strong>: con ella te asigna sucursal, y sin eso no te muestra el carrito.</>,
+          // Dino guarda los ítems aunque después te derive al alta de dirección.
+          nota: <>💡 Si al ver el carrito Dino te pide una dirección de entrega, completala: tus productos ya quedaron guardados y aparecen al terminar.</> }
       : { loginUrl: COTO_LOGIN_URL, cartUrl: COTO_CART_URL, win: COTO_WIN,
           dominio: "coto.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
           recordatorio: <>Tenés que tener la sesión abierta y la opción de entrega ya elegida.</>,
@@ -2172,22 +2199,22 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
             <>
               <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
 
-              {cotoCarga && typeof cotoCarga === "object" ? (
+              {carga && typeof carga === "object" ? (
                 <>
                   <p className="confirm-desc">
-                    Cargando en {superNombre}… <strong>{cotoCarga.actual} de {cotoCarga.total}</strong>. No cierres la pestaña que se abrió.
+                    Cargando en {superNombre}… <strong>{carga.actual} de {carga.total}</strong>. No cierres la pestaña que se abrió.
                   </p>
                   <div style={{height:8, borderRadius:20, background:"var(--border-light)", overflow:"hidden", margin:"4px 0 14px"}}>
                     <div style={{
                       height:"100%", borderRadius:20, background:"var(--success)", transition:"width .3s ease",
-                      width: `${Math.round((cotoCarga.actual / Math.max(1, cotoCarga.total)) * 100)}%`
+                      width: `${Math.round((carga.actual / Math.max(1, carga.total)) * 100)}%`
                     }}/>
                   </div>
                   <div className="confirm-btns">
                     <button className="confirm-btn secondary" onClick={() => {
-                      if (cotoTimer.current) clearInterval(cotoTimer.current);
-                      cotoTimer.current = null;
-                      setCotoCarga(null);
+                      if (cargaTimer.current) clearInterval(cargaTimer.current);
+                      cargaTimer.current = null;
+                      setCarga(null);
                     }}>Cancelar carga</button>
                   </div>
                 </>
@@ -2197,44 +2224,51 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                     Cargamos todo de una en tu carrito de {superNombre}. {cfg.recordatorio}
                   </p>
                   <div className="confirm-btns" style={{marginBottom:6}}>
-                    <button className="confirm-btn primary" onClick={handleCargarCoto} disabled={!cotoAutocargables.length}>
-                      ⚡ Cargar {cotoAutocargables.length === 1 ? "el producto" : `los ${cotoAutocargables.length} productos`} en {superNombre} →
+                    <button className="confirm-btn primary" onClick={handleCargar} disabled={!autocargables.length}>
+                      ⚡ Cargar {autocargables.length === 1 ? "el producto" : `los ${autocargables.length} productos`} en {superNombre} →
                     </button>
                   </div>
 
-                  {cotoAutocargables.length < items.length && (
+                  {autocargables.length < items.length && (
                     <div className="confirm-warning">
-                      ⚠️ {items.length - cotoAutocargables.length} de {items.length} todavía no tienen SKU y no se pueden cargar solos — agregalos desde la lista de abajo.
+                      ⚠️ {items.length - autocargables.length} de {items.length} todavía no tienen SKU y no se pueden cargar solos — agregalos desde la lista de abajo.
                     </div>
                   )}
 
-                  {cotoCarga === "bloqueado" && (
+                  {carga === "bloqueado" && (
                     <div className="confirm-warning">
                       ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para {cfg.dominio} y probá de nuevo, o cargá los productos uno por uno acá abajo.
                     </div>
                   )}
-                  {cotoCarga === "listo" && (
+                  {carga === "listo" && (
                     <div className="confirm-warning">
                       ✅ Listo. Revisá el carrito en la pestaña de {superNombre} — si algún producto no entró, agregalo desde la lista de abajo.
                     </div>
                   )}
+                  {cfg.nota && <div className="confirm-warning">{cfg.nota}</div>}
 
                   <div className="confirm-section-label" style={{fontSize:12, fontWeight:800, color:"var(--text-secondary)", margin:"14px 0 8px"}}>
                     O agregalos uno por uno
                   </div>
                   <div className="confirm-item-list">
                     {items.map((i, idx) => {
-                      const exacto = esLaGallega
-                        ? !!buildLaGallegaProductUrl(i.producto)
+                      // Dino agrega el ítem con la misma URL que usa la carga
+                      // automática, así que acá suma al carrito en vez de abrir
+                      // la ficha. Los demás no tienen un add por GET individual.
+                      const addUrl = esDino ? buildDinoCartUrl(i.producto, i.cantidad) : null;
+                      const exacto = esDino ? false
+                        : esLaGallega ? !!buildLaGallegaProductUrl(i.producto)
                         // Átomo guarda la URL canónica de la ficha en el propio
                         // producto, así que siempre abre la ficha exacta.
                         : esAtomo ? !!i.producto.url
                         : !!buildCotoProductUrl(i.producto);
+                      const destino = addUrl || urlEnSuper(i.producto);
                       return (
                         <div key={idx} className="confirm-item-row">
                           <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                          <button className="confirm-item-btn" onClick={() => window.open(urlEnSuper(i.producto), "_blank", "noopener,noreferrer")}>
-                            {exacto ? "Abrir ficha →" : "Buscar →"}
+                          <button className="confirm-item-btn" disabled={esDino && !addUrl}
+                            onClick={() => destino && window.open(destino, "_blank", "noopener,noreferrer")}>
+                            {esDino ? (addUrl ? "Agregar →" : "Sin datos") : exacto ? "Abrir ficha →" : "Buscar →"}
                           </button>
                         </div>
                       );
@@ -2256,58 +2290,6 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               <div className="confirm-btns">
                 <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (superNombre === "Dino") {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-          {paso === "login" ? (
-            <>
-              <div className="confirm-title">Comprar en Dino — Paso 1 de 2</div>
-              <p className="confirm-desc">Abrí Dino e iniciá sesión con tu usuario (o continuá como invitado).</p>
-              <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open("https://www.dinoonline.com.ar/super/login", "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
-                  Abrir Dino para ingresar →
-                </button>
-                <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
-              </div>
-            </>
-          ) : paso === "carrito" ? (
-            <>
-              <div className="confirm-title">Comprar en Dino — Paso 2 de 2</div>
-              <p className="confirm-desc">Abrí producto por producto para agregarlo al carrito de Dino.</p>
-              <div className="confirm-item-list">
-                {items.map((i, idx) => {
-                  const dinoUrl = buildDinoCartUrl(i.producto, i.cantidad);
-                  return (
-                    <div key={idx} className="confirm-item-row">
-                      <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
-                      <button className="confirm-item-btn" onClick={() => dinoUrl && window.open(dinoUrl, "_blank", "noopener,noreferrer")} disabled={!dinoUrl}>
-                        {dinoUrl ? "Agregar →" : "Sin datos"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="confirm-btns">
-                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
-                <button className="confirm-btn secondary" onClick={onClose}>Cerrar</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
-              <div className="confirm-btns">
-                <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
-                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de Dino</button>
               </div>
             </>
           )}
@@ -2413,7 +2395,10 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
-        const puedeComprar = esVtex || esDino || esCoto || esLaGallega || esAtomo;
+        // Los VTEX compran con la URL masiva: si no hay ni un ítem con SKU no hay
+        // nada que abrir, y el bloque de al lado avisa que falta el próximo scrape.
+        // Los de carga encadenada no dependen de cartUrl.
+        const puedeComprar = esDino || esCoto || esLaGallega || esAtomo || (esVtex && !!cartUrl);
 
         return (
           <div key={superNombre} className="cart-section">
