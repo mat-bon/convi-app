@@ -1915,6 +1915,18 @@ function cargarCarritoEnDino(items, { onProgreso, onFin }) {
   });
 }
 
+// --- La Anónima: SIN carga automática (sólo guía manual) --------------------
+// Agregar es `PUT /carrito/super/articulo/<cod>`, y no hay forma de dispararlo
+// desde otro origen: una navegación/formulario sólo emite GET/POST (el sitio
+// devuelve 405 a todo lo que no sea PUT, incluido `_method=PUT`), y el fetch
+// PUT cross-origin muere en el preflight porque su CORS no manda
+// `Access-Control-Allow-Credentials`. Probado en vivo con cuenta real. Así que
+// La Anónima queda con el modal de dos pasos SIN el botón "cargar todo": el
+// usuario abre cada ficha y agrega desde el sitio. `producto.url` ya viene
+// absoluta (el scraper hace urljoin), así que urlEnSuper la abre directo.
+const LAANONIMA_STORE_URL = `${BASE_URLS["La Anónima"]}/supermercado/`;
+const LAANONIMA_CART_URL  = `${BASE_URLS["La Anónima"]}/carrito`;
+
 // true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
 function esPromoDescuento(promo) {
   if (!promo) return false;
@@ -2128,6 +2140,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
   const esLaGallega = superNombre === "La Gallega";
   const esAtomo     = superNombre === "Atomo";
   const esDino      = superNombre === "Dino";
+  const esLaAnonima = superNombre === "La Anónima";
 
   // Sólo se pueden autocargar los que tienen sku_id; el resto queda para la lista manual.
   const autocargables = superNombre === "Coto"
@@ -2152,6 +2165,73 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
       onFin: (completo) => { cargaTimer.current = null; setCarga(completo ? "listo" : null); },
     });
     if (!cargaTimer.current) setCarga("bloqueado");
+  }
+
+  // La Anónima: guía manual de dos pasos, sin carga automática. Su carrito no
+  // se puede cargar de una desde afuera (ver constantes LAANONIMA_*), así que
+  // abrimos ficha por ficha y el usuario agrega desde el sitio.
+  if (esLaAnonima) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+          {paso === "login" ? (
+            <>
+              <div className="confirm-title">Comprar en La Anónima — Paso 1 de 2</div>
+              <p className="confirm-desc">
+                La Anónima no permite cargar todo el carrito de una desde afuera. Abrí el sitio,
+                iniciá sesión y elegí tu sucursal (te va a pedir el código postal); en el paso 2
+                agregás cada producto desde su ficha.
+              </p>
+              <div className="confirm-btns">
+                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_STORE_URL, "_blank", "noopener,noreferrer"); setPaso("carrito"); }}>
+                  Abrir La Anónima para ingresar →
+                </button>
+                <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
+              </div>
+            </>
+          ) : paso === "carrito" ? (
+            <>
+              <div className="confirm-title">Comprar en La Anónima — Paso 2 de 2</div>
+              <p className="confirm-desc">
+                Abrí cada producto y tocá <strong>Agregar al Carrito</strong> en la ficha de La Anónima.
+              </p>
+              <div className="confirm-warning">
+                ⚠️ El precio puede variar según la sucursal que elijas: los que ves acá son de una sucursal de referencia.
+              </div>
+              <div className="confirm-item-list">
+                {items.map((i, idx) => {
+                  const url = urlEnSuper(i.producto);
+                  return (
+                    <div key={idx} className="confirm-item-row">
+                      <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
+                      <button className="confirm-item-btn" disabled={!url}
+                        onClick={() => url && window.open(url, "_blank", "noopener,noreferrer")}>
+                        {url ? "Abrir ficha →" : "Sin ficha"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="confirm-btns">
+                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_CART_URL, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
+                  Ver el carrito en La Anónima →
+                </button>
+                <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
+              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
+              <div className="confirm-btns">
+                <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
+                <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de La Anónima</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // Coto, La Gallega, Átomo y Dino comparten el mismo flujo: no tienen URL de
@@ -2390,6 +2470,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const esCoto = superNombre === "Coto";
         const esLaGallega = superNombre === "La Gallega";
         const esAtomo = superNombre === "Atomo";
+        const esLaAnonima = superNombre === "La Anónima";
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
@@ -2397,8 +2478,9 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const loginUrl = BASE_URLS[superNombre] || null;
         // Los VTEX compran con la URL masiva: si no hay ni un ítem con SKU no hay
         // nada que abrir, y el bloque de al lado avisa que falta el próximo scrape.
-        // Los de carga encadenada no dependen de cartUrl.
-        const puedeComprar = esDino || esCoto || esLaGallega || esAtomo || (esVtex && !!cartUrl);
+        // Los de carga encadenada no dependen de cartUrl. La Anónima tampoco: abre
+        // el modal de guía manual (sin carga automática, ver ConfirmCompraModal).
+        const puedeComprar = esDino || esCoto || esLaGallega || esAtomo || esLaAnonima || (esVtex && !!cartUrl);
 
         return (
           <div key={superNombre} className="cart-section">
