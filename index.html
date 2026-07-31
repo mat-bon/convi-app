@@ -1252,10 +1252,14 @@ const SUPER_COLORS = {
   "La Gallega": { bg:"#5B2C86", text:"#fff" },
   "La Anónima": { bg:"#034D8E", text:"#fff" },
   Jumbo:     { bg:"#2DC850", text:"#fff" },
+  // Rojo puro, tal cual lo declara el CSS del cabezal del sitio (#FF0000). Sale
+  // más saturado que el de Dia y el de Coto/MasOnline, que ya son casi iguales
+  // entre sí, y así los tres badges rojos se siguen distinguiendo.
+  Atomo:     { bg:"#FF0000", text:"#fff" },
 };
 
 const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez", "Jumbo"];
-const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo"];
+const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo", "Atomo"];
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
@@ -1281,6 +1285,11 @@ const SUPER_LOGOS = {
   // del tema, que lleva la versión adentro — `.../store-theme/7.0.76/...` se
   // rompe sola en el próximo deploy de Jumbo.
   Jumbo:     "https://jumboargentinaio.vtexassets.com/arquivos/logo-jumbo.png",
+  // El wordmark del cabezal va en blanco (vive sobre la barra roja del sitio) y
+  // el `atomo-online-logo.jpg` que declara el og:image está en blanco entero
+  // —el archivo se rompió—, así que se usa la variante roja del tema, que es la
+  // única que se lee sobre el badge blanco.
+  Atomo:     "https://atomoconviene.com/atomo-ecommerce/themes/atomoonline/assets/images/logo_rojo.png",
 };
 
 const SUPER_LOGOS_FALLBACK = {
@@ -1371,6 +1380,9 @@ const BASE_URLS = {
   "La Gallega": "https://www.lagallega.com.ar",
   "La Anónima": "https://www.laanonima.com.ar",
   Jumbo:     "https://www.jumbo.com.ar",
+  // La tienda cuelga de un subdirectorio: atomoconviene.com a secas es el sitio
+  // institucional, sin catálogo.
+  Atomo:     "https://atomoconviene.com/atomo-ecommerce",
 };
 
 const CATEGORIAS = {
@@ -1566,6 +1578,9 @@ const LOGO_CONTENIDO = {
   // Disco verde a sangre: la tinta ocupa el lienzo entero (79% opaco = el área
   // del círculo inscripto, sin margen).
   "Jumbo":      [1000, 1000, 1000, 1000],
+  // Wordmark de dos líneas ("ATOMO" arriba, "online" abajo) con ~7% de aire
+  // alrededor.
+  "Atomo":      [ 786,  296,  676,  244],
 };
 
 // El área objetivo sale de la propia grilla: la columna deja 92 px útiles, y un
@@ -1717,15 +1732,17 @@ function buildCotoAddUrl(producto, cantidad) {
 // cross-origin), terminando en la página del carrito del súper.
 // `pasos` es la lista plana de URLs a visitar; `porProducto` dice cuántas URLs
 // consume cada producto, sólo para mostrar el progreso en unidades entendibles.
+// `totalProductos` lo pisa cuando la lista lleva pasos que no son de ningún
+// producto (Átomo antepone una navegación para abrir sesión).
 // Devuelve el id del intervalo (para cancelar) o null si bloquearon el popup.
-function cargarCarritoEncadenado({ pasos, winName, urlFinal, delayMs, porProducto = 1, onProgreso, onFin }) {
+function cargarCarritoEncadenado({ pasos, winName, urlFinal, delayMs, porProducto = 1, totalProductos, onProgreso, onFin }) {
   if (!pasos.length) return null;
 
   // Debe dispararse dentro del click del usuario o el navegador lo bloquea.
   const win = window.open(pasos[0], winName);
   if (!win) return null;
 
-  const totalProds = Math.ceil(pasos.length / porProducto);
+  const totalProds = totalProductos || Math.ceil(pasos.length / porProducto);
   let i = 1;
   onProgreso(Math.min(1, totalProds), totalProds);
   const timer = setInterval(() => {
@@ -1798,6 +1815,60 @@ function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
     urlFinal: LAGALLEGA_CART_URL,
     delayMs: LAGALLEGA_ADD_DELAY_MS,
     porProducto: 2,
+    onProgreso, onFin,
+  });
+}
+
+// --- Carga automática del carrito de Átomo ----------------------------------
+// PrestaShop 1.7, mismo principio de navegación GET que Coto y La Gallega, pero
+// SIN LOGIN: el carrito de invitado alcanza. Tres cosas que hay que respetar:
+//
+// 1. HAY QUE CALENTAR LA SESIÓN. En frío el primer `add` NO entra: PrestaShop
+//    recién crea la cookie con esa misma respuesta y valida el token contra una
+//    sesión que todavía no existía. Por eso el primer paso es la home de la
+//    tienda, que sólo abre sesión.
+// 2. EL TOKEN ES ESTÁTICO, no de sesión: sale de la clave del sitio, no de la
+//    cookie. Verificado pidiéndolo con dos sesiones limpias distintas. Si algún
+//    día lo rotan, se lee del `<input name="token">` de cualquier ficha.
+// 3. `add` es INCREMENTAL (pedir qty=2 dos veces deja 4), y no hay forma por GET
+//    de fijar una cantidad absoluta: `update=1&op=up` no hace nada. Se resuelve
+//    como en La Gallega, con dos pasos por producto: `delete` y después `add`.
+//    Así volver a cargar el mismo carrito lo deja igual en vez de duplicarlo.
+//
+// Los productos sin stock se ignoran en silencio (el sitio no los agrega y no
+// avisa), igual que en el resto de los súperes.
+const ATOMO_ADD_DELAY_MS = 900;
+const ATOMO_WIN   = "superprecios_atomo";
+const ATOMO_TOKEN = "2b07b066ee0df5e4bc6a8ed1822f9503";
+const ATOMO_CART_URL  = `${BASE_URLS.Atomo}/carrito?action=show`;
+const ATOMO_STORE_URL = `${BASE_URLS.Atomo}/`;
+
+function atomoId(producto) {
+  const id = String(producto.sku_id || "").replace(/\D/g, "");
+  return id || null;
+}
+
+// Devuelve los DOS pasos (borrar la línea + agregarla con la cantidad exacta).
+function buildAtomoAddSteps(producto, cantidad) {
+  const id = atomoId(producto);
+  if (!id) return [];
+  const n = Number(cantidad);
+  const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
+  const base = `${BASE_URLS.Atomo}/carrito?id_product=${id}&id_product_attribute=0&token=${ATOMO_TOKEN}`;
+  return [`${base}&delete=1`, `${base}&add=1&qty=${qty}`];
+}
+
+function cargarCarritoEnAtomo(items, { onProgreso, onFin }) {
+  const pasos = items.flatMap(i => buildAtomoAddSteps(i.producto, i.cantidad));
+  if (!pasos.length) return null;
+  return cargarCarritoEncadenado({
+    // La home va adelante para abrir sesión; sin ella el primer add se pierde.
+    pasos: [ATOMO_STORE_URL, ...pasos],
+    winName: ATOMO_WIN,
+    urlFinal: ATOMO_CART_URL,
+    delayMs: ATOMO_ADD_DELAY_MS,
+    porProducto: 2,
+    totalProductos: pasos.length / 2,
     onProgreso, onFin,
   });
 }
@@ -2003,7 +2074,7 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
   const [paso, setPaso] = React.useState("login");
-  // Carga automática (Coto y La Gallega): null | {actual,total} | "bloqueado" | "listo"
+  // Carga automática (Coto, La Gallega y Átomo): null | {actual,total} | "bloqueado" | "listo"
   const [cotoCarga, setCotoCarga] = React.useState(null);
   const cotoTimer = React.useRef(null);
 
@@ -2013,18 +2084,23 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
   const esLaGallega = superNombre === "La Gallega";
+  const esAtomo     = superNombre === "Atomo";
 
   // Sólo se pueden autocargar los que tienen sku_id; el resto queda para la lista manual.
   const cotoAutocargables = superNombre === "Coto"
     ? items.filter(i => buildCotoAddUrl(i.producto, i.cantidad))
     : esLaGallega
       ? items.filter(i => buildLaGallegaAddSteps(i.producto, i.cantidad).length)
-      : [];
+      : esAtomo
+        ? items.filter(i => buildAtomoAddSteps(i.producto, i.cantidad).length)
+        : [];
 
   function handleCargarCoto() {
     if (!cotoAutocargables.length) return;
     setCotoCarga({ actual: 0, total: cotoAutocargables.length });
-    const cargar = esLaGallega ? cargarCarritoEnLaGallega : cargarCarritoEnCoto;
+    const cargar = esLaGallega ? cargarCarritoEnLaGallega
+                 : esAtomo     ? cargarCarritoEnAtomo
+                 : cargarCarritoEnCoto;
     cotoTimer.current = cargar(cotoAutocargables, {
       onProgreso: (actual, total) => setCotoCarga({ actual, total }),
       onFin: (completo) => { cotoTimer.current = null; setCotoCarga(completo ? "listo" : null); },
@@ -2059,13 +2135,24 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
     );
   }
 
-  // Coto y La Gallega comparten el mismo flujo: no tienen URL de carrito masivo,
-  // así que se cargan encadenando navegaciones sobre una pestaña ya logueada.
-  if (superNombre === "Coto" || esLaGallega) {
+  // Coto, La Gallega y Átomo comparten el mismo flujo: no tienen URL de carrito
+  // masivo, así que se cargan encadenando navegaciones sobre una misma pestaña.
+  // Coto y La Gallega la necesitan logueada; Átomo no, pero igual conviene abrir
+  // la tienda antes para que PrestaShop cree la sesión (ver cargarCarritoEnAtomo).
+  if (superNombre === "Coto" || esLaGallega || esAtomo) {
     const cfg = esLaGallega
       ? { loginUrl: LAGALLEGA_LOGIN_URL, cartUrl: LAGALLEGA_CART_URL, win: LAGALLEGA_WIN,
+          dominio: "lagallega.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
+          recordatorio: <>Tenés que tener la sesión abierta.</>,
           requisitos: <>La Gallega exige <strong>sesión iniciada</strong> para poder cargar el carrito. Ingresá con tu cuenta y volvé acá.</> }
+      : esAtomo
+      ? { loginUrl: ATOMO_STORE_URL, cartUrl: ATOMO_CART_URL, win: ATOMO_WIN,
+          dominio: "atomoconviene.com", botonPaso1: `Abrir ${superNombre} →`,
+          recordatorio: <>Dejá abierta la pestaña de {superNombre} mientras carga.</>,
+          requisitos: <>Átomo <strong>no pide cuenta</strong>: alcanza con abrir la tienda para que arranque la sesión, y después cargamos todo de una.</> }
       : { loginUrl: COTO_LOGIN_URL, cartUrl: COTO_CART_URL, win: COTO_WIN,
+          dominio: "coto.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
+          recordatorio: <>Tenés que tener la sesión abierta y la opción de entrega ya elegida.</>,
           requisitos: <>Coto exige sesión iniciada <strong>y opción de entrega elegida</strong> para cargar el carrito. Hacé las dos cosas y volvé acá.</> };
     return (
       <div className="modal-overlay" onClick={onClose}>
@@ -2076,7 +2163,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               <p className="confirm-desc">{cfg.requisitos}</p>
               <div className="confirm-btns">
                 <button className="confirm-btn primary" onClick={() => { window.open(cfg.loginUrl, cfg.win); setPaso("carrito"); }}>
-                  Abrir {superNombre} para ingresar →
+                  {cfg.botonPaso1}
                 </button>
                 <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
               </div>
@@ -2107,7 +2194,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
               ) : (
                 <>
                   <p className="confirm-desc">
-                    Cargamos todo de una en tu carrito de {superNombre}. Tenés que tener la sesión abierta{esLaGallega ? "" : " y la opción de entrega ya elegida"}.
+                    Cargamos todo de una en tu carrito de {superNombre}. {cfg.recordatorio}
                   </p>
                   <div className="confirm-btns" style={{marginBottom:6}}>
                     <button className="confirm-btn primary" onClick={handleCargarCoto} disabled={!cotoAutocargables.length}>
@@ -2123,7 +2210,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 
                   {cotoCarga === "bloqueado" && (
                     <div className="confirm-warning">
-                      ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para {esLaGallega ? "lagallega.com.ar" : "coto.com.ar"} y probá de nuevo, o cargá los productos uno por uno acá abajo.
+                      ⚠️ Tu navegador bloqueó la pestaña emergente. Permitila para {cfg.dominio} y probá de nuevo, o cargá los productos uno por uno acá abajo.
                     </div>
                   )}
                   {cotoCarga === "listo" && (
@@ -2139,6 +2226,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                     {items.map((i, idx) => {
                       const exacto = esLaGallega
                         ? !!buildLaGallegaProductUrl(i.producto)
+                        // Átomo guarda la URL canónica de la ficha en el propio
+                        // producto, así que siempre abre la ficha exacta.
+                        : esAtomo ? !!i.producto.url
                         : !!buildCotoProductUrl(i.producto);
                       return (
                         <div key={idx} className="confirm-item-row">
@@ -2317,12 +2407,13 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const esDino = superNombre === "Dino";
         const esCoto = superNombre === "Coto";
         const esLaGallega = superNombre === "La Gallega";
+        const esAtomo = superNombre === "Atomo";
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
-        const puedeComprar = esVtex || esDino || esCoto || esLaGallega;
+        const puedeComprar = esVtex || esDino || esCoto || esLaGallega || esAtomo;
 
         return (
           <div key={superNombre} className="cart-section">
@@ -3142,12 +3233,15 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
             title={enLista?"Quitar de mi lista":"Agregar a mi lista"}>
             📋<span className="btn-label">{enLista?"En lista":"Lista"}</span>
           </button>
+          {/* Átomo no es VTEX, pero su carrito se carga de un clic y encima sin pedir
+              cuenta (ver cargarCarritoEnAtomo), así que va del lado de los que tienen
+              botón de carrito y no del de Dino/La Gallega. */}
           {p._sinIdPropio ? (
             <a className="card-btn primary buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
               Ver en {p.supermercado} →
             </a>
-          ) : (esVtex || p.supermercado === "Coto") ? (
+          ) : (esVtex || p.supermercado === "Coto" || p.supermercado === "Atomo") ? (
             <button className={`card-btn buy ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
               🛒<span className="btn-label">{enCarrito?"En carrito":"Agregar"}</span>
             </button>
