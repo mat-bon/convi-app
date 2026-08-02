@@ -1740,6 +1740,18 @@ function cargarCarritoEncadenado({ pasos, winName, urlFinal, delayMs, porProduct
   const win = window.open(pasos[0], winName);
   if (!win) return null;
 
+  // La mandamos atrás mientras trabaja. El usuario no necesita mirar el proceso
+  // —el modal ya muestra el progreso— y así no le parpadean páginas del súper ni
+  // respuestas JSON en la cara; al terminar la traemos al frente con el carrito
+  // ya cargado (el `win.focus()` de más abajo).
+  // `blur`/`focus` son de los pocos métodos que se pueden llamar cross-origin.
+  // OJO: varios navegadores bloquean este cambio de foco, porque es la técnica
+  // que abusan los popunders. Si lo bloquean no se rompe nada: se ve igual que
+  // antes. Por eso ningún paso puede depender de que la pestaña esté oculta.
+  // Separados: si uno falla, el otro igual corre.
+  try { win.blur(); } catch (e) {}
+  try { window.focus(); } catch (e) {}
+
   const totalProds = totalProductos || Math.ceil(pasos.length / porProducto);
   let i = 1;
   onProgreso(Math.min(1, totalProds), totalProds);
@@ -1753,7 +1765,11 @@ function cargarCarritoEncadenado({ pasos, winName, urlFinal, delayMs, porProduct
     } else {
       clearInterval(timer);
       win.location = urlFinal;
-      win.focus();
+      // Acá la traemos al frente, ya con el carrito cargado. Va protegido: si
+      // `focus` tirara (la pestaña puede cerrarse justo entre el chequeo de
+      // `closed` y esta línea), `onFin` no correría y el modal se quedaría
+      // colgado en la barra de progreso para siempre.
+      try { win.focus(); } catch (e) {}
       onFin(true);
     }
   }, delayMs);
@@ -1819,7 +1835,7 @@ function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
 
 // --- Carga automática del carrito de Átomo ----------------------------------
 // PrestaShop 1.7, mismo principio de navegación GET que Coto y La Gallega, pero
-// SIN LOGIN: el carrito de invitado alcanza. Cuatro cosas que hay que respetar:
+// SIN LOGIN: el carrito de invitado alcanza. Cinco cosas que hay que respetar:
 //
 // 1. HAY QUE CALENTAR LA SESIÓN. En frío el primer `add` NO entra: PrestaShop
 //    recién crea la cookie con esa misma respuesta y valida el token contra una
@@ -1840,19 +1856,29 @@ function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
 //    de fijar una cantidad absoluta: `update=1&op=up` no hace nada. Se resuelve
 //    como en La Gallega, con dos pasos por producto: `delete` y después `add`.
 //    Así volver a cargar el mismo carrito lo deja igual en vez de duplicarlo.
-// 4. LOS PASOS VAN CON `ajax=1&action=update`, y el delay tiene que ser MAYOR
-//    que lo que tarda la respuesta. El encadenado pisa `win.location` cada
-//    delayMs: si el servidor todavía no contestó, la navegación se cancela y el
-//    add se pierde en silencio. Medido el 2026-08-02: la página completa del
-//    carrito tarda 1,44-1,69 s (290 KB) y con `ajax=1` baja a 0,67-0,78 s
-//    (932 bytes). Con los 900 ms que había antes era una CARRERA que casi
-//    siempre se perdía — el síntoma era "carga sólo el último producto" o
-//    ninguno, distinto en cada intento. 1500 ms deja ~2x de margen sobre la
-//    respuesta ajax y cubre también la home del paso 1 (TTFB 0,82 s).
+// 4. EL DELAY TIENE QUE SER MAYOR QUE LO QUE TARDA LA RESPUESTA. El encadenado
+//    pisa `win.location` cada delayMs: si el servidor todavía no contestó, la
+//    navegación se cancela y el add se pierde en silencio. Con los 900 ms que
+//    tenía antes era una CARRERA que casi siempre se perdía, y el síntoma era
+//    desconcertante: distinto en cada intento — a veces cargaba todo, a veces
+//    sólo el último producto, a veces ninguno. Medido el 2026-08-02 cortando la
+//    navegación a distintos tiempos: a 1,0 s y 1,2 s el carrito queda VACÍO; a
+//    1,5 s y 1,8 s entra completo y con las cantidades exactas (3 corridas
+//    seguidas). Se usa 1800 ms, 1,5x sobre el borde de falla medido. La página
+//    del carrito tarda 1,44-1,69 s en cargar entera, pero alcanza con llegar al
+//    TTFB (0,68-0,89 s): el alta ya quedó hecha del lado del servidor antes de
+//    que empiece a responder.
+// 5. LOS PASOS VAN A LA PÁGINA COMPLETA, no a `ajax=1&action=update`. El ajax
+//    hace exactamente lo mismo y es la mitad de lento (0,73 s y 932 bytes contra
+//    1,55 s y 290 KB), pero contesta un JSON crudo. La pestaña de la cadena se
+//    manda atrás (ver `cargarCarritoEncadenado`), pero algunos navegadores
+//    bloquean ese cambio de foco, y ahí queda a la vista: conviene que el
+//    usuario vea su carrito llenándose y no un volcado de código. Con 1800 ms la
+//    página completa entra igual, así que se paga esa diferencia.
 //
 // Los productos sin stock se ignoran en silencio (el sitio no los agrega y no
 // avisa), igual que en el resto de los súperes.
-const ATOMO_ADD_DELAY_MS = 1500;
+const ATOMO_ADD_DELAY_MS = 1800;
 const ATOMO_WIN   = "superprecios_atomo";
 const ATOMO_TOKEN = "2b07b066ee0df5e4bc6a8ed1822f9503";
 const ATOMO_CART_URL  = `${BASE_URLS.Atomo}/carrito?action=show`;
@@ -1864,16 +1890,14 @@ function atomoId(producto) {
 }
 
 // Devuelve los DOS pasos (borrar la línea + agregarla con la cantidad exacta).
-// `ajax=1&action=update` hace exactamente lo mismo que la navegación normal pero
-// contesta un JSON de ~1 KB en vez de renderizar los 290 KB del carrito: es la
-// mitad de tiempo por paso, que es lo que evita que se cancele (ver punto 4).
+// Sin `ajax=1` a propósito: cada paso renderiza el carrito de verdad, que es lo
+// que conviene que se vea si la pestaña queda al frente (ver punto 5).
 function buildAtomoAddSteps(producto, cantidad) {
   const id = atomoId(producto);
   if (!id) return [];
   const n = Number(cantidad);
   const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
-  const base = `${BASE_URLS.Atomo}/carrito?id_product=${id}&id_product_attribute=0`
-             + `&token=${ATOMO_TOKEN}&ajax=1&action=update`;
+  const base = `${BASE_URLS.Atomo}/carrito?id_product=${id}&id_product_attribute=0&token=${ATOMO_TOKEN}`;
   return [`${base}&delete=1`, `${base}&add=1&qty=${qty}`];
 }
 
