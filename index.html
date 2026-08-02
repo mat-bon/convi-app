@@ -1819,23 +1819,40 @@ function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
 
 // --- Carga automática del carrito de Átomo ----------------------------------
 // PrestaShop 1.7, mismo principio de navegación GET que Coto y La Gallega, pero
-// SIN LOGIN: el carrito de invitado alcanza. Tres cosas que hay que respetar:
+// SIN LOGIN: el carrito de invitado alcanza. Cuatro cosas que hay que respetar:
 //
 // 1. HAY QUE CALENTAR LA SESIÓN. En frío el primer `add` NO entra: PrestaShop
 //    recién crea la cookie con esa misma respuesta y valida el token contra una
 //    sesión que todavía no existía. Por eso el primer paso es la home de la
-//    tienda, que sólo abre sesión.
-// 2. EL TOKEN ES ESTÁTICO, no de sesión: sale de la clave del sitio, no de la
-//    cookie. Verificado pidiéndolo con dos sesiones limpias distintas. Si algún
-//    día lo rotan, se lee del `<input name="token">` de cualquier ficha.
+//    tienda, que sólo abre sesión. Y tiene que ser una PÁGINA DE VERDAD: probado
+//    el 2026-08-02, calentar con `?ajax=1&action=refresh` (7 KB) NO alcanza —
+//    el add posterior se pierde igual. La home y `/carrito?action=show` sirven;
+//    los 404 no (los sirve el caché, sin sesión).
+// 2. EL TOKEN VALE SÓLO PARA INVITADOS. Es fijo mientras no haya sesión, pero
+//    PrestaShop emite uno DISTINTO POR CLIENTE logueado y ahí este se rechaza:
+//    el add no hace nada y te redirige a la home, sin ningún mensaje. O sea que
+//    con la sesión de Átomo iniciada la carga automática no funciona, y no hay
+//    arreglo posible desde acá: el token del usuario vive en su sesión y el
+//    sitio no manda cabeceras CORS, así que no se puede leer desde otro origen
+//    (mismo muro que en La Anónima). Si algún día rotan el de invitado, se lee
+//    del `<input name="token">` de cualquier ficha pedida SIN sesión.
 // 3. `add` es INCREMENTAL (pedir qty=2 dos veces deja 4), y no hay forma por GET
 //    de fijar una cantidad absoluta: `update=1&op=up` no hace nada. Se resuelve
 //    como en La Gallega, con dos pasos por producto: `delete` y después `add`.
 //    Así volver a cargar el mismo carrito lo deja igual en vez de duplicarlo.
+// 4. LOS PASOS VAN CON `ajax=1&action=update`, y el delay tiene que ser MAYOR
+//    que lo que tarda la respuesta. El encadenado pisa `win.location` cada
+//    delayMs: si el servidor todavía no contestó, la navegación se cancela y el
+//    add se pierde en silencio. Medido el 2026-08-02: la página completa del
+//    carrito tarda 1,44-1,69 s (290 KB) y con `ajax=1` baja a 0,67-0,78 s
+//    (932 bytes). Con los 900 ms que había antes era una CARRERA que casi
+//    siempre se perdía — el síntoma era "carga sólo el último producto" o
+//    ninguno, distinto en cada intento. 1500 ms deja ~2x de margen sobre la
+//    respuesta ajax y cubre también la home del paso 1 (TTFB 0,82 s).
 //
 // Los productos sin stock se ignoran en silencio (el sitio no los agrega y no
 // avisa), igual que en el resto de los súperes.
-const ATOMO_ADD_DELAY_MS = 900;
+const ATOMO_ADD_DELAY_MS = 1500;
 const ATOMO_WIN   = "superprecios_atomo";
 const ATOMO_TOKEN = "2b07b066ee0df5e4bc6a8ed1822f9503";
 const ATOMO_CART_URL  = `${BASE_URLS.Atomo}/carrito?action=show`;
@@ -1847,12 +1864,16 @@ function atomoId(producto) {
 }
 
 // Devuelve los DOS pasos (borrar la línea + agregarla con la cantidad exacta).
+// `ajax=1&action=update` hace exactamente lo mismo que la navegación normal pero
+// contesta un JSON de ~1 KB en vez de renderizar los 290 KB del carrito: es la
+// mitad de tiempo por paso, que es lo que evita que se cancele (ver punto 4).
 function buildAtomoAddSteps(producto, cantidad) {
   const id = atomoId(producto);
   if (!id) return [];
   const n = Number(cantidad);
   const qty = Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1;
-  const base = `${BASE_URLS.Atomo}/carrito?id_product=${id}&id_product_attribute=0&token=${ATOMO_TOKEN}`;
+  const base = `${BASE_URLS.Atomo}/carrito?id_product=${id}&id_product_attribute=0`
+             + `&token=${ATOMO_TOKEN}&ajax=1&action=update`;
   return [`${base}&delete=1`, `${base}&add=1&qty=${qty}`];
 }
 
@@ -2127,7 +2148,10 @@ function AuthModal({ onClose, onLogin }) {
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
 function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
-  const [paso, setPaso] = React.useState("login");
+  // Átomo se saltea el paso de login: no pide cuenta y la propia cadena abre la
+  // tienda como primer paso para que PrestaShop cree la sesión, así que mandarlo
+  // a abrirla a mano antes era pedirle dos clics para lo mismo.
+  const [paso, setPaso] = React.useState(superNombre === "Atomo" ? "carrito" : "login");
   // Carga encadenada (Coto, La Gallega, Átomo y Dino): null | {actual,total} | "bloqueado" | "listo"
   const [carga, setCarga] = React.useState(null);
   const cargaTimer = React.useRef(null);
@@ -2247,9 +2271,12 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           requisitos: <>La Gallega exige <strong>sesión iniciada</strong> para poder cargar el carrito. Ingresá con tu cuenta y volvé acá.</> }
       : esAtomo
       ? { loginUrl: ATOMO_STORE_URL, cartUrl: ATOMO_CART_URL, win: ATOMO_WIN,
-          dominio: "atomoconviene.com", botonPaso1: `Abrir ${superNombre} →`,
-          recordatorio: <>Dejá abierta la pestaña de {superNombre} mientras carga.</>,
-          requisitos: <>Átomo <strong>no pide cuenta</strong>: alcanza con abrir la tienda para que arranque la sesión, y después cargamos todo de una.</> }
+          dominio: "atomoconviene.com", sinPaso1: true,
+          recordatorio: <>Átomo <strong>no pide cuenta</strong>, así que va directo: dejá abierta la pestaña que se abre hasta que termine.</>,
+          // La contracara de no pedir cuenta: con la sesión de Átomo iniciada su
+          // token anti-CSRF cambia y el sitio descarta los add sin avisar. No se
+          // puede detectar desde acá (no manda CORS), así que se avisa siempre.
+          nota: <>💡 Si tenés <strong>sesión iniciada en Átomo</strong>, su sitio bloquea la carga automática y el carrito queda vacío. Cerrá sesión ahí y volvé a intentar, o agregá los productos con la lista de abajo.</> }
       : esDino
       ? { loginUrl: DINO_LOGIN_URL, cartUrl: DINO_CART_URL, win: DINO_WIN,
           dominio: "dinoonline.com.ar", botonPaso1: `Abrir ${superNombre} para ingresar →`,
@@ -2277,7 +2304,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
             </>
           ) : paso === "carrito" ? (
             <>
-              <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
+              <div className="confirm-title">
+                Comprar en {superNombre}{cfg.sinPaso1 ? "" : " — Paso 2 de 2"}
+              </div>
 
               {carga && typeof carga === "object" ? (
                 <>
@@ -2358,7 +2387,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
                     <button className="confirm-btn primary" onClick={() => { window.open(cfg.cartUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
                       Ver el carrito en {superNombre} →
                     </button>
-                    <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
+                    {cfg.sinPaso1
+                      ? <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
+                      : <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>}
                   </div>
                 </>
               )}
