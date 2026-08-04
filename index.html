@@ -503,6 +503,16 @@
     .card-btn.fav:hover { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
     .card-btn.fav.active { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
 
+    /* Aviso de búsqueda relajada */
+    .search-notice {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--info-light); border: 1px solid rgba(59,130,246,0.22);
+      border-radius: var(--radius); padding: 12px 14px; margin-bottom: 16px;
+      font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+    }
+    .search-notice strong { color: var(--text-primary); font-weight: 700; }
+    .search-notice-icon { font-size: 15px; line-height: 1.4; }
+
     /* Empty state */
     .empty-state {
       text-align: center; padding: 80px 20px; background: var(--surface);
@@ -3619,6 +3629,8 @@ function App() {
   const [porPagina, setPorPagina] = React.useState(30);
   const [pagina, setPagina] = React.useState(1);
   const [totalProductos, setTotalProductos] = React.useState(0);
+  // Término que la API tuvo que relajar (le sobraba una palabra), o null.
+  const [busquedaRelajada, setBusquedaRelajada] = React.useState(null);
   const [totalPaginas, setTotalPaginas] = React.useState(1);
   const [usuario, setUsuario] = React.useState(() => { try { return JSON.parse(localStorage.getItem("sp_user")); } catch { return null; } });
   const [token, setToken] = React.useState(() => localStorage.getItem("sp_token") || null);
@@ -3926,6 +3938,7 @@ function App() {
       setProductos(Array.isArray(prods)?prods:[]);
       setTotalProductos(resp.total||0);
       setTotalPaginas(resp.total_paginas||1);
+      setBusquedaRelajada(resp.busqueda_relajada ? busqueda : null);
     } catch(e) { if (e.name==="AbortError") return; }
     setLoading(false);
   }
@@ -4187,6 +4200,17 @@ function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Aviso: la API no encontró nada con todas las palabras y relajó una */}
+              {busquedaRelajada && !loading && productosVisibles.length > 0 && (
+                <div className="search-notice">
+                  <span className="search-notice-icon">💡</span>
+                  <span>
+                    No encontramos productos con todas las palabras de <strong>“{busquedaRelajada}”</strong>.
+                    Estos son los más parecidos, así que puede faltarles alguna.
+                  </span>
+                </div>
+              )}
 
               {/* Grid */}
               {supersVisibles.length===0 && !loading ? (
