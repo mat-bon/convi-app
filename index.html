@@ -273,6 +273,21 @@
       border-bottom: 1px solid var(--border-light); border-radius: 0;
       margin-bottom: 4px; padding-bottom: 9px; font-weight: 800; color: var(--text-primary);
     }
+    /* Cadena que no vende en la región elegida: se atenúa pero sigue tildable,
+       porque el precio sirve de referencia aunque no se pueda comprar. */
+    .filter-check.sin-cobertura { opacity: 0.55; }
+    .filter-check.sin-cobertura:hover { opacity: 1; }
+    .filter-check.sin-cobertura img { filter: grayscale(1); }
+    .filter-check.sin-cobertura.on img { filter: none; }
+    .filter-check-tag {
+      margin-left: auto; font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em;
+      text-transform: uppercase; padding: 1px 6px; border-radius: 8px;
+      background: var(--surface-2); color: var(--text-muted);
+      border: 1px solid var(--border-light); white-space: nowrap;
+    }
+    /* Con la etiqueta presente el contador pierde el margin-left:auto (ya lo
+       tomó la etiqueta) y quedaría pegado; se lo separa a mano. */
+    .filter-check-tag + .count { margin-left: 5px; }
 
     .filter-toggle {
       display: flex; align-items: center; gap: 11px; padding: 9px 11px;
@@ -1270,6 +1285,54 @@ const SUPER_COLORS = {
 
 const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez", "Jumbo"];
 const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo", "Atomo"];
+
+// Qué cadenas venden REALMENTE en cada región. Sin esto la app mostraba las 12
+// en las 7 plazas: un usuario de Tucumán comparaba contra Dino, Cordiez, La
+// Gallega, Átomo, Coto y Dia, seis cadenas que no venden ahí, y a veces el "más
+// barato" del listado era una de ellas. Es el mismo problema que el precio de
+// catálogo sin región: un número real que nadie de esa plaza puede pagar.
+//
+// La cadena que no llega arranca DESTILDADA (se puede volver a tildar, sirve
+// como referencia) y sin botón de compra. Ver `superLlegaA` y `regionDe`.
+//
+// Cómo se relevó cada una (2026-08-05):
+//   Carrefour, MasOnline, VEA, Dia, Cordiez → /api/checkout/pub/regions por CP:
+//       si `sellers` vuelve vacío no hay venta online. Dia devuelve tienda SÓLO
+//       con CP de CABA/GBA; en el resto del país la lista es vacía. (Dia tiene
+//       locales físicos en varias provincias, pero su precio online es una lista
+//       de AMBA y no la que cobra el franquiciado, así que no se extiende.)
+//   Jumbo → sus 20 sellers nombran la ciudad: rosario, sanlorenzo, nuevocentro
+//       (Córdoba), mendoza, tucuman, salta. La Plata cae en el mismo regionId
+//       que CABA/GBA, así que la cubren las tiendas del conurbano.
+//   Disco → su propio /sucursales sólo nombra Córdoba, Rosario, La Plata, Villa
+//       Gesell, Mar del Plata y La Horqueta: Buenos Aires, CABA, Córdoba y
+//       Santa Fe, nada de Cuyo ni del NOA.
+//   Coto → las 122 sucursales de coto.com.ar/sucursales: 107 en AMBA, 7 en Santa
+//       Fe (Rosario y capital), 1 en La Plata, 1 en Mendoza. NINGUNA en Córdoba,
+//       Tucumán ni Salta.
+//   La Anónima → api.laanonima.com.ar/sucursal/<cp>, campo haySucursalSuper:
+//       true en Córdoba (176-179), Rosario (186), Tucumán (181-182) y Salta
+//       (183); false en CABA/GBA, La Plata y Mendoza.
+//   Dino (Córdoba), Cordiez (Córdoba), La Gallega (Rosario) y Átomo (Mendoza)
+//       son de una sola plaza.
+const SUPER_POR_REGION = {
+  caba_gba:         ["Carrefour", "MasOnline", "VEA", "Disco", "Jumbo", "Coto", "Dia"],
+  la_plata:         ["Carrefour", "MasOnline", "VEA", "Disco", "Jumbo", "Coto"],
+  santa_fe_rosario: ["Carrefour", "MasOnline", "VEA", "Disco", "Jumbo", "Coto", "La Gallega", "La Anónima"],
+  cordoba:          ["Carrefour", "MasOnline", "VEA", "Disco", "Jumbo", "Dino", "Cordiez", "La Anónima"],
+  mendoza:          ["Carrefour", "MasOnline", "VEA", "Jumbo", "Coto", "Atomo"],
+  tucuman:          ["Carrefour", "MasOnline", "VEA", "Jumbo", "La Anónima"],
+  salta:            ["Carrefour", "MasOnline", "VEA", "Jumbo", "La Anónima"],
+};
+
+// Sin región elegida no se filtra nada: no sabemos dónde está el usuario, así
+// que mostrar las 12 es lo correcto. Una región desconocida (por si se agrega
+// una en la base antes que acá) también deja pasar todo, en vez de vaciar la
+// grilla en silencio.
+function superLlegaA(superNombre, regionCodigo) {
+  const lista = regionCodigo && SUPER_POR_REGION[regionCodigo];
+  return !lista || lista.includes(superNombre);
+}
 
 const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
@@ -2489,7 +2552,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
 // ---------------------------------------------------------------------------
 // CarritoView
 // ---------------------------------------------------------------------------
-function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, onCambiarSuper, token }) {
+function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, onCambiarSuper, token, regionCodigo }) {
   const [confirmData, setConfirmData] = React.useState(null);
   const [modalProd, setModalProd] = React.useState(null); // { producto, swap }
 
@@ -2541,11 +2604,17 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
           : null;
         const loginUrl = BASE_URLS[superNombre] || null;
+        // La cadena que no vende en la región elegida no ofrece compra: el
+        // carrito de su sitio no acepta una dirección de esa plaza, así que el
+        // botón sólo llevaría a un callejón sin salida. El precio se sigue
+        // mostrando, que para eso el usuario la tildó (ver SUPER_POR_REGION).
+        const llegaAcá = superLlegaA(superNombre, regionCodigo);
         // Los VTEX compran con la URL masiva: si no hay ni un ítem con SKU no hay
         // nada que abrir, y el bloque de al lado avisa que falta el próximo scrape.
         // Los de carga encadenada no dependen de cartUrl. La Anónima tampoco: abre
         // el modal de guía manual (sin carga automática, ver ConfirmCompraModal).
-        const puedeComprar = esDino || esCoto || esLaGallega || esAtomo || esLaAnonima || (esVtex && !!cartUrl);
+        const puedeComprar = llegaAcá &&
+          (esDino || esCoto || esLaGallega || esAtomo || esLaAnonima || (esVtex && !!cartUrl));
 
         return (
           <div key={superNombre} className="cart-section">
@@ -2562,6 +2631,10 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                   onClick={() => setConfirmData({ superNombre, loginUrl, cartUrl, itemIds: items.map(i => i.producto_id), items })}>
                   Comprar en {superNombre} →
                 </button>
+              ) : !llegaAcá ? (
+                <span style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",textAlign:"right",maxWidth:170,lineHeight:1.5}}>
+                  No vende en tu región — precio de referencia
+                </span>
               ) : esVtex && conSku.length < items.length ? (
                 <span style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic"}}>
                   {conSku.length === 0 ? "Sin SKUs — esperá el próximo scrape" : `${conSku.length}/${items.length} con SKU`}
@@ -2855,7 +2928,7 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
 // Una fila por producto, una columna por súper. Las columnas vienen ordenadas
 // del backend: primero los que tienen la lista completa, después por cuántos
 // productos les faltan, y recién ahí por precio.
-function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
+function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, listaActivaId,
                      setListaActivaId, onListasChange, carritoIds, onCarritoChange }) {
   const [data, setData]         = React.useState(null);
   const [cargando, setCargando] = React.useState(true);
@@ -3069,6 +3142,9 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
   const masBarato   = supers.reduce((a, b) => (!a || b.total_estimado < a.total_estimado ? b : a), null);
   const mixta       = data.compra_mixta;
   const ahorroMixta = mejorComp && mixta ? mejorComp.total_estimado - mixta.total : 0;
+  // Columnas que están sólo como referencia: la cadena no vende en la región.
+  const referencias = supers.map(s => s.supermercado).filter(n => !superLlegaA(n, regionCodigo));
+  const hayReferencia = referencias.length > 0;
 
   // Con medios de pago cargados hay DOS respuestas a "cuál conviene": la de
   // góndola (la de arriba, que vale para cualquiera) y la de este usuario con
@@ -3128,6 +3204,13 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
           <div className="lista-resumen-linea mixta">
             💚 Comprando cada cosa donde está más barata: <strong>{fmt(mixta.total)}</strong>
             {ahorroMixta > 0 && <> — ahorrás {fmt(ahorroMixta)} contra el mejor súper único</>}
+          </div>
+        )}
+        {hayReferencia && (
+          <div className="lista-resumen-linea">
+            👀 {referencias.join(", ")} {referencias.length > 1 ? "no venden" : "no vende"} en tu
+            región: {referencias.length > 1 ? "esas columnas van" : "esa columna va"} como referencia
+            de precio y no {referencias.length > 1 ? "entran" : "entra"} en la compra.
           </div>
         )}
         {data.sin_precio > 0 && (
@@ -3194,27 +3277,35 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
                   const celda     = fila.precios[s.supermercado];
                   const esMejor   = celda && fila.mas_barato === s.supermercado;
                   const enCarrito = celda && carritoIds.has(celda.producto_id);
+                  // La celda de una cadena que no llega muestra el precio pero
+                  // no se puede tocar: agregarla armaría un carrito que después
+                  // no hay dónde cerrar.
+                  const llega     = superLlegaA(s.supermercado, regionCodigo);
                   return (
                     <td key={s.supermercado}
                         className={`lg-cell ${esMejor ? "mejor" : ""} ${enCarrito ? "en-carrito" : ""}`}>
-                      <button className="lg-cell-btn" disabled={!celda || ocupado === `c${fila.id}`}
+                      <button className="lg-cell-btn" disabled={!celda || !llega || ocupado === `c${fila.id}`}
                         onClick={() => toggleCelda(fila, celda, enCarrito)}
-                        title={celda
-                          ? (enCarrito
+                        title={!celda
+                          ? `${s.supermercado} no tiene este producto`
+                          : !llega
+                            ? `${s.supermercado} no vende en tu región: el precio va como referencia`
+                            : enCarrito
                               ? `Quitar del carrito`
-                              : `Agregar al carrito desde ${s.supermercado}`)
-                          : `${s.supermercado} no tiene este producto`}>
+                              : `Agregar al carrito desde ${s.supermercado}`}>
                         {celda ? (
                           <>
                             <span>{fmt(celda.precio * fila.cantidad)}</span>
-                            {enCarrito
-                              ? <span className="lg-cell-swap">
-                                  <span className="lg-cell-tag lg-swap-puesto">✓ en carrito</span>
-                                  <span className="lg-cell-tag lg-swap-quitar">− quitar</span>
-                                </span>
-                              : celda.precio_regional
-                                ? <span className="lg-cell-tag">📍 tu región</span>
-                                : <span className="lg-cell-add">+ carrito</span>}
+                            {!llega
+                              ? <span className="lg-cell-tag">👀 referencia</span>
+                              : enCarrito
+                                ? <span className="lg-cell-swap">
+                                    <span className="lg-cell-tag lg-swap-puesto">✓ en carrito</span>
+                                    <span className="lg-cell-tag lg-swap-quitar">− quitar</span>
+                                  </span>
+                                : celda.precio_regional
+                                  ? <span className="lg-cell-tag">📍 tu región</span>
+                                  : <span className="lg-cell-add">+ carrito</span>}
                           </>
                         ) : "—"}
                       </button>
@@ -3232,8 +3323,17 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
                   Total de la lista
                 </div>
                 {mixta && (
-                  <button className="lg-total-btn" disabled={ocupado === "mixta"}
-                    style={{background:"#059669"}} onClick={() => volcar(null)}>
+                  // La compra mixta reparte la lista entre las columnas que se
+                  // están viendo. Si alguna es una cadena que no vende en la
+                  // región (tildada a propósito, como referencia), el total de
+                  // arriba incluye precios que no se pueden comprar y el
+                  // volcado cargaría otra cosa: se desactiva hasta destildarla.
+                  <button className="lg-total-btn" disabled={ocupado === "mixta" || hayReferencia}
+                    style={{background: hayReferencia ? "var(--text-muted)" : "#059669"}}
+                    title={hayReferencia
+                      ? `Destildá ${referencias.join(", ")} para poder repartir la compra: no vende${referencias.length > 1 ? "n" : ""} en tu región.`
+                      : undefined}
+                    onClick={() => volcar(null)}>
                     {ocupado === "mixta" ? "…" : <>💚<span className="btn-label"> Compra mixta</span> {fmt(mixta.total)}</>}
                   </button>
                 )}
@@ -3250,10 +3350,19 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
                       : `estimado — falta${s.faltantes > 1 ? "n" : ""} ${s.faltantes}`}
                   </div>
                   <PromoBadge promo={s.promo_bancaria}/>
-                  <button className="lg-total-btn" disabled={ocupado === s.supermercado || s.cubiertos === 0}
-                    onClick={() => volcar(s.supermercado)}>
-                    {ocupado === s.supermercado ? "…" : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
-                  </button>
+                  {/* La columna de una cadena que no vende en la región queda
+                      como referencia de precio, sin volcado: su carrito no se
+                      puede cerrar desde acá (ver SUPER_POR_REGION). */}
+                  {superLlegaA(s.supermercado, regionCodigo) ? (
+                    <button className="lg-total-btn" disabled={ocupado === s.supermercado || s.cubiertos === 0}
+                      onClick={() => volcar(s.supermercado)}>
+                      {ocupado === s.supermercado ? "…" : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
+                    </button>
+                  ) : (
+                    <div className="lg-total-nota" title={`${s.supermercado} no vende en tu región`}>
+                      no llega — referencia
+                    </div>
+                  )}
                 </td>
               ))}
             </tr>
@@ -3267,9 +3376,13 @@ function ListaView({ token, regionId, supersVisibles, listas, listaActivaId,
 // ---------------------------------------------------------------------------
 // ProductCard
 // ---------------------------------------------------------------------------
-const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onFav, onCarrito, onLista, onOpen, supersVisibles }) {
+const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onFav, onCarrito, onLista, onOpen, supersVisibles, regionCodigo }) {
   const hasOffer = p.descuento_pct || p.promocion;
   const esVtex = SUPER_VTEX.includes(p.supermercado);
+  // Cadena que no vende en la región elegida: se ve el precio (el usuario la
+  // tildó a propósito, sirve de referencia) pero no se ofrece agregar al
+  // carrito, porque ese carrito no se puede cerrar desde acá.
+  const llegaAcá = superLlegaA(p.supermercado, regionCodigo);
   // Ocultar de la comparación los supers que el usuario destildó en el filtro
   const otros = (p.otros_supers || []).filter(o => !supersVisibles || supersVisibles.includes(o.supermercado));
   const hayComparacion = otros.length > 0;
@@ -3368,7 +3481,13 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
           {/* Átomo no es VTEX, pero su carrito se carga de un clic y encima sin pedir
               cuenta (ver cargarCarritoEnAtomo), así que va del lado de los que tienen
               botón de carrito y no del de Dino/La Gallega. */}
-          {p._sinIdPropio ? (
+          {!llegaAcá ? (
+            <a className="card-btn buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
+              onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}}
+              title={`${p.supermercado} no vende en tu región: el precio va como referencia`}>
+              👀<span className="btn-label">Referencia</span>
+            </a>
+          ) : p._sinIdPropio ? (
             <a className="card-btn primary buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
               Ver en {p.supermercado} →
@@ -3387,8 +3506,15 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
 // ---------------------------------------------------------------------------
 // Sidebar Filters
 // ---------------------------------------------------------------------------
-function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats }) {
-  const supers = SUPER_TODOS;
+function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats, regionCodigo }) {
+  // Las que llegan primero: si no, el usuario de Tucumán abre el panel y lo que
+  // ve arriba son seis cadenas que no le sirven.
+  const supers = React.useMemo(() => {
+    if (!regionCodigo) return SUPER_TODOS;
+    return [...SUPER_TODOS].sort((a, b) =>
+      (superLlegaA(b, regionCodigo) ? 1 : 0) - (superLlegaA(a, regionCodigo) ? 1 : 0));
+  }, [regionCodigo]);
+  const sinCobertura = SUPER_TODOS.filter(s => !superLlegaA(s, regionCodigo));
   const cats = ["Todas", ...Object.keys(CATEGORIAS)];
   const subcats = catFiltro !== "Todas" && CATEGORIAS[catFiltro] ? ["Todas", ...Object.keys(CATEGORIAS[catFiltro].subs)] : [];
 
@@ -3409,15 +3535,26 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
               onChange={toggleTodos}/>
             <span className="filter-check-name">Todos</span>
           </label>
-          {supers.map(s => (
-            <label key={s} className={`filter-check ${supersVisibles.includes(s)?"on":""}`}>
-              <input type="checkbox" checked={supersVisibles.includes(s)} onChange={()=>toggleSuper(s)}/>
-              <SuperLogo nombre={s} size={18} bare={true}/>
-              <span className="filter-check-name">{s}</span>
-              {stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
-            </label>
-          ))}
+          {supers.map(s => {
+            const llega = superLlegaA(s, regionCodigo);
+            return (
+              <label key={s} className={`filter-check ${supersVisibles.includes(s)?"on":""} ${llega?"":"sin-cobertura"}`}
+                title={llega ? undefined : "No vende en tu región. Podés tildarlo igual para usarlo de referencia, pero no vas a poder comprar."}>
+                <input type="checkbox" checked={supersVisibles.includes(s)} onChange={()=>toggleSuper(s)}/>
+                <SuperLogo nombre={s} size={18} bare={true}/>
+                <span className="filter-check-name">{s}</span>
+                {!llega && <span className="filter-check-tag">no llega</span>}
+                {stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
+              </label>
+            );
+          })}
         </div>
+        {sinCobertura.length > 0 && (
+          <div className="filter-hint" style={{marginTop:8}}>
+            {sinCobertura.length === 1 ? "1 cadena no vende" : `${sinCobertura.length} cadenas no venden`} en tu
+            región y quedaron destildadas. Podés tildarlas para ver el precio de referencia.
+          </div>
+        )}
       </div>
 
       <div className="filter-card">
@@ -3650,6 +3787,36 @@ function App() {
   const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
+  // El código de la región elegida ("cordoba", "tucuman"…). Es la clave de
+  // SUPER_POR_REGION; el regionId sólo sirve para hablar con la API.
+  const regionCodigo = React.useMemo(
+    () => (regiones.find(r => r.id === regionId) || {}).codigo || null,
+    [regiones, regionId]
+  );
+
+  // Al entrar a una región se destildan las cadenas que no venden ahí. Se aplica
+  // UNA vez por región, no en cada render: sin el ref, volver a tildar Coto en
+  // Tucumán lo destildaría en el acto y el checkbox quedaría muerto (la idea es
+  // justamente que se pueda mirar el precio como referencia).
+  // Si el destildado dejaría la grilla vacía —el usuario tenía marcadas sólo
+  // cadenas que no llegan— se tildan todas las que sí llegan, que es más útil
+  // que una pantalla en blanco.
+  const regionAplicadaRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!regionCodigo || regionAplicadaRef.current === regionCodigo) return;
+    regionAplicadaRef.current = regionCodigo;
+    setSupersVisibles(prev => {
+      const quedan = prev.filter(s => superLlegaA(s, regionCodigo));
+      if (quedan.length === prev.length) return prev;
+      return quedan.length ? quedan : SUPER_TODOS.filter(s => superLlegaA(s, regionCodigo));
+    });
+    // `supersVisibles` va en las dependencias para que el destildado alcance
+    // también a la lista que llega de /preferencia después del login (que puede
+    // resetear el ref sin que cambie la región). No hay bucle: el propio ref
+    // corta en la segunda pasada, y tampoco pelea con el usuario que vuelve a
+    // tildar una cadena, porque para entonces el ref ya coincide con la región.
+  }, [regionCodigo, supersVisibles]);
+
   // Multi-selección de supermercados: si hay exactamente uno visible lo filtramos en el
   // servidor (paginación correcta); con un subconjunto filtramos en cliente sobre lo traído.
   const superParam = supersVisibles.length === 1 ? supersVisibles[0] : "";
@@ -3873,7 +4040,12 @@ function App() {
         // Hidratar supers preferidos (null/[] = sin configurar → dejamos SUPER_TODOS)
         if (data && Array.isArray(data.supermercados) && data.supermercados.length) {
           const validos = data.supermercados.filter(s => SUPER_TODOS.includes(s));
-          if (validos.length) setSupersVisibles(validos);
+          if (validos.length) {
+            setSupersVisibles(validos);
+            // La lista del servidor puede traer cadenas que no llegan a la región
+            // guardada, así que el destildado tiene que volver a correr sobre ella.
+            regionAplicadaRef.current = null;
+          }
         }
       })
       .catch(() => {});
@@ -4106,6 +4278,7 @@ function App() {
               subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
               soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
               stats={stats}
+              regionCodigo={regionCodigo}
             />
           </aside>
         )}
@@ -4150,11 +4323,12 @@ function App() {
           </div>
 
           {tab === "carrito" ? (
-            <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token}/>
+            <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token} regionCodigo={regionCodigo}/>
           ) : tab === "lista" ? (
             <ListaView
               token={token}
               regionId={regionId}
+              regionCodigo={regionCodigo}
               supersVisibles={supersVisibles}
               listas={listas}
               listaActivaId={listaActivaId}
@@ -4251,6 +4425,7 @@ function App() {
                           onLista={toggleLista}
                           onOpen={setModalProducto}
                           supersVisibles={supersVisibles}
+                          regionCodigo={regionCodigo}
                         />
                       ))
                     )}
