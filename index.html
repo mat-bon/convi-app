@@ -658,9 +658,32 @@
     }
     .welcome-savings strong { color: #14532d; font-weight: 800; }
     .welcome-savings-emoji { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+
+    /* Promos bancarias en el onboarding. Va en el violeta del selector de medios
+       de pago, que es adonde lleva: el color hace de hilo entre los dos. */
+    .welcome-bancos {
+      margin: 12px 24px 0; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start;
+      background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.22);
+      border-radius: var(--radius); font-size: 12.5px; color: var(--text-secondary); line-height: 1.55;
+    }
+    .welcome-bancos strong { color: var(--text-primary); font-weight: 800; }
+    .welcome-bancos-emoji { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .welcome-bancos-logos {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 11px;
+    }
+    .welcome-bancos-mas { font-size: 11.5px; font-weight: 800; color: var(--text-muted); }
+    /* El botón se pega abajo del modal. Con los cinco pasos, el bloque de ahorro
+       y el de bancos el contenido pasa de 900px, y el modal está topeado en 92vh:
+       sin esto el CTA del onboarding queda fuera de pantalla hasta que el usuario
+       scrollea. En pantallas donde todo entra, `sticky` no hace nada. El pie
+       lleva el fondo del modal para que el contenido no se vea pasar por debajo. */
+    .welcome-pie {
+      position: sticky; bottom: 0; background: var(--surface);
+      box-shadow: 0 -14px 14px -14px rgba(0,0,0,0.14);
+    }
     .welcome-cta {
       display: flex; align-items: center; justify-content: center; gap: 6px;
-      margin: 18px 24px 24px; width: calc(100% - 48px);
+      margin: 16px 24px 20px; width: calc(100% - 48px);
       padding: 14px; border: none; border-radius: var(--radius);
       background: var(--ink); color: var(--accent); font-size: 15px; font-weight: 800;
       cursor: pointer; font-family: inherit; transition: all 0.15s;
@@ -1362,7 +1385,10 @@ const SUPER_LOGOS = {
   VEA:       "https://veaargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/90afb408-ae59-49dc-93d3-024dfad89cb3___512e889dc7a3dba0a62a4b47dffde6d1.png",
   Carrefour: "https://www.micarrefour.com.ar/images/footer/logo-carrefour-com-ar.svg",
   MasOnline: "https://masonlineprod.vtexassets.com/assets/vtex.file-manager-graphql/images/1f676005-1a66-4379-abe1-e8c39b539f10___3b7e04ce085fbfa38121c0692ad1dd9b.svg",
-  Dino:      "https://www.dinoonline.com.ar/super/images/logo-super-mami.png",
+  // El de dinoonline.com.ar dejó de responder (verificado 2026-08-07, falla 3 de
+  // 3): se promovió el que era respaldo, que trae el mismo logo. El viejo queda
+  // abajo por si vuelve.
+  Dino:      "https://statics.dinoonline.com.ar/img/dino-online_sm.png",
   Dia:       "https://tradeyretail.com/img/39b330a74fb0ce11006649d94eedb67c.jpg",
   Coto:      "https://static.cotodigital3.com.ar/sitios/cdigi/static/content/images/nuevositio/header/LogoCOTO.svg",
   Disco:     "https://discoargentina.vtexassets.com/assets/vtex.file-manager-graphql/images/bd790034-1117-4263-90e5-04f3f5a27503___ab950355900559ccc0bc0cb131364561.png",
@@ -1390,7 +1416,8 @@ const SUPER_LOGOS = {
 };
 
 const SUPER_LOGOS_FALLBACK = {
-  Dino: ["https://statics.dinoonline.com.ar/img/dino-online_sm.png"],
+  // Era el primario hasta que dejó de responder; queda de respaldo por si vuelve.
+  Dino: ["https://www.dinoonline.com.ar/super/images/logo-super-mami.png"],
   // Mismo isotipo en PNG, por si el SVG no carga.
   "La Anónima": ["https://www.laanonima.com.ar/imagenes/2025/png/152x152-la.png"],
 };
@@ -1679,7 +1706,9 @@ const LOGO_CONTENIDO = {
   "VEA":        [1419, 1418, 1212, 1212],
   "Carrefour":  [ 143,   32,  143,   32],
   "MasOnline":  [ 300,   57,  299,   57],
-  "Dino":       [ 492,  197,  488,  194],
+  // Remedido el 2026-08-07 al cambiar la URL: el archivo viejo era 492x197 a
+  // sangre y éste es 255x75 con casi la mitad del ancho en relleno.
+  "Dino":       [ 255,   75,  134,   54],
   "Dia":        [1080, 1036, 1080, 1036],
   "Coto":       [ 420,  151,  400,  133],
   "Disco":      [ 489,  488,  441,  441],
@@ -1726,8 +1755,25 @@ function _cajaLogoGrilla(nombre) {
   // caja. La proporción es la del archivo: así la caja calza justo con la imagen
   // y `contain` no agrega bandas.
   const escala = Math.sqrt(_AREA_TINTA / (anchoTinta * altoTinta));
+  const anchoCaja = anchoArch * escala;
+
+  // El espejo del caso de Cordiez: acá el relleno está a los COSTADOS. Dino trae
+  // 134 px de tinta en un archivo de 255, así que la caja que haría falta mide
+  // 131 y no entra en la columna — pero lo que sobra es aire, no logo. Con
+  // `contain` recortado a 92 la tinta queda en 943 px² contra los 1900 del resto.
+  //
+  // Con `cover` la escala la fija el alto y el ancho se recorta a la columna,
+  // llevándose justamente el relleno. La segunda condición es la que garantiza
+  // que no se corte el logo: la ventana visible abarca `_ANCHO_COL / escala` px
+  // del archivo y tiene que entrarle la tinta. Asume que está centrada, que es el
+  // caso de los que se midieron; si no lo estuviera, cae solo a `contain`, que
+  // achica pero nunca corta.
+  if (anchoCaja > _ANCHO_COL && _ANCHO_COL / escala >= anchoTinta) {
+    return { ancho: px(_ANCHO_COL), recorte: +(_ANCHO_COL / (altoArch * escala)).toFixed(3) };
+  }
+
   return {
-    ancho: px(Math.min(_ANCHO_COL, anchoArch * escala)),
+    ancho: px(Math.min(_ANCHO_COL, anchoCaja)),
     proporcion: +(anchoArch / altoArch).toFixed(3),
   };
 }
@@ -3794,7 +3840,38 @@ function LegalModal({ initialTab = "terminos", onClose }) {
 // ---------------------------------------------------------------------------
 // WelcomeModal — onboarding breve (primera visita)
 // ---------------------------------------------------------------------------
+// Cuántos logos entran en la tira antes de resumir en "+N". Diez es lo que
+// llena dos renglones del modal sin empujar el botón fuera de pantalla.
+const _WELCOME_BANCOS_VISIBLES = 10;
+
 function WelcomeModal({ onClose }) {
+  // El catálogo sale de la API y no de una lista fija por la misma razón que el
+  // selector: se arma con las promos ACTIVAS, así que una entidad cuya promo
+  // venció deja de mostrarse sola. Es público, no pide token. Si falla, el
+  // bloque se queda con el texto —que es lo que importa— y sin la tira.
+  const [entidades, setEntidades] = React.useState([]);
+  React.useEffect(() => {
+    fetch(`${API}/medios-pago`)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => setEntidades((d.entidades || []).map(e => e.entidad)))
+      .catch(() => {});
+  }, []);
+  // Solo van a la tira las que tienen ícono; el resto sumaría cuadraditos de
+  // monograma que acá no aportan nada. Y se descartan los REPETIDOS: las dos de
+  // CencoPay comparten isotipo, igual que las tres tarjetas de Carrefour, y sin
+  // el nombre al lado dos chips idénticos pegados se leen como un error.
+  // El "+N" sí cuenta el catálogo entero, que es la cobertura real.
+  const tira = React.useMemo(() => {
+    const vistos = new Set();
+    return entidades.filter(e => {
+      const src = PAGO_LOGOS[e];
+      if (!src || vistos.has(src)) return false;
+      vistos.add(src);
+      return true;
+    }).slice(0, _WELCOME_BANCOS_VISIBLES);
+  }, [entidades]);
+  const mas = entidades.length - tira.length;
+
   const pasos = [
     { ico: "📍", t: "Elegí tu región", d: "Arriba a la izquierda. Así ves los precios y promos de tu zona." },
     { ico: "✅", t: "Marcá tus supermercados", d: "Elegí de cuáles querés ver precios y recibir alertas." },
@@ -3828,7 +3905,23 @@ function WelcomeModal({ onClose }) {
             <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos.
           </div>
         </div>
-        <button className="welcome-cta" onClick={onClose}>Empezar a ahorrar →</button>
+        <div className="welcome-bancos">
+          <span className="welcome-bancos-emoji">💳</span>
+          <div>
+            <strong>Y los descuentos del banco.</strong> Tildá tus tarjetas y te decimos cuánto te
+            sale la lista <strong>a vos</strong>. Van sobre el total de la compra, no sobre el precio
+            de góndola, y muchos son reintegro: en la caja pagás todo.
+            {tira.length > 0 && (
+              <div className="welcome-bancos-logos">
+                {tira.map(e => <PagoLogo key={e} nombre={e} size={26}/>)}
+                {mas > 0 && <span className="welcome-bancos-mas">+{mas}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="welcome-pie">
+          <button className="welcome-cta" onClick={onClose}>Empezar a ahorrar →</button>
+        </div>
       </div>
     </div>
   );
