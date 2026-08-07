@@ -126,12 +126,7 @@
       border-radius: 9px; font-size: 10px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 2px 6px rgba(16,24,40,0.18); border: 2px solid var(--surface);
-      /* El fondo y el color van en la clase BASE, no sólo en los modificadores.
-         Antes el badge sin modificador (el de "Mi lista") no declaraba ninguno
-         de los dos y heredaba el color del botón: con la pestaña activa,
-         `.header-btn.active` lo pinta #fff y el número quedaba blanco sobre
-         nada, ilegible. Los de Favoritos y Carrito no fallaban de casualidad,
-         porque su modificador sí declara ambos. */
+  
       background: var(--info); color: #fff;
     }
     .header-btn-badge.yellow { background: var(--accent); color: #000; }
@@ -3902,15 +3897,15 @@ function WelcomeModal({ onClose }) {
         <div className="welcome-savings">
           <span className="welcome-savings-emoji">💚</span>
           <div>
-            <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos.
+            <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos!
           </div>
         </div>
         <div className="welcome-bancos">
           <span className="welcome-bancos-emoji">💳</span>
           <div>
-            <strong>Y los descuentos del banco.</strong> Tildá tus tarjetas y te decimos cuánto te
-            sale la lista <strong>a vos</strong>. Van sobre el total de la compra, no sobre el precio
-            de góndola, y muchos son reintegro: en la caja pagás todo.
+            <strong>PROMOS BANCARIAS!</strong> Tildá tus tarjetas y te decimos cuánto te
+            sale la lista <strong>a vos!</strong> Los descuentos aplican sobre el total de la compra
+             o con reintegro a tu cuenta.
             {tira.length > 0 && (
               <div className="welcome-bancos-logos">
                 {tira.map(e => <PagoLogo key={e} nombre={e} size={26}/>)}
