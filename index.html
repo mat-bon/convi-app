@@ -1416,7 +1416,8 @@ const SUPER_LOGOS_FALLBACK = {
 // Si algún día Apple cambia la ruta del arte, el onError de PagoLogo lo baja al
 // monograma solo; no hay que hacer nada.
 //
-// De las 33 entidades activas quedan 5 sin entrada, y no es por olvido:
+// De las 36 entidades activas —33 más las tres que trajeron las promos de
+// Cencosud— quedan 5 sin entrada, y no es por olvido:
 //   · "Jubilados y pensionados", "Todos los medios de pago", "Billeteras
 //     virtuales" y "Ciudadanía Porteña" no son una marca: no hay logo que poner.
 //   · "Tarjeta Dino" no tiene ícono propio y ninguna de las dos vías sirve: el
@@ -1449,7 +1450,10 @@ const PAGO_LOGOS = {
   "Tarjeta Coto TCI":  _ICONO_COTO,                                                                      //  32
   "Banco Patagonia":   "https://www.bancopatagonia.com.ar/favicon.ico",                                  //  32
   "Banco Credicoop":   "https://www.bancocredicoop.coop/favicon.ico",                                    //  32
-  "Beneficios ANSES":  "https://www.anses.gob.ar/themes/custom/ansessite/favicon25.png",                 //  32
+  // Estaba con el favicon de anses.gob.ar y el 2026-08-07 empezó a devolver 403:
+  // le pusieron protección contra hotlink. Es la fragilidad de esta fuente y por
+  // eso existe el onError. Reemplazado por la app, que además viene a 128.
+  "Beneficios ANSES":  "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/32/b6/a6/32b6a632-751d-72c1-e586-75a5fa63395a/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png", // mi ANSES — Administración Nacional de la Seguridad Social
 
   // Ícono de la app oficial (ver "SEGUNDA FUENTE" arriba). Al lado, la app y el
   // vendedor con el que se verificó que fuera la del banco correcto.
@@ -1463,6 +1467,16 @@ const PAGO_LOGOS = {
   "Cuenta DNI":        "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/3b/af/27/3baf27cd-e71e-e451-6f2b-6b1236c62bed/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png",     // Cuenta DNI — Banco de la Provincia de Buenos Aires
   "Billetera Santa Fe / Plus Pagos":
                        "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/41/27/cd/4127cd70-2e23-8cac-55c3-87f70597782f/SantaFeIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png", // Billetera Santa Fe — Administradora San Juan (Plus Pagos)
+
+  // Las tres que trajeron las promos de Cencosud. También por la app, y por lo
+  // mismo que los bancos de arriba: sus logos propios son wordmarks apaisados
+  // —los del feed miden 139x79 y 200x82— que dentro del cuadrado de 24px quedan
+  // en una franja fina e ilegible. El ícono de la app ya viene cuadrado.
+  // CencoPay y CencoPay Cuenta comparten el isotipo, igual que las tres tarjetas
+  // de Carrefour: son dos productos de la misma marca.
+  "CencoPay":          "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/15/89/07/1589073c-ec3d-0040-49d4-72b025f57773/AppIcon-0-1x_U007emarketing-0-8-0-85-220-0.png/128x128bb.png", // CencoPay — Cencosud. Ojo con las homónimas: "Cencopay PY" es de CLT S.A. (Paraguay) y "Cencosud Scotiabank" de Scotiabank Chile
+  "CencoPay Cuenta":   "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/15/89/07/1589073c-ec3d-0040-49d4-72b025f57773/AppIcon-0-1x_U007emarketing-0-8-0-85-220-0.png/128x128bb.png", // idem CencoPay
+  "Club Clarín 365":   "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a2/42/38/a2423884-b64e-5011-9af3-cce81fee0479/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png", // 365 — AGEA S.A., la editorial de Clarín
 };
 
 const BASE_URLS = {
