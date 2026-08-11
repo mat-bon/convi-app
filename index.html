@@ -998,31 +998,56 @@
     .cr-hoy .cr-th-dia, .cr-hoy .cr-celda { background: var(--accent-soft); }
 
     .cr-celda {
-      padding: 9px 8px; text-align: center; vertical-align: top; cursor: pointer;
+      padding: 8px 7px; vertical-align: top; cursor: pointer;
       transition: background .12s;
     }
     .cr-celda:hover { background: var(--bg); }
-    .cr-celda.vacia { color: var(--text-muted); font-weight: 700; cursor: default; }
+    .cr-celda.vacia { color: var(--text-muted); font-weight: 700; cursor: default; text-align: center; }
     .cr-celda.vacia:hover { background: transparent; }
-    .cr-pct { font-size: 19px; font-weight: 900; letter-spacing: -0.6px; color: var(--success); }
+
+    /* Un renglón por banco. El % va con `min-width` y no centrado: así los
+       nombres de los bancos arrancan todos en la misma columna y la celda se
+       lee como una lista, que es lo que es. */
+    .cr-banco {
+      display: flex; align-items: baseline; gap: 4px;
+      line-height: 1.25; padding: 1.5px 0;
+    }
+    .cr-banco + .cr-banco { border-top: 1px dotted var(--border-light); }
+    /* `order` en los cuatro: el DOM está escrito en el orden de mobile (ver el
+       JSX), así que en desktop hay que reacomodarlos explícitamente. */
+    .cr-pct {
+      order: 1; font-size: 15px; font-weight: 900; letter-spacing: -0.4px;
+      color: var(--success); min-width: 34px; flex-shrink: 0;
+    }
+    .cr-banco > img, .cr-banco > span[aria-hidden] { order: 2; }
     /* Gris y no verde cuando pide una categoría de cliente: el número existe
        pero no le corresponde a cualquiera, y pintarlo igual que uno sin
        requisito es prometer un ahorro que la mayoría no tiene. */
-    .cr-celda.con-requisito .cr-pct { color: var(--text-secondary); }
+    .cr-banco.con-requisito .cr-pct { color: var(--text-secondary); }
+    /* El `max-width` es lo que fija el ancho de la columna, no el `min-width`
+       del th: con table-layout auto la celda se estira hasta el nombre más
+       largo, y "Billetera Santa Fe / Plus Pagos" llevaba la columna a 201px —
+       con once columnas eso es scrollear 2.058px de costado en un teléfono.
+       Recortado con puntos suspensivos y el nombre entero en el `title`. */
     .cr-ent {
-      display: flex; align-items: center; justify-content: center; gap: 4px;
-      font-size: 10.5px; font-weight: 700; color: var(--text-secondary);
-      margin-top: 2px; line-height: 1.2;
+      order: 3; font-size: 10.5px; font-weight: 700; color: var(--text-secondary);
+      min-width: 0; max-width: 104px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .cr-marcas { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-top: 4px; }
-    .cr-marca {
-      font-size: 8.5px; font-weight: 800; padding: 1.5px 5px; border-radius: 999px;
-      text-transform: uppercase; letter-spacing: 0.2px; white-space: nowrap;
+    .cr-banco > img, .cr-banco > span[aria-hidden] { align-self: center; flex-shrink: 0; }
+    /* `order` y no posición en el DOM: van escritos junto al % (ver el JSX) para
+       que en mobile compartan renglón con él, y acá se los manda al extremo
+       derecho de la fila. */
+    .cr-iconos {
+      order: 9; margin-left: auto; flex-shrink: 0; display: flex; gap: 1px;
+      font-size: 9px; font-style: normal; color: var(--text-muted); line-height: 1;
     }
-    .cr-marca.reintegro { background: var(--info-light); color: var(--info); }
-    .cr-marca.sucursal  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-light); }
-    .cr-marca.requisito { background: var(--accent-soft); color: var(--accent-dark); }
-    .cr-marca.mas       { background: var(--bg); color: var(--text-secondary); }
+    .cr-iconos i { font-style: normal; cursor: help; }
+    .cr-mas {
+      font-size: 9px; font-weight: 800; color: var(--text-secondary);
+      background: var(--bg); border-radius: 999px; padding: 1.5px 7px;
+      display: inline-block; margin-top: 4px;
+    }
 
     .cr-nota { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
     .cr-link {
@@ -1037,6 +1062,7 @@
     .cr-detalle-pct { margin-left: auto; font-size: 20px; font-weight: 900; color: var(--success); }
     .cr-detalle-item ul { margin: 8px 0 0; padding-left: 18px; }
     .cr-detalle-item li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
+    .cr-membresia { color: var(--text-primary); font-weight: 900; }
     .cr-detalle-legal { color: var(--text-muted) !important; font-size: 11px !important; }
 
     @media (max-width: 720px) {
@@ -1044,7 +1070,32 @@
       .cr-dia-corto { display: inline; }
       .cr-th-dia { min-width: 58px; padding: 8px; font-size: 12px; }
       .cr-th-super { min-width: 86px; padding: 9px 6px; }
-      .cr-pct { font-size: 16px; }
+      .cr-celda { padding: 7px 5px; }
+      /* En teléfono el % se apila SOBRE el nombre en vez de ir al lado. En fila
+         la columna necesita 170px (y once columnas son 1.750px de scroll
+         horizontal, más 34 nombres recortados); apilado baja a ~96px. Cuesta
+         alto, pero en un teléfono scrollear para abajo es gratis y para el
+         costado no. */
+      .cr-banco { display: block; text-align: center; padding: 3px 0; line-height: 1.15; }
+      .cr-pct { font-size: 14px; min-width: 0; display: inline; }
+      .cr-iconos { display: inline-flex; margin-left: 3px; vertical-align: middle; }
+      /* El logo va ANTES del %, en el mismo renglón. `PagoLogo` lo emite con
+         `display:block` —y como estilo INLINE, que le gana a la hoja— así que
+         sin este override se lleva un renglón entero por banco, tres por celda,
+         y la fila salta de 160 a 254px. De ahí el `!important`: no es pereza,
+         es la única forma de pisar un style inline. */
+      .cr-banco > img, .cr-banco > span[aria-hidden] {
+        display: inline-block !important; vertical-align: middle; margin-right: 3px;
+      }
+      /* Los nombres largos envuelven en vez de recortarse en seco: el `title`
+         no se puede leer sin mouse. Con tope de dos renglones vía max-height y
+         no `-webkit-line-clamp`, que acá el display computa a flow-root y el
+         clamp no llega a aplicarse. */
+      .cr-ent {
+        display: block; max-width: none; white-space: normal;
+        overflow: hidden; max-height: 2.4em;
+        font-size: 9.5px; line-height: 1.2;
+      }
       /* Una sola fila que scrollea. `-webkit-overflow-scrolling` y el
          `flex: 0 0 auto` de los chips son necesarios: sin el segundo, flex los
          comprime para que entren y quedan ilegibles en vez de scrollear. */
@@ -3005,11 +3056,41 @@ const DIAS_CORTO  = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 // Cuántos chips de banco se muestran antes de colapsar. Doce entran en dos
 // renglones a 1280px y dejan la grilla arriba del pliegue.
 const CR_CHIPS_VISIBLES = 12;
+// Cuántos bancos distintos entran en una celda antes del "+N bancos". Tres es
+// lo que da la mediana de la grilla sin estirar la fila: hay celdas con nueve
+// (Coto los lunes) pero la cuarta ya empuja el alto de todo el renglón.
+const CR_BANCOS_POR_CELDA = 3;
+
+// En la celda el nombre va sin el "Banco " del principio: son 35px por renglón
+// y con once columnas eso decide cuánto hay que scrollear de costado. Se saca
+// SOLO ese prefijo, que no desambigua nada —ninguna entidad de la tabla colisiona
+// sin él ("Banco Del Sol"→"Del Sol" sigue siendo distinta de "Tarjeta Sol")—
+// y no se toca "Tarjeta …" ni "Cuenta …", donde sí hay tres Carrefour distintos.
+// Los chips y el modal muestran el nombre entero: ahí es donde el usuario elige
+// y no puede quedar ninguna duda.
+function nombreCortoEntidad(nombre) {
+  return (nombre || "").replace(/^Banco\s+/i, "");
+}
 
 function CronogramaCelda({ celda, onVer }) {
   if (!celda || !celda.promos.length) return <td className="cr-celda vacia">—</td>;
-  const p = celda.promos[0];
-  const extra = celda.total - 1;
+
+  // Un renglón por BANCO, no por promo. Dos motivos: NaranjaX mete sus tres
+  // tramos (Épico/Turbo/base) en la misma celda y repetir el mismo nombre tres
+  // veces gasta el lugar que necesita el banco siguiente; y lo que hace útil a
+  // la celda es cuántas tarjetas distintas sirven ese día, no el detalle de una.
+  // La lista ya viene ordenada por `_orden_promo`, así que la primera de cada
+  // banco es la mejor que ese banco tiene ahí.
+  const porBanco = [];
+  const vistos = new Set();
+  for (const p of celda.promos) {
+    if (vistos.has(p.entidad)) continue;
+    vistos.add(p.entidad);
+    porBanco.push(p);
+  }
+  const visibles = porBanco.slice(0, CR_BANCOS_POR_CELDA);
+  const extra = porBanco.length - visibles.length;
+
   // El título junta todo lo que no entra en la celda. La condición va primero
   // porque cambia si el número le corresponde o no al que mira.
   const detalle = celda.promos.map(q =>
@@ -3022,19 +3103,26 @@ function CronogramaCelda({ celda, onVer }) {
   ).join("\n");
 
   return (
-    <td className={`cr-celda ${p.membresia ? "con-requisito" : ""}`} title={detalle}
-        onClick={() => onVer(celda)}>
-      <div className="cr-pct">{p.pct}%</div>
-      <div className="cr-ent">
-        <PagoLogo nombre={p.entidad} size={14}/>
-        <span>{p.entidad}</span>
-      </div>
-      <div className="cr-marcas">
-        {p.tipo === "reintegro" && <span className="cr-marca reintegro" title="Reintegro: lo pagás entero y te lo devuelven">↩ reintegro</span>}
-        {p.canal === "sucursal" && <span className="cr-marca sucursal" title="Sólo en sucursal física">🏪 sucursal</span>}
-        {p.membresia && <span className="cr-marca requisito" title={`Sólo con ${p.membresia}`}>★ {p.membresia}</span>}
-        {extra > 0 && <span className="cr-marca mas">+{extra}</span>}
-      </div>
+    <td className="cr-celda" title={detalle} onClick={() => onVer(celda)}>
+      {/* El orden del DOM es el de MOBILE (logo · % · íconos, y el nombre
+          abajo), porque ahí el bloque es `display:block` y la posición en el DOM
+          es lo único que decide el renglón. Desktop lo reacomoda con `order` a
+          % · logo · nombre · íconos, que ahí sí es flex. */}
+      {visibles.map((p, i) => (
+        <div key={i} className={`cr-banco ${p.membresia ? "con-requisito" : ""}`}>
+          <PagoLogo nombre={p.entidad} size={13}/>
+          <span className="cr-pct">{p.pct}%</span>
+          <span className="cr-iconos">
+            {p.tipo === "reintegro" && <i title="Reintegro: lo pagás entero y te lo devuelven después">↩</i>}
+            {p.canal === "sucursal" && <i title="Sólo en sucursal física">🏪</i>}
+            {p.membresia && <i title={`Sólo con ${p.membresia}`}>★</i>}
+          </span>
+          <span className="cr-ent" title={p.entidad}>{nombreCortoEntidad(p.entidad)}</span>
+        </div>
+      ))}
+      {extra > 0 && (
+        <div className="cr-mas">+{extra} banco{extra !== 1 ? "s" : ""}</div>
+      )}
     </td>
   );
 }
@@ -3223,7 +3311,10 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
                     {p.canal === "online" && <li>Sólo comprando online.</li>}
                     {p.tope && <li>Tope de ahorro: {fmt(p.tope)} {p.tope_periodo || ""}.</li>}
                     {p.compra_minima && <li>Compra mínima: {fmt(p.compra_minima)}.</li>}
-                    {p.membresia && <li>Sólo para clientes {p.membresia}.</li>}
+                    {/* La categoría va resaltada porque es lo único de la lista
+                        que decide si el número le corresponde al que lee: sin
+                        ese plan el ahorro no es menor, es cero. */}
+                    {p.membresia && <li>Sólo para clientes <strong className="cr-membresia">{p.membresia}</strong>.</li>}
                     {p.excluye && <li>No aplica a todo el carrito: la cadena excluye rubros.</li>}
                     {p.detalle && <li className="cr-detalle-legal">{p.detalle}</li>}
                   </ul>
