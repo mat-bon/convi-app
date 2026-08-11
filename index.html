@@ -1431,8 +1431,9 @@
     .super-MasOnline { --s-bg: #E4002B; --s-text: #fff; }
     .super-Dino { --s-bg: #2E7D32; --s-text: #fff; }
 
-    /* Fila superior de la barra: tab "Todos los productos" + botón de filtros (móvil) */
+    /* Fila superior de la barra: pestañas + accesos al panel de filtros (móvil) */
     .brandbar-top { display: flex; align-items: center; gap: 10px; }
+    .filtro-botones { display: none; }
 
     /* Responsive sidebar collapse */
     .mobile-filter-toggle {
@@ -1442,12 +1443,32 @@
       color: var(--text-secondary); cursor: pointer; white-space: nowrap;
       font-family: inherit; box-shadow: var(--shadow-sm);
     }
+    .mobile-filter-toggle.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .mft-chev { font-size: 9px; opacity: 0.75; }
     @media (max-width: 1024px) {
-      /* Tab y botón de filtros al 50-50 exacto (grid de columnas iguales) ocupando casi todo el ancho */
-      .brandbar-top { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
-      .brandbar-top .tabs { width: auto; min-width: 0; }
-      .brandbar-top .tabs .tab { width: 100%; justify-content: center; }
-      .mobile-filter-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
+      /* Pestañas y botones de filtro son DOS bloques que envuelven solos. El
+         grid 50-50 de antes daba por hecho una sola pestaña: con la segunda,
+         "Todos los productos" se salía del pill y se montaba encima del botón
+         de filtros. Con flex-basis cada bloque pide su ancho mínimo y el flex
+         decide si entran en una fila (tablet) o en dos (teléfono). */
+      .brandbar-top { width: 100%; flex-wrap: wrap; }
+      .brandbar-top .tabs { flex: 1 1 300px; min-width: 0; }
+      /* Menos padding y medio punto de fuente: es lo que hace que "Todos los
+         productos" entre en UN renglón a 375px (144px de texto en 153 de caja).
+         Sin `nowrap` a propósito: en pantallas de 320px tiene que poder partir
+         en dos líneas en vez de desbordar. */
+      .brandbar-top .tabs .tab {
+        flex: 1 1 0; min-width: 0; justify-content: center; text-align: center;
+        padding: 10px 8px; font-size: 12.5px;
+      }
+      .filtro-botones {
+        flex: 1 1 260px; min-width: 0; display: grid;
+        grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px;
+      }
+      .mobile-filter-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        min-width: 0; padding: 12px 10px; font-size: 12.5px;
+      }
       .sidebar { display: none; position: static; }
       .sidebar.open { display: block; }
     }
@@ -4129,7 +4150,9 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
 
   return (
     <div>
-      <div className="filter-card">
+      {/* Los id son el destino del scroll de los botones "Supermercados" y
+          "Categorías" de la barra en móvil. */}
+      <div className="filter-card" id="filtro-super">
         <div className="filter-title">Supermercado</div>
         <div className="filter-hint">Definen lo que ves y de qué supermercados recibís alertas de precio.</div>
         <div className="filter-checks">
@@ -4161,7 +4184,7 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
         )}
       </div>
 
-      <div className="filter-card">
+      <div className="filter-card" id="filtro-categoria">
         <div className="filter-title">Categoría</div>
         <div className="filter-group">
           {cats.map(c => (
@@ -4437,6 +4460,30 @@ function App() {
   const [regiones, setRegiones] = React.useState([]);
   const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  // Qué sección del panel de filtros pidió el usuario en móvil ("super" | "cat").
+  // El panel es uno solo, pero los botones dicen qué hay adentro en vez de
+  // "filtros": el que entra por primera vez no sabe qué se filtra.
+  const [filtroSeccion, setFiltroSeccion] = React.useState(null);
+  const abrirFiltros = (sec) => {
+    // Segundo toque en el mismo botón cierra: el botón es el interruptor.
+    if (sidebarOpen && filtroSeccion === sec) { setSidebarOpen(false); setFiltroSeccion(null); return; }
+    setSidebarOpen(true); setFiltroSeccion(sec);
+  };
+  // El panel se abre ARRIBA de la barra (el <aside> va antes que el contenido),
+  // así que al abrirlo el botón que acabás de tocar se va para abajo de la
+  // pantalla. Llevar la sección pedida a la vista es lo que evita ese salto.
+  React.useEffect(() => {
+    if (!sidebarOpen || !filtroSeccion) return;
+    const el = document.getElementById(filtroSeccion === "cat" ? "filtro-categoria" : "filtro-super");
+    if (!el) return;
+    // `scrollIntoView` no sirve: el header es sticky (176px en móvil) y deja el
+    // título de la tarjeta tapado abajo. Se descuenta su alto real medido, que
+    // cambia según el ancho y según si hay sesión iniciada.
+    const header = document.querySelector(".header");
+    const margen = (header ? header.getBoundingClientRect().height : 0) + 8;
+    const destino = el.getBoundingClientRect().top + window.scrollY - margen;
+    window.scrollTo({ top: Math.max(0, destino), behavior: "smooth" });
+  }, [sidebarOpen, filtroSeccion]);
 
   // El código de la región elegida ("cordoba", "tucuman"…). Es la clave de
   // SUPER_POR_REGION; el regionId sólo sirve para hablar con la API.
@@ -4946,13 +4993,19 @@ function App() {
                     entra, y pedirle cuenta a alguien que todavía no sabe para
                     qué sirve la app es justo lo que queremos evitar. */}
                 <button className={`tab ${tab==="cronograma"?"active":""}`} onClick={()=>setTab("cronograma")}>
-                  📅 Descuentos de la semana
+                  💸 Promos Bancarias
                 </button>
               </div>
               {tab !== "carrito" && tab !== "cronograma" && (
-                <button className="mobile-filter-toggle" onClick={()=>setSidebarOpen(!sidebarOpen)}>
-                  ⚙️ {sidebarOpen ? "Ocultar filtros" : "Mostrar filtros"}
-                </button>
+                <div className="filtro-botones">
+                  {[["super","🏬","Supermercados"],["cat","🗂️","Categorías"]].map(([k,ico,txt]) => (
+                    <button key={k} className={`mobile-filter-toggle ${sidebarOpen && filtroSeccion===k ? "on" : ""}`}
+                            onClick={()=>abrirFiltros(k)}>
+                      {ico} {txt}
+                      <span className="mft-chev">{sidebarOpen && filtroSeccion===k ? "▴" : "▾"}</span>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
             <div className="logos-marquee">
