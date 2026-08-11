@@ -927,6 +927,135 @@
     }
     .lg-promo.vacia .lg-promo-det { color: var(--text-muted); opacity: 0.75; }
 
+    /* ------------------------------------------------------------------ */
+    /* Cronograma semanal                                                  */
+    /* ------------------------------------------------------------------ */
+    .cronograma { display: flex; flex-direction: column; gap: 16px; }
+    .cr-head h2 { font-size: 22px; font-weight: 900; letter-spacing: -0.4px; margin: 0 0 4px; }
+    .cr-head p { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 62ch; }
+    .cr-estado {
+      padding: 40px 20px; text-align: center; color: var(--text-muted);
+      font-size: 14px; font-weight: 600;
+    }
+
+    .cr-filtros { display: flex; flex-direction: column; gap: 10px; }
+    .cr-canal { display: flex; gap: 6px; }
+    .cr-canal-btn {
+      border: 1.5px solid var(--border); background: var(--surface); cursor: pointer;
+      border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;
+      color: var(--text-secondary); transition: all .15s;
+    }
+    .cr-canal-btn:hover { border-color: var(--accent-dark); }
+    .cr-canal-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    .cr-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .cr-chips-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .cr-chip {
+      display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface);
+      border-radius: 999px; padding: 4px 10px 4px 5px; font-size: 11.5px;
+      font-weight: 700; color: var(--text-secondary); transition: all .15s;
+    }
+    .cr-chip:hover { border-color: var(--accent-dark); }
+    .cr-chip.active { background: var(--accent-soft); border-color: var(--accent-dark); color: var(--ink); }
+    .cr-chip.mias { background: var(--ink); color: #fff; border-color: var(--ink); padding-left: 10px; }
+    .cr-chip.limpiar { padding-left: 10px; color: var(--danger); border-color: var(--danger-light); }
+    .cr-chip.vermas { padding-left: 10px; color: var(--text-primary); border-style: dashed; }
+
+    /* La tabla scrollea en su propio contenedor y NO empuja el ancho de la
+       página: con 10 súperes son ~1000px y en mobile arrastraría el body
+       entero. La primera columna queda pegada porque sin el nombre del día a la
+       vista, scrollear a la derecha deja la grilla sin referencia. */
+    .cr-scroll {
+      overflow-x: auto; border: 1px solid var(--border);
+      border-radius: var(--radius-lg); background: var(--surface);
+    }
+    .cr-tabla { border-collapse: separate; border-spacing: 0; width: 100%; }
+    .cr-tabla th, .cr-tabla td { border-bottom: 1px solid var(--border-light); }
+    .cr-tabla tr:last-child th, .cr-tabla tr:last-child td { border-bottom: none; }
+
+    .cr-th-super {
+      padding: 12px 10px; background: var(--surface-2); text-align: center;
+      border-bottom: 1.5px solid var(--border); min-width: 104px;
+    }
+    .cr-th-super img { margin: 0 auto; }
+
+    .cr-tabla thead .cr-th-dia { background: var(--surface-2); }
+    .cr-th-dia {
+      position: sticky; left: 0; z-index: 2; background: var(--surface);
+      padding: 10px 12px; text-align: left; min-width: 92px;
+      border-right: 1px solid var(--border);
+      font-size: 13px; font-weight: 800; color: var(--text-primary);
+      white-space: nowrap;
+    }
+    .cr-dia-corto { display: none; }
+    .cr-hoy-tag {
+      display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 999px;
+      background: var(--accent); color: var(--ink); font-size: 9.5px;
+      font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px;
+      vertical-align: middle;
+    }
+    .cr-hoy .cr-th-dia, .cr-hoy .cr-celda { background: var(--accent-soft); }
+
+    .cr-celda {
+      padding: 9px 8px; text-align: center; vertical-align: top; cursor: pointer;
+      transition: background .12s;
+    }
+    .cr-celda:hover { background: var(--bg); }
+    .cr-celda.vacia { color: var(--text-muted); font-weight: 700; cursor: default; }
+    .cr-celda.vacia:hover { background: transparent; }
+    .cr-pct { font-size: 19px; font-weight: 900; letter-spacing: -0.6px; color: var(--success); }
+    /* Gris y no verde cuando pide una categoría de cliente: el número existe
+       pero no le corresponde a cualquiera, y pintarlo igual que uno sin
+       requisito es prometer un ahorro que la mayoría no tiene. */
+    .cr-celda.con-requisito .cr-pct { color: var(--text-secondary); }
+    .cr-ent {
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      font-size: 10.5px; font-weight: 700; color: var(--text-secondary);
+      margin-top: 2px; line-height: 1.2;
+    }
+    .cr-marcas { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-top: 4px; }
+    .cr-marca {
+      font-size: 8.5px; font-weight: 800; padding: 1.5px 5px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.2px; white-space: nowrap;
+    }
+    .cr-marca.reintegro { background: var(--info-light); color: var(--info); }
+    .cr-marca.sucursal  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-light); }
+    .cr-marca.requisito { background: var(--accent-soft); color: var(--accent-dark); }
+    .cr-marca.mas       { background: var(--bg); color: var(--text-secondary); }
+
+    .cr-nota { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .cr-link {
+      background: none; border: none; padding: 0; cursor: pointer;
+      color: var(--text-primary); font-weight: 800; text-decoration: underline;
+      font-size: inherit; font-family: inherit;
+    }
+
+    .cr-detalle-item { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+    .cr-detalle-item:last-child { border-bottom: none; }
+    .cr-detalle-top { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .cr-detalle-pct { margin-left: auto; font-size: 20px; font-weight: 900; color: var(--success); }
+    .cr-detalle-item ul { margin: 8px 0 0; padding-left: 18px; }
+    .cr-detalle-item li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
+    .cr-detalle-legal { color: var(--text-muted) !important; font-size: 11px !important; }
+
+    @media (max-width: 720px) {
+      .cr-dia-largo { display: none; }
+      .cr-dia-corto { display: inline; }
+      .cr-th-dia { min-width: 58px; padding: 8px; font-size: 12px; }
+      .cr-th-super { min-width: 86px; padding: 9px 6px; }
+      .cr-pct { font-size: 16px; }
+      /* Una sola fila que scrollea. `-webkit-overflow-scrolling` y el
+         `flex: 0 0 auto` de los chips son necesarios: sin el segundo, flex los
+         comprime para que entren y quedan ilegibles en vez de scrollear. */
+      .cr-chips--fila {
+        flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      }
+      .cr-chips--fila::-webkit-scrollbar { display: none; }
+      .cr-chips--fila .cr-chip { flex: 0 0 auto; }
+    }
+
     /* Selector de medios de pago */
     /* .mp-item dejó de ser un <button> al meterle adentro los chips de
        categoría: un botón no puede contener otro botón. Ahora es el contenedor
@@ -2856,6 +2985,259 @@ function PromoBadge({ promo }) {
 }
 
 // ---------------------------------------------------------------------------
+// CronogramaView — la semana de promos bancarias
+// ---------------------------------------------------------------------------
+// Es la vista de entrada para alguien que todavía no tiene cuenta: entra, ve qué
+// le conviene el jueves con su banco, y recién ahí se registra. Por eso NO pide
+// login ni medios de pago cargados.
+//
+// La grilla es días × supermercados y no bancos × supermercados como la de
+// Clash, por dos razones: lo que se pidió es un cronograma —el eje natural es el
+// día— y porque con 39 entidades la matriz de ellos serían 390 celdas. El banco
+// no desaparece: va escrito en cada celda y hay filtro por entidad arriba.
+//
+// Dos datos que la grilla de Clash no tiene y son la razón de tener una propia:
+// si la promo es de SUCURSAL (no sirve para un carrito online, y cinco de las
+// seis de La Anónima son así) y si es REINTEGRO (plata que volvés a ver en
+// 10-30 días, no un descuento en la caja). Los dos se marcan en la celda.
+const DIAS_NOMBRE = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const DIAS_CORTO  = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+// Cuántos chips de banco se muestran antes de colapsar. Doce entran en dos
+// renglones a 1280px y dejan la grilla arriba del pliegue.
+const CR_CHIPS_VISIBLES = 12;
+
+function CronogramaCelda({ celda, onVer }) {
+  if (!celda || !celda.promos.length) return <td className="cr-celda vacia">—</td>;
+  const p = celda.promos[0];
+  const extra = celda.total - 1;
+  // El título junta todo lo que no entra en la celda. La condición va primero
+  // porque cambia si el número le corresponde o no al que mira.
+  const detalle = celda.promos.map(q =>
+    `${q.entidad} ${q.pct}%`
+    + (q.membresia ? ` — sólo con ${q.membresia}` : "")
+    + (q.tipo === "reintegro" ? " — reintegro, no descuento en caja" : "")
+    + (q.canal === "sucursal" ? " — sólo en sucursal" : "")
+    + (q.tope ? ` — tope ${fmt(q.tope)} ${q.tope_periodo || ""}` : "")
+    + (q.compra_minima ? ` — compra mínima ${fmt(q.compra_minima)}` : "")
+  ).join("\n");
+
+  return (
+    <td className={`cr-celda ${p.membresia ? "con-requisito" : ""}`} title={detalle}
+        onClick={() => onVer(celda)}>
+      <div className="cr-pct">{p.pct}%</div>
+      <div className="cr-ent">
+        <PagoLogo nombre={p.entidad} size={14}/>
+        <span>{p.entidad}</span>
+      </div>
+      <div className="cr-marcas">
+        {p.tipo === "reintegro" && <span className="cr-marca reintegro" title="Reintegro: lo pagás entero y te lo devuelven">↩ reintegro</span>}
+        {p.canal === "sucursal" && <span className="cr-marca sucursal" title="Sólo en sucursal física">🏪 sucursal</span>}
+        {p.membresia && <span className="cr-marca requisito" title={`Sólo con ${p.membresia}`}>★ {p.membresia}</span>}
+        {extra > 0 && <span className="cr-marca mas">+{extra}</span>}
+      </div>
+    </td>
+  );
+}
+
+function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
+  const [data, setData] = React.useState(null);
+  const [cargando, setCargando] = React.useState(true);
+  const [error, setError] = React.useState(false);
+  const [filtro, setFiltro] = React.useState([]);
+  const [canal, setCanal] = React.useState("todos");
+  const [detalle, setDetalle] = React.useState(null);
+  const [misEntidades, setMisEntidades] = React.useState([]);
+  const [verTodas, setVerTodas] = React.useState(false);
+
+  // Las tarjetas del usuario se piden acá y no bajan por props porque `App` no
+  // las tiene: hoy cada componente que las necesita las trae (MediosPagoModal,
+  // ListaView). Si falla, el atajo "Sólo los míos" simplemente no aparece.
+  React.useEffect(() => {
+    if (!token) { setMisEntidades([]); return; }
+    fetch(`${API}/mis-medios-pago`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setMisEntidades(d.entidades || []))
+      .catch(() => setMisEntidades([]));
+  }, [token]);
+
+  React.useEffect(() => {
+    setCargando(true); setError(false);
+    const q = canal === "todos" ? "" : `?canal=${canal}`;
+    fetch(`${API}/promos/semana${q}`)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(d => { setData(d); setCargando(false); })
+      .catch(() => { setError(true); setCargando(false); });
+  }, [canal]);
+
+  // Las cadenas que no llegan a la región elegida se sacan de la grilla. Acá sí
+  // se ocultan (y no se muestran en gris como en la comparación de precios):
+  // un cronograma es "adónde ir el jueves", y una fila de un súper que no está
+  // en tu ciudad no es una referencia útil, es ruido.
+  const supers = React.useMemo(() => {
+    if (!data) return [];
+    return data.supermercados.filter(s => superLlegaA(s, regionCodigo));
+  }, [data, regionCodigo]);
+
+  const semana = React.useMemo(() => {
+    if (!data) return [];
+    if (!filtro.length) return data.semana;
+    const set = new Set(filtro);
+    return data.semana.map(f => {
+      const celdas = {};
+      for (const [sup, c] of Object.entries(f.celdas)) {
+        const promos = c.promos.filter(p => set.has(p.entidad));
+        if (promos.length) celdas[sup] = { promos, total: promos.length };
+      }
+      return { dia: f.dia, celdas };
+    });
+  }, [data, filtro]);
+
+  const toggle = (e) => setFiltro(f => f.includes(e) ? f.filter(x => x !== e) : [...f, e]);
+
+  if (cargando) return <div className="cr-estado">Cargando el cronograma…</div>;
+  if (error || !data) return <div className="cr-estado">No pudimos cargar el cronograma. Probá de nuevo en un rato.</div>;
+
+  const hoy = data.dia_hoy;
+
+  return (
+    <div className="cronograma">
+      <div className="cr-head">
+        <h2>📅 La semana de descuentos</h2>
+        <p>Qué banco conviene cada día en cada supermercado. Se actualiza todas las mañanas
+           con lo que publica cada cadena.</p>
+      </div>
+
+      <div className="cr-filtros">
+        <div className="cr-canal">
+          {[["todos","Todos"],["online","Compra online"],["sucursal","En sucursal"]].map(([k,l]) => (
+            <button key={k} className={`cr-canal-btn ${canal===k?"active":""}`}
+                    onClick={()=>setCanal(k)}>{l}</button>
+          ))}
+        </div>
+        <span className="cr-chips-label">Filtrar por banco:</span>
+        {/* Colapsado va en UNA fila que scrollea en mobile: a 375px doce chips
+            envuelven en seis renglones y mandan la grilla 1.400px abajo. En
+            desktop envuelve normal, que ahí entran en dos. */}
+        <div className={`cr-chips ${verTodas ? "" : "cr-chips--fila"}`}>
+          {/* Atajo para el que ya cargó sus tarjetas: es el caso de uso real
+              —"qué me conviene A MÍ"— y sin esto hay que tildar seis chips. */}
+          {token && misEntidades && misEntidades.length > 0 && (
+            <button className="cr-chip mias"
+                    onClick={()=>setFiltro(filtro.length ? [] : misEntidades)}>
+              {filtro.length ? "Ver todos" : "💳 Sólo los míos"}
+            </button>
+          )}
+          {/* Las 39 entidades enteras ocupan 211px y empujan la grilla abajo del
+              pliegue, que es justo lo que la gente vino a ver. Se muestran las
+              que están en más súperes (el back las manda ordenadas así) y el
+              resto queda atrás del "+N". Las tildadas se muestran siempre,
+              aunque estén en la cola: si no, filtrar por una entidad de abajo la
+              haría desaparecer del propio filtro al colapsar. */}
+          {data.entidades
+            .filter((e,i) => verTodas || i < CR_CHIPS_VISIBLES || filtro.includes(e))
+            .map(e => (
+              <button key={e} className={`cr-chip ${filtro.includes(e)?"active":""}`}
+                      onClick={()=>toggle(e)}>
+                <PagoLogo nombre={e} size={14}/><span>{e}</span>
+              </button>
+            ))}
+          {data.entidades.length > CR_CHIPS_VISIBLES && (
+            <button className="cr-chip vermas" onClick={()=>setVerTodas(v=>!v)}>
+              {verTodas ? "− ver menos" : `+${data.entidades.length - CR_CHIPS_VISIBLES} más`}
+            </button>
+          )}
+          {filtro.length > 0 && (
+            <button className="cr-chip limpiar" onClick={()=>setFiltro([])}>✕ limpiar</button>
+          )}
+        </div>
+      </div>
+
+      <div className="cr-scroll">
+        <table className="cr-tabla">
+          <thead>
+            <tr>
+              <th className="cr-th-dia"></th>
+              {supers.map(s => (
+                <th key={s} className="cr-th-super">
+                  {/* Cordiez es un wordmark metido en un lienzo cuadrado con
+                      relleno arriba y abajo: con `size` sale diminuto porque el
+                      alto se lo come el aire. Necesita `recorte`, igual que en
+                      el marquee. */}
+                  {s === "Cordiez"
+                    ? <SuperLogo nombre={s} ancho={76} recorte={4.3} bare={true}/>
+                    : <SuperLogo nombre={s} size={26} ancho="auto" maxAncho={84} bare={true}/>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {semana.map(f => (
+              <tr key={f.dia} className={f.dia === hoy ? "cr-hoy" : ""}>
+                <th className="cr-th-dia">
+                  <span className="cr-dia-largo">{DIAS_NOMBRE[f.dia-1]}</span>
+                  <span className="cr-dia-corto">{DIAS_CORTO[f.dia-1]}</span>
+                  {f.dia === hoy && <span className="cr-hoy-tag">hoy</span>}
+                </th>
+                {supers.map(s => (
+                  <CronogramaCelda key={s} celda={f.celdas[s]} onVer={setDetalle}/>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {supers.length === 0 && (
+        <div className="cr-estado">Todavía no tenemos promos cargadas para tu región.</div>
+      )}
+
+      <p className="cr-nota">
+        Los porcentajes son los que publica cada cadena. El tope, las exclusiones y si es
+        descuento o reintegro están en el detalle de cada celda — tocala para verlo.
+        {!token && <> Si <button className="cr-link" onClick={onPedirCuenta}>creás una cuenta</button> y
+        cargás tus tarjetas, calculamos cuánto ahorrás sobre tu lista real.</>}
+      </p>
+
+      {/* Modal propio y no el componente `Modal`, que es de producto y sale a
+          pedir el historial de precios apenas monta. */}
+      {detalle && (
+        <div className="modal-overlay" onClick={()=>setDetalle(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Promos de esta celda</div>
+              <button className="modal-close" onClick={()=>setDetalle(null)}>✕</button>
+            </div>
+            <div className="modal-body cr-detalle">
+              {detalle.promos.map((p, i) => (
+                <div key={i} className="cr-detalle-item">
+                  <div className="cr-detalle-top">
+                    <PagoLogo nombre={p.entidad} size={22}/>
+                    <strong>{p.entidad}</strong>
+                    <span className="cr-detalle-pct">{p.pct}%</span>
+                  </div>
+                  <ul>
+                    <li>{p.tipo === "reintegro"
+                          ? "Reintegro: pagás el total y te lo devuelven después."
+                          : "Descuento directo en la caja."}</li>
+                    {p.canal === "sucursal" && <li>Sólo en sucursal física.</li>}
+                    {p.canal === "online" && <li>Sólo comprando online.</li>}
+                    {p.tope && <li>Tope de ahorro: {fmt(p.tope)} {p.tope_periodo || ""}.</li>}
+                    {p.compra_minima && <li>Compra mínima: {fmt(p.compra_minima)}.</li>}
+                    {p.membresia && <li>Sólo para clientes {p.membresia}.</li>}
+                    {p.excluye && <li>No aplica a todo el carrito: la cadena excluye rubros.</li>}
+                    {p.detalle && <li className="cr-detalle-legal">{p.detalle}</li>}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // MediosPagoModal — qué tarjetas/billeteras tiene el usuario
 // ---------------------------------------------------------------------------
 // El catálogo sale de las promos activas y no de una tabla fija: si una entidad
@@ -4299,7 +4681,7 @@ function App() {
   }, [token]);
 
   React.useEffect(() => {
-    if (tab === "carrito" || tab === "lista") return;
+    if (tab === "carrito" || tab === "lista" || tab === "cronograma") return;
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
@@ -4448,7 +4830,7 @@ function App() {
       {/* Main */}
       <div className="main">
         {/* Sidebar - solo en pestañas de productos */}
-        {tab !== "carrito" && (
+        {tab !== "carrito" && tab !== "cronograma" && (
           <aside className={`sidebar ${sidebarOpen?"open":""}`}>
             <Sidebar
               supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
@@ -4469,8 +4851,14 @@ function App() {
                 <button className={`tab ${tab==="todos"?"active":""}`} onClick={()=>setTab("todos")}>
                   🏪 Todos los productos
                 </button>
+                {/* Sin guarda de token a propósito: es la vista con la que se
+                    entra, y pedirle cuenta a alguien que todavía no sabe para
+                    qué sirve la app es justo lo que queremos evitar. */}
+                <button className={`tab ${tab==="cronograma"?"active":""}`} onClick={()=>setTab("cronograma")}>
+                  📅 Descuentos de la semana
+                </button>
               </div>
-              {tab !== "carrito" && (
+              {tab !== "carrito" && tab !== "cronograma" && (
                 <button className="mobile-filter-toggle" onClick={()=>setSidebarOpen(!sidebarOpen)}>
                   ⚙️ {sidebarOpen ? "Ocultar filtros" : "Mostrar filtros"}
                 </button>
@@ -4500,7 +4888,10 @@ function App() {
             </div>
           </div>
 
-          {tab === "carrito" ? (
+          {tab === "cronograma" ? (
+            <CronogramaView regionCodigo={regionCodigo} token={token}
+                            onPedirCuenta={()=>setShowAuth(true)}/>
+          ) : tab === "carrito" ? (
             <CarritoView carritoItems={carritoItems} productosMap={productosMap} onRemove={removeDelCarrito} onUpdateCantidad={updateCantidad} onCambiarSuper={cambiarSuper} token={token} regionCodigo={regionCodigo}/>
           ) : tab === "lista" ? (
             <ListaView
