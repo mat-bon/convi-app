@@ -157,7 +157,12 @@
 
     /* Main layout */
     .main { max-width: 1320px; margin: 0 auto; padding: 20px; display: flex; gap: 20px; }
-    .sidebar { width: 260px; flex-shrink: 0; }
+    /* 280 y no 260: la columna "+ Barato" del filtro de supermercados se come
+       ~40px de cada fila, y con esos 20 de más entran enteros los nombres largos
+       ("La Anónima", "MasOnline") junto al contador. No le saca ninguna columna a
+       la grilla de productos: 4 no entran ni con el panel angosto, y 3 siguen
+       entrando en cuanto la ventana pasa los 1150. */
+    .sidebar { width: 280px; flex-shrink: 0; }
     .content { flex: 1; min-width: 0; }
 
     @media (max-width: 1024px) {
@@ -287,9 +292,64 @@
       background: var(--surface-2); color: var(--text-muted);
       border: 1px solid var(--border-light); white-space: nowrap;
     }
-    /* Con la etiqueta presente el contador pierde el margin-left:auto (ya lo
-       tomó la etiqueta) y quedaría pegado; se lo separa a mano. */
-    .filter-check-tag + .count { margin-left: 5px; }
+
+    /* Columna "+ Barato": segunda casilla por cadena, excluyente (una sola).
+       Va FUERA del <label> de la izquierda a propósito — adentro, el click en
+       la casilla nueva activaría también el checkbox que el label envuelve. */
+    .filter-check-row { display: flex; align-items: center; gap: 2px; }
+    .filter-check-row .filter-check { flex: 1 1 auto; min-width: 0; gap: 8px; padding-left: 8px; padding-right: 6px; }
+    .filter-check-row:hover .filter-check { background: var(--surface-2); color: var(--text-primary); }
+    /* Con 44px menos de ancho, el nombre largo con etiqueta "no llega" se pasaba
+       de la tarjeta: se corta en vez de desbordar. */
+    .filter-check-row .filter-check-name { overflow: hidden; text-overflow: ellipsis; }
+    /* La cabecera lleva ahora la línea divisoria que tenía el label "Todos": con
+       la columna nueva al lado, tiene que cruzar la fila entera. */
+    .filter-check-row.cabecera { border-bottom: 1px solid var(--border-light); margin-bottom: 4px; }
+    .filter-check-row.cabecera .filter-check.master { border-bottom: none; margin-bottom: 0; }
+    .filter-barato {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; flex-shrink: 0; padding: 7px 0;
+      border-radius: 10px; cursor: pointer;
+    }
+    .filter-barato:hover { background: var(--success-light); }
+    .filter-barato input[type="checkbox"] {
+      appearance: none; -webkit-appearance: none;
+      width: 18px; height: 18px; flex-shrink: 0; margin: 0;
+      /* Redonda y no cuadrada: es la forma con la que se lee "de acá va una sola"
+         sin tener que explicarlo. */
+      border: 1.5px solid var(--border); border-radius: 50%;
+      background: var(--surface); cursor: pointer; position: relative;
+      transition: background 0.14s, border-color 0.14s;
+    }
+    .filter-barato input[type="checkbox"]:hover { border-color: var(--success); }
+    .filter-barato input[type="checkbox"]:checked { background: var(--success); border-color: var(--success); }
+    .filter-barato input[type="checkbox"]:checked::after {
+      content: ""; position: absolute; left: 5.5px; top: 2px;
+      width: 4px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    /* Angosto como la columna, pero el texto puede pasarse: a la izquierda tiene
+       el vacío del label "Todos", así que el rótulo se lee entero sin obligar a
+       que la columna mida lo que mide la palabra. */
+    .filter-barato-head {
+      width: 38px; flex-shrink: 0; text-align: center; white-space: nowrap;
+      overflow: visible; font-size: 9.5px; font-weight: 800; color: var(--text-muted);
+      user-select: none; cursor: help;
+    }
+    .filter-barato-head.on { color: var(--success); }
+    .filter-check-row.es-barato .filter-check-name { color: var(--success); }
+    .filter-barato-nota {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      margin-top: 8px; padding: 7px 9px; border-radius: 10px;
+      background: var(--success-light); border: 1px solid rgba(22,163,74,0.22);
+      font-size: 11px; font-weight: 600; color: var(--success); line-height: 1.4;
+    }
+    .filter-barato-nota button {
+      margin-left: auto; font-family: inherit; cursor: pointer;
+      font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 8px;
+      background: var(--surface); color: var(--success); border: 1px solid rgba(22,163,74,0.35);
+    }
+    .filter-barato-nota button:hover { background: var(--success); color: #fff; }
 
     .filter-toggle {
       display: flex; align-items: center; gap: 11px; padding: 9px 11px;
@@ -317,6 +377,15 @@
     }
     .sort-info { font-size: 13px; color: var(--text-muted); font-weight: 600; }
     .sort-info strong { color: var(--text-primary); font-weight: 800; }
+    /* Chip del filtro "+ Barato". El panel de filtros vive arriba de la grilla y
+       en móvil está plegado: sin esto no se ve por qué la lista se achicó. */
+    .sort-info-chip {
+      margin-left: 8px; font-family: inherit; cursor: pointer; white-space: nowrap;
+      font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 20px;
+      background: var(--success-light); color: var(--success);
+      border: 1px solid rgba(22,163,74,0.25);
+    }
+    .sort-info-chip:hover { background: var(--success); color: #fff; border-color: var(--success); }
     .sort-options { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; background: var(--surface); padding: 4px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
     .sort-btn {
       padding: 6px 12px; border-radius: 8px; border: none;
@@ -4239,7 +4308,10 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
 // ---------------------------------------------------------------------------
 // Sidebar Filters
 // ---------------------------------------------------------------------------
-function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats, regionCodigo, onCerrar }) {
+// `conMasBarato` apaga la columna "+ Barato" donde no aplica: en Mi lista la
+// grilla es producto × súper y ya marca el más barato de cada fila, así que un
+// filtro que esconde productos de tu propia lista no significa nada.
+function Sidebar({ supersVisibles, setSupersVisibles, masBaratoEn, setMasBaratoEn, conMasBarato = true, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats, regionCodigo, onCerrar }) {
   // Las que llegan primero: si no, el usuario de Tucumán abre el panel y lo que
   // ve arriba son seis cadenas que no le sirven.
   const supers = React.useMemo(() => {
@@ -4256,34 +4328,81 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
   const toggleSuper = (s) => setSupersVisibles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleTodos = () => setSupersVisibles(todosMarcados ? [] : supers);
 
+  // Columna "+ Barato": una cadena a la vez. Tildar otra reemplaza la anterior y
+  // volver a tildar la misma apaga el filtro (si no, no habría cómo sacarlo).
+  // Tildarla también a la izquierda no es un extra: esa cadena va a encabezar
+  // TODAS las cards que queden, así que tenerla destildada no tiene sentido.
+  const elegirMasBarato = (s) => {
+    if (masBaratoEn === s) { setMasBaratoEn(null); return; }
+    setMasBaratoEn(s);
+    setSupersVisibles(prev => prev.includes(s) ? prev : [...prev, s]);
+  };
+
   return (
     <div>
       {/* Los id son el destino del scroll de los botones "Supermercados" y
           "Categorías" de la barra en móvil. */}
       <div className="filter-card" id="filtro-super">
         <div className="filter-title">Supermercado</div>
-        <div className="filter-hint">Definen lo que ves y de qué supermercados recibís alertas de precio.</div>
+        <div className="filter-hint">
+          {conMasBarato ? <>
+            La casilla de la izquierda define qué precios ves y de qué supermercados recibís alertas.
+            La de la derecha —<strong>+ Barato</strong>— deja la lista solo con los productos que
+            están más baratos en esa cadena. Va una sola.
+          </> : "Definen lo que ves y de qué supermercados recibís alertas de precio."}
+        </div>
         <div className="filter-checks">
-          <label className="filter-check master">
-            <input type="checkbox" checked={todosMarcados}
-              ref={el => { if (el) el.indeterminate = algunoMarcado && !todosMarcados; }}
-              onChange={toggleTodos}/>
-            <span className="filter-check-name">Todos</span>
-          </label>
+          <div className="filter-check-row cabecera">
+            <label className="filter-check master">
+              <input type="checkbox" checked={todosMarcados}
+                ref={el => { if (el) el.indeterminate = algunoMarcado && !todosMarcados; }}
+                onChange={toggleTodos}/>
+              <span className="filter-check-name">Todos</span>
+            </label>
+            {conMasBarato && (
+              <span className={`filter-barato-head ${masBaratoEn?"on":""}`}
+                title="Elegí una cadena en esta columna y la lista queda solo con los productos donde tiene el precio más bajo. Los otros supermercados tildados a la izquierda se siguen viendo en la comparación.">
+                + Barato
+              </span>
+            )}
+          </div>
           {supers.map(s => {
             const llega = superLlegaA(s, regionCodigo);
+            const esBarato = masBaratoEn === s;
             return (
-              <label key={s} className={`filter-check ${supersVisibles.includes(s)?"on":""} ${llega?"":"sin-cobertura"}`}
-                title={llega ? undefined : "No vende en tu región. Podés tildarlo igual para usarlo de referencia, pero no vas a poder comprar."}>
-                <input type="checkbox" checked={supersVisibles.includes(s)} onChange={()=>toggleSuper(s)}/>
-                <SuperLogo nombre={s} size={18} bare={true}/>
-                <span className="filter-check-name">{s}</span>
-                {!llega && <span className="filter-check-tag">no llega</span>}
-                {stats.por_super && <span className="count">{stats.por_super[s] || 0}</span>}
-              </label>
+              <div key={s} className={`filter-check-row ${esBarato?"es-barato":""}`}>
+                <label className={`filter-check ${supersVisibles.includes(s)?"on":""} ${llega?"":"sin-cobertura"}`}
+                  title={llega ? undefined : "No vende en tu región. Podés tildarlo igual para usarlo de referencia, pero no vas a poder comprar."}>
+                  <input type="checkbox" checked={supersVisibles.includes(s)} onChange={()=>toggleSuper(s)}/>
+                  <SuperLogo nombre={s} size={18} bare={true}/>
+                  <span className="filter-check-name">{s}</span>
+                  {/* Etiqueta O contador, nunca los dos: juntos no entran en la fila y se
+                      comen el nombre de la cadena (con la columna "+ Barato" al lado, más).
+                      Y en una cadena que no vende en tu región, cuántos productos tiene es
+                      justo el dato que no sirve para nada. */}
+                  {!llega
+                    ? <span className="filter-check-tag">no llega</span>
+                    : stats.por_super ? <span className="count">{stats.por_super[s] || 0}</span> : null}
+                </label>
+                {conMasBarato && <label className="filter-barato"
+                  title={esBarato
+                    ? `Mostrando solo los productos más baratos en ${s}. Tocá de nuevo para ver todos.`
+                    : `Ver solo los productos más baratos en ${s}`}>
+                  {/* El label no tiene texto (es una columna de casillas), así que el
+                      nombre accesible va acá o el lector de pantalla lee "casilla" y nada más. */}
+                  <input type="checkbox" checked={esBarato} onChange={()=>elegirMasBarato(s)}
+                    aria-label={`Ver solo los productos más baratos en ${s}`}/>
+                </label>}
+              </div>
             );
           })}
         </div>
+        {conMasBarato && masBaratoEn && (
+          <div className="filter-barato-nota">
+            <span>🏷️ Solo lo más barato en <strong>{masBaratoEn}</strong></span>
+            <button onClick={()=>setMasBaratoEn(null)}>Quitar</button>
+          </div>
+        )}
         {sinCobertura.length > 0 && (
           <div className="filter-hint" style={{marginTop:8}}>
             {sinCobertura.length === 1 ? "1 cadena no vende" : `${sinCobertura.length} cadenas no venden`} en tu
@@ -4548,6 +4667,11 @@ function App() {
     try { const s = JSON.parse(localStorage.getItem("sp_supers")); return Array.isArray(s) && s.length ? s.filter(x => SUPER_TODOS.includes(x)) : SUPER_TODOS; }
     catch { return SUPER_TODOS; }
   });
+  // Cadena elegida en la columna "+ Barato" del filtro: la lista queda solo con
+  // los productos que están más baratos ahí. Es una sola, y NO se persiste (ni en
+  // localStorage ni en /preferencia) a propósito: esconde la mayoría del catálogo,
+  // y volver mañana a una app con 1 de cada 12 productos no se entiende.
+  const [masBaratoEn, setMasBaratoEn] = React.useState(null);
   const [catFiltro, setCatFiltro] = React.useState("Todas");
   const [subcatFiltro, setSubcatFiltro] = React.useState("Todas");
   const [soloOfertas, setSoloOfertas] = React.useState(false);
@@ -4643,24 +4767,48 @@ function App() {
     // tildar una cadena, porque para entonces el ref ya coincide con la región.
   }, [regionCodigo, supersVisibles]);
 
+  // Si la cadena elegida en "+ Barato" se destilda a la izquierda —a mano, al
+  // cambiar de región o al cargar la preferencia del login— el filtro se apaga:
+  // todas las cards estarían encabezadas por un súper que el usuario no quiere ver.
+  React.useEffect(() => {
+    if (masBaratoEn && !supersVisibles.includes(masBaratoEn)) setMasBaratoEn(null);
+  }, [supersVisibles, masBaratoEn]);
+
   // Multi-selección de supermercados: si hay exactamente uno visible lo filtramos en el
   // servidor (paginación correcta); con un subconjunto filtramos en cliente sobre lo traído.
-  const superParam = supersVisibles.length === 1 ? supersVisibles[0] : "";
+  // El filtro "+ Barato" también va al servidor, y por el mismo parámetro: la matview
+  // productos_mejor_precio tiene UNA fila por producto —la del súper más barato— así que
+  // pedirle supermercado=X es exactamente "los productos que están más baratos en X".
+  // Filtrarlo en cliente traería páginas de 30 con 4 cards, y el total y el paginador mintiendo.
+  const superParam = masBaratoEn || (supersVisibles.length === 1 ? supersVisibles[0] : "");
   // Reproyectamos cada producto sobre los supers visibles: si el super principal quedó
   // destildado pero el producto existe en otro super visible, promovemos el más barato
   // visible como principal (así la card no desaparece). Se oculta solo si ningún super visible lo tiene.
   const productosVisibles = React.useMemo(() => {
     const visibles = new Set(supersVisibles);
+    // Un precio nulo no es un precio de $0: si no lo mandamos al fondo, la alternativa
+    // sin precio gana el orden y encabeza la card.
+    const precioDe = (o) => (o && o.precio != null ? o.precio : Infinity);
     return productos.map(p => {
       // Si el super principal sigue visible, la card queda intacta (ProductCard filtra
       // los otros_supers destildados y mantiene el cartel "más barato en X" si corresponde).
-      if (visibles.has(p.supermercado)) return p;
-      // El principal quedó oculto: promovemos el mejor super visible entre los otros_supers.
-      const visiblesOtros = (p.otros_supers || []).filter(o => visibles.has(o.supermercado));
-      if (visiblesOtros.length === 0) return null; // ningún super visible tiene el producto
-      visiblesOtros.sort((a,b) => a.precio - b.precio);
-      const mejor = visiblesOtros[0];
-      const restantes = visiblesOtros.slice(1).map(o => ({ supermercado:o.supermercado, precio:o.precio, url:o.url }));
+      if (!masBaratoEn && visibles.has(p.supermercado)) return p;
+      // Candidatos: el súper de la card + sus alternativas, quedándonos con los tildados.
+      const candidatos = [p, ...(p.otros_supers || [])].filter(o => visibles.has(o.supermercado));
+      if (candidatos.length === 0) return null; // ningún super visible tiene el producto
+      candidatos.sort((a,b) => precioDe(a) - precioDe(b));
+      // Con "+ Barato" activo la card tiene que quedar encabezada por ESA cadena. El
+      // servidor ya devolvió solo los productos donde gana, pero al regionalizar los
+      // precios pudo haber promovido a otro súper (el re-ranking de get_productos): ahí
+      // el producto dejó de cumplir lo que promete el filtro y se cae de la lista.
+      // El empate cuenta como ganar: sigue siendo el precio más bajo que hay.
+      const elegido = masBaratoEn ? candidatos.find(o => o.supermercado === masBaratoEn) : null;
+      if (masBaratoEn && precioDe(elegido) > precioDe(candidatos[0])) return null;
+      // El principal quedó oculto (o lo desplazó el filtro): promovemos el súper elegido.
+      const mejor = elegido || candidatos[0];
+      if (mejor === p) return p;
+      const restantes = candidatos.filter(o => o !== mejor)
+        .map(o => ({ supermercado:o.supermercado, precio:o.precio, url:o.url }));
       // El backend manda el id (y sku_id) de cada alternativa, así que el producto
       // promovido es una fila real y se puede agregar al carrito como cualquier otro.
       // Si no viniera (backend viejo), no sabemos qué fila es y hay que caer al link
@@ -4676,7 +4824,7 @@ function App() {
         otros_supers: restantes, _reproyectado: true, _sinIdPropio: sinIdPropio,
       };
     }).filter(Boolean);
-  }, [productos, supersVisibles]);
+  }, [productos, supersVisibles, masBaratoEn]);
 
   React.useEffect(() => {
     fetch(`${API}/regiones`).then(r => r.json())
@@ -5030,7 +5178,8 @@ function App() {
 
   function resetFilters() {
     // No reseteamos supersVisibles: es una preferencia persistente del usuario, no un filtro transitorio.
-    setTab("todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas");
+    // El "+ Barato" sí se limpia: eso es un filtro del momento, y de los que más esconden.
+    setTab("todos"); setCatFiltro("Todas"); setSubcatFiltro("Todas"); setMasBaratoEn(null);
     setBusqueda(""); setSoloOfertas(false); window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -5105,6 +5254,7 @@ function App() {
             <Sidebar
               onCerrar={cerrarFiltros}
               supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
+              masBaratoEn={masBaratoEn} setMasBaratoEn={setMasBaratoEn} conMasBarato={tab !== "lista"}
               catFiltro={catFiltro} setCatFiltro={setCatFiltro}
               subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
               soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
@@ -5205,6 +5355,12 @@ function App() {
               <div className="sort-bar">
                 <span className="sort-info">
                   {loading ? "Cargando..." : <><strong>{totalProductos}</strong> producto{totalProductos!==1?"s":""} · página <strong>{pagina}</strong> de <strong>{totalPaginas}</strong></>}
+                  {masBaratoEn && (
+                    <button className="sort-info-chip" onClick={()=>setMasBaratoEn(null)}
+                      title="Quitar el filtro y volver a ver todos los productos">
+                      🏷️ Más baratos en {masBaratoEn} ✕
+                    </button>
+                  )}
                 </span>
                 <div className="sort-controls" style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
                   <div className="sort-options">
@@ -5243,7 +5399,14 @@ function App() {
                 <div className="empty-state">
                   <div className="empty-state-icon">🧐</div>
                   <div className="empty-state-title">No encontramos productos</div>
-                  <div className="empty-state-desc">Probá con otros filtros o términos de búsqueda. También podés reiniciar los filtros haciendo clic en el logo.</div>
+                  {masBaratoEn ? (
+                    <div className="empty-state-desc">
+                      Con estos filtros no hay nada que esté más barato en <strong>{masBaratoEn}</strong>.{" "}
+                      <button className="footer-link-btn" onClick={()=>setMasBaratoEn(null)}>Ver todos los supermercados</button>
+                    </div>
+                  ) : (
+                    <div className="empty-state-desc">Probá con otros filtros o términos de búsqueda. También podés reiniciar los filtros haciendo clic en el logo.</div>
+                  )}
                 </div>
               ) : (
                 <>
