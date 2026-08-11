@@ -930,7 +930,12 @@
     /* ------------------------------------------------------------------ */
     /* Cronograma semanal                                                  */
     /* ------------------------------------------------------------------ */
-    .cronograma { display: flex; flex-direction: column; gap: 16px; }
+    /* `--cr-k` es el factor del selector de tamaño. Todo lo que escala en la
+       grilla —tipografía, padding, ancho de columna y el tamaño de los logos—
+       se expresa en función de él. El valor por defecto va acá y no sólo en el
+       style inline del componente: si algún día la tabla se renderiza fuera de
+       CronogramaView, sigue midiendo bien. */
+    .cronograma { display: flex; flex-direction: column; gap: 16px; --cr-k: 1; }
     .cr-head h2 { font-size: 22px; font-weight: 900; letter-spacing: -0.4px; margin: 0 0 4px; }
     .cr-head p { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 62ch; }
     .cr-estado {
@@ -939,6 +944,10 @@
     }
 
     .cr-filtros { display: flex; flex-direction: column; gap: 10px; }
+    /* Canal y tamaño comparten renglón; el tamaño se va al extremo derecho.
+       Con `wrap`, en teléfono el selector cae en su propia línea en vez de
+       comprimir los botones de canal. */
+    .cr-fila-controles { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .cr-canal { display: flex; gap: 6px; }
     .cr-canal-btn {
       border: 1.5px solid var(--border); background: var(--surface); cursor: pointer;
@@ -947,6 +956,29 @@
     }
     .cr-canal-btn:hover { border-color: var(--accent-dark); }
     .cr-canal-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    /* Selector de tamaño: tres "A" de tamaño creciente, que se explican solas
+       sin gastar ancho en texto. Van dentro de un marco compartido para que se
+       lean como un control y no como tres botones sueltos. */
+    .cr-tamano {
+      margin-left: auto; display: flex; align-items: center; gap: 2px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      border-radius: 999px; padding: 2px;
+    }
+    .cr-tam-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      padding: 0 4px 0 8px; white-space: nowrap;
+    }
+    .cr-tam-btn {
+      border: none; background: transparent; cursor: pointer; font-family: inherit;
+      border-radius: 999px; padding: 3px 9px; font-weight: 900; line-height: 1;
+      color: var(--text-muted); transition: all .15s;
+    }
+    .cr-tam-btn:hover { background: var(--surface-2); color: var(--text-primary); }
+    .cr-tam-btn.active { background: var(--ink); color: #fff; }
+    .cr-tam-btn.t-s { font-size: 10px; }
+    .cr-tam-btn.t-m { font-size: 13px; }
+    .cr-tam-btn.t-g { font-size: 16px; }
 
     .cr-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .cr-chips-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
@@ -975,17 +1007,17 @@
     .cr-tabla tr:last-child th, .cr-tabla tr:last-child td { border-bottom: none; }
 
     .cr-th-super {
-      padding: 12px 10px; background: var(--surface-2); text-align: center;
-      border-bottom: 1.5px solid var(--border); min-width: 104px;
+      padding: calc(12px * var(--cr-k)) 10px; background: var(--surface-2); text-align: center;
+      border-bottom: 1.5px solid var(--border); min-width: calc(104px * var(--cr-k));
     }
     .cr-th-super img { margin: 0 auto; }
 
     .cr-tabla thead .cr-th-dia { background: var(--surface-2); }
     .cr-th-dia {
       position: sticky; left: 0; z-index: 2; background: var(--surface);
-      padding: 10px 12px; text-align: left; min-width: 92px;
+      padding: 10px 12px; text-align: left; min-width: calc(92px * var(--cr-k));
       border-right: 1px solid var(--border);
-      font-size: 13px; font-weight: 800; color: var(--text-primary);
+      font-size: calc(13px * var(--cr-k)); font-weight: 800; color: var(--text-primary);
       white-space: nowrap;
     }
     .cr-dia-corto { display: none; }
@@ -998,8 +1030,8 @@
     .cr-hoy .cr-th-dia, .cr-hoy .cr-celda { background: var(--accent-soft); }
 
     .cr-celda {
-      padding: 8px 7px; vertical-align: top; cursor: pointer;
-      transition: background .12s;
+      padding: calc(8px * var(--cr-k)) calc(7px * var(--cr-k)); vertical-align: top;
+      cursor: pointer; transition: background .12s;
     }
     .cr-celda:hover { background: var(--bg); }
     .cr-celda.vacia { color: var(--text-muted); font-weight: 700; cursor: default; text-align: center; }
@@ -1016,8 +1048,8 @@
     /* `order` en los cuatro: el DOM está escrito en el orden de mobile (ver el
        JSX), así que en desktop hay que reacomodarlos explícitamente. */
     .cr-pct {
-      order: 1; font-size: 15px; font-weight: 900; letter-spacing: -0.4px;
-      color: var(--success); min-width: 34px; flex-shrink: 0;
+      order: 1; font-size: calc(15px * var(--cr-k)); font-weight: 900; letter-spacing: -0.4px;
+      color: var(--success); min-width: calc(34px * var(--cr-k)); flex-shrink: 0;
     }
     .cr-banco > img, .cr-banco > span[aria-hidden] { order: 2; }
     /* Gris y no verde cuando pide una categoría de cliente: el número existe
@@ -1030,8 +1062,8 @@
        con once columnas eso es scrollear 2.058px de costado en un teléfono.
        Recortado con puntos suspensivos y el nombre entero en el `title`. */
     .cr-ent {
-      order: 3; font-size: 10.5px; font-weight: 700; color: var(--text-secondary);
-      min-width: 0; max-width: 104px;
+      order: 3; font-size: calc(10.5px * var(--cr-k)); font-weight: 700; color: var(--text-secondary);
+      min-width: 0; max-width: calc(104px * var(--cr-k));
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .cr-banco > img, .cr-banco > span[aria-hidden] { align-self: center; flex-shrink: 0; }
@@ -1040,11 +1072,11 @@
        derecho de la fila. */
     .cr-iconos {
       order: 9; margin-left: auto; flex-shrink: 0; display: flex; gap: 1px;
-      font-size: 9px; font-style: normal; color: var(--text-muted); line-height: 1;
+      font-size: calc(9px * var(--cr-k)); font-style: normal; color: var(--text-muted); line-height: 1;
     }
     .cr-iconos i { font-style: normal; cursor: help; }
     .cr-mas {
-      font-size: 9px; font-weight: 800; color: var(--text-secondary);
+      font-size: calc(9px * var(--cr-k)); font-weight: 800; color: var(--text-secondary);
       background: var(--bg); border-radius: 999px; padding: 1.5px 7px;
       display: inline-block; margin-top: 4px;
     }
@@ -1068,16 +1100,16 @@
     @media (max-width: 720px) {
       .cr-dia-largo { display: none; }
       .cr-dia-corto { display: inline; }
-      .cr-th-dia { min-width: 58px; padding: 8px; font-size: 12px; }
-      .cr-th-super { min-width: 86px; padding: 9px 6px; }
-      .cr-celda { padding: 7px 5px; }
+      .cr-th-dia { min-width: calc(58px * var(--cr-k)); padding: 8px; font-size: calc(12px * var(--cr-k)); }
+      .cr-th-super { min-width: calc(86px * var(--cr-k)); padding: 9px 6px; }
+      .cr-celda { padding: calc(7px * var(--cr-k)) calc(5px * var(--cr-k)); }
       /* En teléfono el % se apila SOBRE el nombre en vez de ir al lado. En fila
          la columna necesita 170px (y once columnas son 1.750px de scroll
          horizontal, más 34 nombres recortados); apilado baja a ~96px. Cuesta
          alto, pero en un teléfono scrollear para abajo es gratis y para el
          costado no. */
       .cr-banco { display: block; text-align: center; padding: 3px 0; line-height: 1.15; }
-      .cr-pct { font-size: 14px; min-width: 0; display: inline; }
+      .cr-pct { font-size: calc(14px * var(--cr-k)); min-width: 0; display: inline; }
       .cr-iconos { display: inline-flex; margin-left: 3px; vertical-align: middle; }
       /* El logo va ANTES del %, en el mismo renglón. `PagoLogo` lo emite con
          `display:block` —y como estilo INLINE, que le gana a la hoja— así que
@@ -1094,7 +1126,7 @@
       .cr-ent {
         display: block; max-width: none; white-space: normal;
         overflow: hidden; max-height: 2.4em;
-        font-size: 9.5px; line-height: 1.2;
+        font-size: calc(9.5px * var(--cr-k)); line-height: 1.2;
       }
       /* Una sola fila que scrollea. `-webkit-overflow-scrolling` y el
          `flex: 0 0 auto` de los chips son necesarios: sin el segundo, flex los
@@ -1445,6 +1477,12 @@
     }
     .mobile-filter-toggle.on { background: var(--ink); color: #fff; border-color: var(--ink); }
     .mft-chev { font-size: 9px; opacity: 0.75; }
+    .filtro-cerrar {
+      display: none; width: 100%; padding: 13px 16px; margin-bottom: 20px;
+      background: var(--ink); color: #fff; border: none; border-radius: var(--radius);
+      font-size: 13px; font-weight: 800; font-family: inherit; cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
     @media (max-width: 1024px) {
       /* Pestañas y botones de filtro son DOS bloques que envuelven solos. El
          grid 50-50 de antes daba por hecho una sola pestaña: con la segunda,
@@ -1471,6 +1509,13 @@
       }
       .sidebar { display: none; position: static; }
       .sidebar.open { display: block; }
+      /* Una sección por vez: el botón que tocaste manda. La subcategoría va con
+         la categoría, que es de donde sale. "Filtros rápidos" se queda en las
+         dos: es el único acceso que tiene en móvil. */
+      .sidebar.solo-super #filtro-categoria,
+      .sidebar.solo-super #filtro-subcategoria,
+      .sidebar.solo-cat #filtro-super { display: none; }
+      .filtro-cerrar { display: block; }
     }
     /* En móvil, la barra de orden scrollea horizontalmente en vez de partirse en dos líneas.
        Los contenedores se acotan al ancho (min-width:0 / max-width:100%) para que el scroll
@@ -3093,7 +3138,16 @@ function nombreCortoEntidad(nombre) {
   return (nombre || "").replace(/^Banco\s+/i, "");
 }
 
-function CronogramaCelda({ celda, onVer }) {
+// Los tres pasos del selector de tamaño. `f` multiplica a `--cr-k` en el CSS y
+// también a los `size` de los logos, que son props de JS y no se pueden escalar
+// desde la hoja de estilos (PagoLogo y SuperLogo emiten ancho y alto inline).
+const CR_TAMANOS = [
+  { k: "s", clase: "t-s", titulo: "compacto", f: 0.85 },
+  { k: "m", clase: "t-m", titulo: "normal",   f: 1 },
+  { k: "g", clase: "t-g", titulo: "grande",   f: 1.25 },
+];
+
+function CronogramaCelda({ celda, onVer, escala }) {
   if (!celda || !celda.promos.length) return <td className="cr-celda vacia">—</td>;
 
   // Un renglón por BANCO, no por promo. Dos motivos: NaranjaX mete sus tres
@@ -3131,7 +3185,7 @@ function CronogramaCelda({ celda, onVer }) {
           % · logo · nombre · íconos, que ahí sí es flex. */}
       {visibles.map((p, i) => (
         <div key={i} className={`cr-banco ${p.membresia ? "con-requisito" : ""}`}>
-          <PagoLogo nombre={p.entidad} size={13}/>
+          <PagoLogo nombre={p.entidad} size={Math.round(13 * escala)}/>
           <span className="cr-pct">{p.pct}%</span>
           <span className="cr-iconos">
             {p.tipo === "reintegro" && <i title="Reintegro: lo pagás entero y te lo devuelven después">↩</i>}
@@ -3157,6 +3211,15 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
   const [detalle, setDetalle] = React.useState(null);
   const [misEntidades, setMisEntidades] = React.useState([]);
   const [verTodas, setVerTodas] = React.useState(false);
+  // Se recuerda: el que agranda la letra la necesita agrandada siempre, no una
+  // vez por visita.
+  const [tam, setTam] = React.useState(() => {
+    try { return localStorage.getItem("sp_cr_tam") || "m"; } catch { return "m"; }
+  });
+  React.useEffect(() => { try { localStorage.setItem("sp_cr_tam", tam); } catch {} }, [tam]);
+  // `escala` y no `f`: abajo `f` ya es la fila del día en los dos .map de la
+  // semana, y adentro de esos loops es justo donde hay que pasarla.
+  const escala = (CR_TAMANOS.find(t => t.k === tam) || CR_TAMANOS[1]).f;
 
   // Las tarjetas del usuario se piden acá y no bajan por props porque `App` no
   // las tiene: hoy cada componente que las necesita las trae (MediosPagoModal,
@@ -3209,7 +3272,7 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
   const hoy = data.dia_hoy;
 
   return (
-    <div className="cronograma">
+    <div className="cronograma" style={{"--cr-k": escala}}>
       <div className="cr-head">
         <h2>📅 La semana de descuentos</h2>
         <p>Qué banco conviene cada día en cada supermercado. Se actualiza todas las mañanas
@@ -3217,11 +3280,21 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
       </div>
 
       <div className="cr-filtros">
-        <div className="cr-canal">
-          {[["todos","Todos"],["online","Compra online"],["sucursal","En sucursal"]].map(([k,l]) => (
-            <button key={k} className={`cr-canal-btn ${canal===k?"active":""}`}
-                    onClick={()=>setCanal(k)}>{l}</button>
-          ))}
+        <div className="cr-fila-controles">
+          <div className="cr-canal">
+            {[["todos","Todos"],["online","Compra online"],["sucursal","En sucursal"]].map(([k,l]) => (
+              <button key={k} className={`cr-canal-btn ${canal===k?"active":""}`}
+                      onClick={()=>setCanal(k)}>{l}</button>
+            ))}
+          </div>
+          <div className="cr-tamano" role="group" aria-label="Tamaño de la grilla">
+            <span className="cr-tam-label">Tamaño</span>
+            {CR_TAMANOS.map(t => (
+              <button key={t.k} className={`cr-tam-btn ${t.clase} ${tam===t.k?"active":""}`}
+                      onClick={()=>setTam(t.k)} aria-pressed={tam===t.k}
+                      title={`Tamaño ${t.titulo}`} aria-label={`Tamaño ${t.titulo}`}>A</button>
+            ))}
+          </div>
         </div>
         <span className="cr-chips-label">Filtrar por banco:</span>
         {/* Colapsado va en UNA fila que scrollea en mobile: a 375px doce chips
@@ -3273,8 +3346,9 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
                       alto se lo come el aire. Necesita `recorte`, igual que en
                       el marquee. */}
                   {s === "Cordiez"
-                    ? <SuperLogo nombre={s} ancho={76} recorte={4.3} bare={true}/>
-                    : <SuperLogo nombre={s} size={26} ancho="auto" maxAncho={84} bare={true}/>}
+                    ? <SuperLogo nombre={s} ancho={Math.round(76 * escala)} recorte={4.3} bare={true}/>
+                    : <SuperLogo nombre={s} size={Math.round(26 * escala)} ancho="auto"
+                                 maxAncho={Math.round(84 * escala)} bare={true}/>}
                 </th>
               ))}
             </tr>
@@ -3288,7 +3362,7 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
                   {f.dia === hoy && <span className="cr-hoy-tag">hoy</span>}
                 </th>
                 {supers.map(s => (
-                  <CronogramaCelda key={s} celda={f.celdas[s]} onVer={setDetalle}/>
+                  <CronogramaCelda key={s} celda={f.celdas[s]} onVer={setDetalle} escala={escala}/>
                 ))}
               </tr>
             ))}
@@ -4131,7 +4205,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
 // ---------------------------------------------------------------------------
 // Sidebar Filters
 // ---------------------------------------------------------------------------
-function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats, regionCodigo }) {
+function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, subcatFiltro, setSubcatFiltro, soloOfertas, setSoloOfertas, stats, regionCodigo, onCerrar }) {
   // Las que llegan primero: si no, el usuario de Tucumán abre el panel y lo que
   // ve arriba son seis cadenas que no le sirven.
   const supers = React.useMemo(() => {
@@ -4196,7 +4270,7 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
       </div>
 
       {subcats.length > 0 && (
-        <div className="filter-card">
+        <div className="filter-card" id="filtro-subcategoria">
           <div className="filter-title">Subcategoría</div>
           <select value={subcatFiltro} onChange={e=>setSubcatFiltro(e.target.value)}
             style={{width:"100%",padding:"8px 10px",borderRadius:"var(--radius)",fontSize:12.5,fontWeight:600,border:"1.5px solid var(--border)",background:"var(--surface)",color:"var(--text-secondary)",cursor:"pointer",outline:"none",fontFamily:"inherit"}}>
@@ -4205,6 +4279,9 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
         </div>
       )}
 
+      {/* Se queda en las dos secciones a propósito: en móvil el panel es el
+          ÚNICO lugar donde vive este interruptor, así que esconderlo con la
+          sección que no elegiste lo dejaría inalcanzable. */}
       <div className="filter-card">
         <div className="filter-title">Filtros rápidos</div>
         <div className="filter-toggle" onClick={()=>setSoloOfertas(!soloOfertas)}>
@@ -4214,6 +4291,12 @@ function Sidebar({ supersVisibles, setSupersVisibles, catFiltro, setCatFiltro, s
           <span className={`toggle-label ${soloOfertas?"on":""}`}>Solo ofertas y promos</span>
         </div>
       </div>
+
+      {/* Sólo se ve abajo de 1024px (lo esconde el CSS): en desktop el panel es
+          una columna fija que no se cierra. */}
+      {onCerrar && (
+        <button className="filtro-cerrar" onClick={onCerrar}>Cerrar filtro</button>
+      )}
     </div>
   );
 }
@@ -4464,25 +4547,36 @@ function App() {
   // El panel es uno solo, pero los botones dicen qué hay adentro en vez de
   // "filtros": el que entra por primera vez no sabe qué se filtra.
   const [filtroSeccion, setFiltroSeccion] = React.useState(null);
+  const volverALaBarra = React.useRef(false);
+  const cerrarFiltros = () => {
+    setSidebarOpen(false); setFiltroSeccion(null);
+    volverALaBarra.current = true;
+  };
   const abrirFiltros = (sec) => {
     // Segundo toque en el mismo botón cierra: el botón es el interruptor.
-    if (sidebarOpen && filtroSeccion === sec) { setSidebarOpen(false); setFiltroSeccion(null); return; }
+    if (sidebarOpen && filtroSeccion === sec) { cerrarFiltros(); return; }
     setSidebarOpen(true); setFiltroSeccion(sec);
   };
-  // El panel se abre ARRIBA de la barra (el <aside> va antes que el contenido),
-  // así que al abrirlo el botón que acabás de tocar se va para abajo de la
-  // pantalla. Llevar la sección pedida a la vista es lo que evita ese salto.
-  React.useEffect(() => {
-    if (!sidebarOpen || !filtroSeccion) return;
-    const el = document.getElementById(filtroSeccion === "cat" ? "filtro-categoria" : "filtro-super");
+  // Deja `el` justo abajo del header. `scrollIntoView` no sirve: el header es
+  // sticky (176px en móvil) y taparía el título; hay que medirlo, porque el
+  // alto cambia según el ancho y según si hay sesión iniciada.
+  const scrollAncla = (el) => {
     if (!el) return;
-    // `scrollIntoView` no sirve: el header es sticky (176px en móvil) y deja el
-    // título de la tarjeta tapado abajo. Se descuenta su alto real medido, que
-    // cambia según el ancho y según si hay sesión iniciada.
     const header = document.querySelector(".header");
     const margen = (header ? header.getBoundingClientRect().height : 0) + 8;
-    const destino = el.getBoundingClientRect().top + window.scrollY - margen;
-    window.scrollTo({ top: Math.max(0, destino), behavior: "smooth" });
+    window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - margen), behavior: "smooth" });
+  };
+  // El panel se abre ARRIBA de la barra (el <aside> va antes que el contenido),
+  // así que abrirlo empuja el botón que acabás de tocar fuera de la pantalla, y
+  // cerrarlo deja el scroll mil píxeles más abajo de donde estabas. Los dos
+  // movimientos se compensan acá.
+  React.useEffect(() => {
+    if (sidebarOpen && filtroSeccion) {
+      scrollAncla(document.getElementById(filtroSeccion === "cat" ? "filtro-categoria" : "filtro-super"));
+    } else if (!sidebarOpen && volverALaBarra.current) {
+      volverALaBarra.current = false;
+      scrollAncla(document.querySelector(".brandbar-top"));
+    }
   }, [sidebarOpen, filtroSeccion]);
 
   // El código de la región elegida ("cordoba", "tucuman"…). Es la clave de
@@ -4967,10 +5061,15 @@ function App() {
 
       {/* Main */}
       <div className="main">
-        {/* Sidebar - solo en pestañas de productos */}
+        {/* Sidebar - solo en pestañas de productos.
+            Qué sección mostrar se decide por CLASE y no por prop: el recorte
+            vale sólo abajo de 1024px, así que va en la media query. Con un
+            prop, agrandar la ventana con el panel abierto en "super" dejaba la
+            tarjeta de categorías escondida en desktop. */}
         {tab !== "carrito" && tab !== "cronograma" && (
-          <aside className={`sidebar ${sidebarOpen?"open":""}`}>
+          <aside className={`sidebar ${sidebarOpen?"open":""} ${filtroSeccion==="cat"?"solo-cat":filtroSeccion==="super"?"solo-super":""}`}>
             <Sidebar
+              onCerrar={cerrarFiltros}
               supersVisibles={supersVisibles} setSupersVisibles={setSupersVisibles}
               catFiltro={catFiltro} setCatFiltro={setCatFiltro}
               subcatFiltro={subcatFiltro} setSubcatFiltro={setSubcatFiltro}
