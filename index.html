@@ -4804,6 +4804,11 @@ function App() {
       // El empate cuenta como ganar: sigue siendo el precio más bajo que hay.
       const elegido = masBaratoEn ? candidatos.find(o => o.supermercado === masBaratoEn) : null;
       if (masBaratoEn && precioDe(elegido) > precioDe(candidatos[0])) return null;
+      // Y tiene que haber contra qué compararlo. El servidor ya sacó los que no vende
+      // nadie más (`comparables`), pero acá se caen además los que solo vende alguna
+      // cadena DESTILDADA: la card saldría con el precio pelado y sin comparativo,
+      // que es justo lo que el filtro promete mostrar.
+      if (masBaratoEn && candidatos.length < 2) return null;
       // El principal quedó oculto (o lo desplazó el filtro): promovemos el súper elegido.
       const mejor = elegido || candidatos[0];
       if (mejor === p) return p;
@@ -5067,6 +5072,11 @@ function App() {
     const paginaActual = paginaOverride !== undefined ? paginaOverride : pagina;
     const params = new URLSearchParams();
     if (superParam) params.append("supermercado", superParam);
+    // Con "+ Barato" puesto, sin esto la lista se llena de productos que solo vende
+    // esa cadena: ganan por no tener rival, y la card sale sin comparativo. Va aparte
+    // de `supermercado` y no pegado a él a propósito — si el backend todavía no lo
+    // conoce, lo ignora y el filtro sigue andando, nada más que con los exclusivos.
+    if (masBaratoEn) params.append("comparables", "true");
     if (catFiltro !== "Todas") params.append("categoria", catFiltro);
     if (subcatFiltro !== "Todas") params.append("subcategoria", subcatFiltro);
     if (soloOfertas) params.append("ofertas", "true");
@@ -5099,7 +5109,10 @@ function App() {
     setPagina(1);
     const t = setTimeout(() => cargar(1), busqueda?400:0);
     return () => clearTimeout(t);
-  }, [tab, superParam, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
+    // masBaratoEn va aparte de superParam: cuando hay UN solo súper tildado y es el
+    // mismo del "+ Barato", superParam no cambia al prenderlo o apagarlo, pero el
+    // parámetro `comparables` de la request sí.
+  }, [tab, superParam, masBaratoEn, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
 
   const toggleFav = React.useCallback(async (e, id) => {
     e.stopPropagation();
