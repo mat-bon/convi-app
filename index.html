@@ -997,22 +997,50 @@
     /* La tabla scrollea en su propio contenedor y NO empuja el ancho de la
        página: con 10 súperes son ~1000px y en mobile arrastraría el body
        entero. La primera columna queda pegada porque sin el nombre del día a la
-       vista, scrollear a la derecha deja la grilla sin referencia. */
+       vista, scrollear a la derecha deja la grilla sin referencia.
+
+       El `max-height` es lo que hace que la FILA de supermercados también se
+       pueda fijar. `position: sticky` se resuelve contra el contenedor de
+       scroll más cercano, y como `overflow-x: auto` ya convierte a .cr-scroll
+       en uno, un `top` acá adentro se mide contra esta caja y no contra la
+       ventana. Sin alto máximo la caja no scrollea en vertical, así que el
+       `top` no tiene contra qué pegarse y el thead se va con la página
+       (probado: con `overflow-y: clip` tampoco alcanza, sigue siendo esta caja
+       la que manda). Con alto máximo la grilla scrollea en los dos ejes y las
+       dos cabeceras quedan fijas, como en una planilla.
+       `dvh` para que en el teléfono no cuente la barra de direcciones, con
+       `vh` de reserva para navegadores viejos; el `max()` evita que en un
+       celular apaisado la grilla quede de 150px.
+
+       Lo que resta el calc NO es un número cómodo: es el header sticky de la
+       app más lo que va debajo de la grilla (la nota). Si la caja es más alta
+       que ese hueco, al llegar al fondo de la página se le mete por arriba del
+       header y tapa justo la fila que acabamos de fijar. Medido con la nota
+       larga —sin sesión, que es el caso peor— hacen falta 273px en teléfono
+       (header 176 + nota 97) y 160 en desktop (header 67 + nota 93); van 280 y
+       176 para tener margen. */
     .cr-scroll {
-      overflow-x: auto; border: 1px solid var(--border);
+      overflow: auto; border: 1px solid var(--border);
       border-radius: var(--radius-lg); background: var(--surface);
+      max-height: max(320px, calc(100vh - 176px));
+      max-height: max(320px, calc(100dvh - 176px));
     }
     .cr-tabla { border-collapse: separate; border-spacing: 0; width: 100%; }
     .cr-tabla th, .cr-tabla td { border-bottom: 1px solid var(--border-light); }
     .cr-tabla tr:last-child th, .cr-tabla tr:last-child td { border-bottom: none; }
 
+    /* Fija arriba mientras se recorren los días. El fondo opaco es obligatorio:
+       una celda sticky transparente deja ver las filas pasando por debajo. */
     .cr-th-super {
+      position: sticky; top: 0; z-index: 3;
       padding: calc(12px * var(--cr-k)) 10px; background: var(--surface-2); text-align: center;
       border-bottom: 1.5px solid var(--border); min-width: calc(104px * var(--cr-k));
     }
     .cr-th-super img { margin: 0 auto; }
 
-    .cr-tabla thead .cr-th-dia { background: var(--surface-2); }
+    /* La esquina se fija en los DOS ejes y va por encima de las dos cabeceras
+       (z-index 4 contra 3 y 2), o al scrollear en diagonal se le montan encima. */
+    .cr-tabla thead .cr-th-dia { background: var(--surface-2); top: 0; z-index: 4; }
     .cr-th-dia {
       position: sticky; left: 0; z-index: 2; background: var(--surface);
       padding: 10px 12px; text-align: left; min-width: calc(92px * var(--cr-k));
@@ -1100,6 +1128,12 @@
     @media (max-width: 720px) {
       .cr-dia-largo { display: none; }
       .cr-dia-corto { display: inline; }
+      /* En teléfono el header propio de la app mide 176px (contra 67 en
+         desktop), así que la caja tiene que restar más. */
+      .cr-scroll {
+        max-height: max(320px, calc(100vh - 280px));
+        max-height: max(320px, calc(100dvh - 280px));
+      }
       .cr-th-dia { min-width: calc(58px * var(--cr-k)); padding: 8px; font-size: calc(12px * var(--cr-k)); }
       .cr-th-super { min-width: calc(86px * var(--cr-k)); padding: 9px 6px; }
       .cr-celda { padding: calc(7px * var(--cr-k)) calc(5px * var(--cr-k)); }
