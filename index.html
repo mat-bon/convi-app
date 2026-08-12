@@ -2137,16 +2137,91 @@ function promoColor(promo) {
 // inactivos responden "sc is inactive" y los ajenos "sc N is not available".
 const VTEX_SALES_CHANNEL = { VEA: 34, Disco: 33, Jumbo: 32 };
 
-function buildVtexCartUrl(superNombre, items) {
+// El `seller` de la URL ELIGE la sucursal que prepara el pedido, y es
+// irreversible: una vez que el ítem entró con un seller, cambiar de tienda en el
+// sitio del súper NO lo reasigna. Verificado releyendo el mismo orderForm con la
+// cookie `vtex_segment` de otra región — el ítem se queda en su seller y con su
+// precio. Por eso el comprador veía una sucursal que "no se podía modificar".
+//
+// Y el `seller=1` que mandábamos era el peor de todos: en Cencosud el 1 es el
+// seller de la CUENTA ("Vea Argentina"), no una sucursal real. Sus opciones de
+// entrega son un juego fijo de retiros en tienda —idéntico para cualquier CP y
+// cualquier región— y NO incluyen "Envío a Domicilio", así que el pedido quedaba
+// clavado en un local que el usuario nunca eligió. Medido el 2026-08-12 con
+// `POST /api/checkout/pub/orderForms/simulation` desde CP 1425, 1617, 1704, 1824
+// y 5000: VEA ofrecía siempre las mismas 4 sucursales de La Plata, Disco San
+// Isidro y Vicente López, y Jumbo mandaba a **Neuquén**.
+//
+// Con el seller de una sucursal real aparece "Envío a Domicilio" (si el domicilio
+// cae en su zona) y el precio del carrito es el que le mostramos, porque el
+// scraper cotiza esa región con este mismo seller. Los ítems sin stock en esa
+// sucursal igual entran, marcados `withoutStock` y con el aviso de VTEX: es la
+// verdad de esa tienda, mientras que el seller 1 los daba todos como disponibles.
+//
+// Espejo de CENCOSUD_SELLER_POR_REGION en scraper.py, que es LA FUENTE DE VERDAD
+// (de ahí sale el precio que mostramos). Si allá se cambia una sucursal, hay que
+// cambiarla acá: si las dos tablas se separan, el usuario paga un precio distinto
+// del que comparó. Los nombres salen del SLA de retiro de cada seller.
+const CENCOSUD_SUCURSAL_POR_REGION = {
+  VEA: {
+    nacional:         ["jumboargentinav692lanus692",           "Lanús — Av. Yrigoyen 3043"],
+    caba_gba:         ["jumboargentinav692lanus692",           "Lanús — Av. Yrigoyen 3043"],
+    la_plata:         ["jumboargentinav036laplata2",           "La Plata — Calle 45"],
+    santa_fe_rosario: ["jumboargentinav430funes",              "Funes — Santa Fe"],
+    // OJO: NO es `v700cordoba700`. Ese slug dice "cordoba" pero es la sucursal de
+    // Av. Córdoba 6103, CABA (lo delatan sus retiros: Araoz 265 y Bulnes 1048).
+    // Es la misma trampa de nombre que `j5245sanlorenzo`, que es de Salta.
+    // `v032buchardo` es el seller de la CIUDAD: 11 puntos de retiro y el único de
+    // la plaza con Envío a Domicilio. El nombre acá es genérico a propósito —
+    // el comprador elige entre los 11 en el checkout.
+    cordoba:          ["jumboargentinav032buchardo",           "Ciudad de Córdoba"],
+    mendoza:          ["jumboargentinav546bdalvian",           "Mendoza — Cerro Siete Colores 2496, B° Dalvian"],
+    tucuman:          ["jumboargentinav125sarmientotucuman",   "Tucumán — Av. Alem 240"],
+    salta:            ["jumboargentinav657sarmientoyohiggins", "Salta — Av. Houssay y Colectora"],
+  },
+  Disco: {
+    nacional:         ["jumboargentinad107", "CABA — Naón 2142"],
+    caba_gba:         ["jumboargentinad107", "CABA — Naón 2142"],
+    cordoba:          ["jumboargentinad028", "Córdoba — Av. Colón 683"],
+    la_plata:         ["jumboargentinad042", "La Plata — Calle 30 N° 777"],
+  },
+  Jumbo: {
+    nacional:         ["jumboargentinaj5204lomas",     "Lomas de Zamora"],
+    caba_gba:         ["jumboargentinaj5204lomas",     "Lomas de Zamora"],
+    cordoba:          ["jumboargentinaj451nuevocentro","Córdoba — Av. Duarte Quirós 1400"],
+    santa_fe_rosario: ["jumboargentinaj5218rosario",   "Rosario — Nansen 255"],
+    mendoza:          ["jumboargentinaj5222mendoza",   "Mendoza — Chacras, San Martín 6279"],
+    tucuman:          ["jumboargentinaj5227tucuman",   "Tucumán — Av. Fermín Cariola 42"],
+    salta:            ["jumboargentinaj5251salta",     "Salta — 20 de Febrero 1437"],
+  },
+};
+
+// Sucursal que va a preparar el pedido: [sellerId, nombre] o null si el súper no
+// es de Cencosud. Los otros VTEX (Carrefour, MasOnline, Dia, Cordiez) tienen una
+// sola bandera y ahí el seller 1 SÍ es el correcto.
+//
+// Si la región no está en la tabla —Disco en Santa Fe, Jumbo en La Plata— cae a
+// "nacional". Son plazas donde SUPER_POR_REGION ya no ofrece la cadena, así que
+// en la práctica no se llega, pero caer a la sucursal nacional es preferible a
+// volver al seller 1, que es el que rompe el checkout.
+function sucursalCencosud(superNombre, regionCodigo) {
+  const porRegion = CENCOSUD_SUCURSAL_POR_REGION[superNombre];
+  if (!porRegion) return null;
+  return porRegion[regionCodigo] || porRegion.nacional;
+}
+
+function buildVtexCartUrl(superNombre, items, regionCodigo) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
   const sc = VTEX_SALES_CHANNEL[superNombre] || 1;
+  const sucursal = sucursalCencosud(superNombre, regionCodigo);
+  const seller = sucursal ? sucursal[0] : "1";
   const params = items
     .filter(i => i.sku_id)
     .map(i => {
       const qtyNum = Number(i.qty);
       const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
-      return `sku=${i.sku_id}&qty=${qty}&seller=1`;
+      return `sku=${i.sku_id}&qty=${qty}&seller=${seller}`;
     })
     .join("&");
   if (!params) return null;
@@ -2672,7 +2747,7 @@ function AuthModal({ onClose, onLogin }) {
 // ---------------------------------------------------------------------------
 // ConfirmCompraModal
 // ---------------------------------------------------------------------------
-function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [], onRemove, onClose, token }) {
+function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, itemIds, items = [], onRemove, onClose, token }) {
   // Átomo se saltea el paso de login: no pide cuenta y la propia cadena abre la
   // tienda como primer paso para que PrestaShop cree la sesión, así que mandarlo
   // a abrirla a mano antes era pedirle dos clics para lo mismo.
@@ -2952,6 +3027,15 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, itemIds, items = [
           <>
             <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
             <p className="confirm-desc">Cuando estés listo, cargá los productos en el carrito de {superNombre}.</p>
+            {/* La sucursal la fija el `seller` del link y después el sitio del
+                súper ya no la deja cambiar (ver buildVtexCartUrl), así que hay
+                que decirla ANTES de abrir el carrito. Es la misma con la que
+                comparamos los precios: por eso el total va a coincidir. */}
+            {sucursalCompra && (
+              <div className="confirm-warning">
+                🏬 El pedido lo prepara <strong>{superNombre} {sucursalCompra}</strong> — es la sucursal con la que comparamos los precios. Para comprar en otra, elegila en {superNombre} <em>antes</em> de cargar el carrito y agregá los productos a mano.
+              </div>
+            )}
             <div className="confirm-warning">
               ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
             </div>
@@ -3010,6 +3094,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
           superNombre={confirmData.superNombre}
           loginUrl={confirmData.loginUrl}
           cartUrl={confirmData.cartUrl}
+          sucursalCompra={confirmData.sucursalCompra}
           itemIds={confirmData.itemIds}
           items={confirmData.items}
           onRemove={onRemove}
@@ -3029,8 +3114,12 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const esLaAnonima = superNombre === "La Anónima";
         const conSku = items.filter(i => i.producto.sku_id);
         const cartUrl = esVtex && !esDino && conSku.length > 0
-          ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})))
+          ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})), regionCodigo)
           : null;
+        // Nombre de la sucursal que va a preparar el pedido, para avisarlo antes
+        // de abrir el carrito: la elige el `seller` de la URL y después no se
+        // puede cambiar desde el sitio del súper (ver buildVtexCartUrl).
+        const sucursalCompra = (sucursalCencosud(superNombre, regionCodigo) || [])[1] || null;
         const loginUrl = BASE_URLS[superNombre] || null;
         // La cadena que no vende en la región elegida no ofrece compra: el
         // carrito de su sitio no acepta una dirección de esa plaza, así que el
@@ -3056,7 +3145,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
               </div>
               {(puedeComprar && loginUrl) ? (
                 <button className="cart-buy-btn" style={{background:sc.bg,color:sc.text}}
-                  onClick={() => setConfirmData({ superNombre, loginUrl, cartUrl, itemIds: items.map(i => i.producto_id), items })}>
+                  onClick={() => setConfirmData({ superNombre, loginUrl, cartUrl, sucursalCompra, itemIds: items.map(i => i.producto_id), items })}>
                   Comprar en {superNombre} →
                 </button>
               ) : !llegaAcá ? (
