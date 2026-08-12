@@ -2231,35 +2231,6 @@ function buildVtexCartUrl(superNombre, items, regionCodigo) {
   return `${baseUrl}/checkout/cart/add?sc=${sc}&${params}`;
 }
 
-// El paso donde el comprador elige CÓMO recibe el pedido. `/checkout/cart/add`
-// siempre aterriza en `/checkout/#/cart`, que es sólo la revisión del carrito y
-// no ofrece nada de entrega — de ahí la impresión de que la forma de entrega
-// venía impuesta. Las opciones viven un paso más adelante, en Envío.
-//
-// El redirect del add está clavado: `returnUrl`, `return` y `redirect` se
-// ignoran los tres (probado, siempre responde `location: /checkout/#/cart`), así
-// que el salto hay que darlo con una segunda navegación de la MISMA pestaña.
-//
-// Tiene que ser este host. `checkout.vea.com.ar` existe pero (a) responde 500 y
-// (b) la cookie `checkout.vtex.com` se emite con `domain=www.vea.com.ar`, así
-// que allá el carrito directamente no está.
-//
-// Ojo con lo que se espera ver: Cencosud declara UN solo deliveryChannel
-// (`delivery`) y mete los retiros dentro como SLA con nombre — "Retiro en Tienda
-// - Lanús Av Yrigoyen 3043", "Envío a Domicilio". O sea que no aparece el
-// clásico interruptor "domicilio / retiro" de VTEX: aparece una lista de
-// opciones de envío, y ahí adentro está todo.
-function buildVtexShippingUrl(superNombre) {
-  const baseUrl = BASE_URLS[superNombre];
-  return baseUrl ? `${baseUrl}/checkout/#/shipping` : null;
-}
-
-// Nombre de ventana compartido por los VTEX, igual que COTO_WIN: el carrito y el
-// paso de envío tienen que caer en la MISMA pestaña, si no el usuario termina con
-// dos y en la segunda parece que no hay nada. Por eso tampoco puede ir
-// `noopener`: perderíamos el destino con nombre.
-const VTEX_WIN = "superprecios_vtex";
-
 // Coto (ATG, no VTEX): su API de carrito exige sesión iniciada y no admite
 // llamadas cross-origin con credenciales (responde `Access-Control-Allow-Origin: *`
 // sin `Allow-Credentials`), así que no hay forma de precargar el carrito desde acá.
@@ -2787,9 +2758,54 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
   // Carga encadenada (Coto, La Gallega, Átomo y Dino): null | {actual,total} | "bloqueado" | "listo"
   const [carga, setCarga] = React.useState(null);
   const cargaTimer = React.useRef(null);
+  const vueltaTimer = React.useRef(null);
 
   // Si el usuario cierra el modal a mitad de la carga, cortamos el encadenado.
-  React.useEffect(() => () => { if (cargaTimer.current) clearInterval(cargaTimer.current); }, []);
+  React.useEffect(() => () => {
+    if (cargaTimer.current) clearInterval(cargaTimer.current);
+    if (vueltaTimer.current) clearInterval(vueltaTimer.current);
+  }, []);
+
+  // La pestaña del paso 1 vuelve sola a nuestra app, y hay que cerrarla.
+  //
+  // Dino corre esto en su página de login:
+  //     if (document.referrer != '') localStorage.setItem('callbackUrl', document.referrer);
+  // y después del login manda la pestaña a ese `callbackUrl`. Como la abrimos
+  // nosotros, el referrer ES nuestra app: el usuario termina con una segunda
+  // pestaña en la home, sin el modal, y el paso 2 le queda escondido en la
+  // pestaña de atrás. Nada de esto se puede evitar del lado de Dino.
+  //
+  // Lo que sí podemos es mirar la pestaña que abrimos, porque tenemos su handle.
+  // Mientras esté en el sitio del súper, leer su `location.href` tira
+  // SecurityError; el día que NO tira es porque volvió a nuestro origen, y ese
+  // es el momento de cerrarla y traer el foco de vuelta acá. Sirve para
+  // cualquiera de los cuatro que se comporte igual, no sólo Dino.
+  //
+  // `about:blank` hay que excluirlo aparte: hereda el origen de quien abre, así
+  // que en el instante entre el `window.open` y la primera navegación se lee
+  // como propio y cerraríamos la pestaña recién nacida.
+  function vigilarVuelta(win) {
+    if (!win) return;
+    if (vueltaTimer.current) clearInterval(vueltaTimer.current);
+    const desde = Date.now();
+    vueltaTimer.current = setInterval(() => {
+      // 10 minutos sin volver: el usuario se fue a otra cosa, soltamos el timer.
+      if (win.closed || Date.now() - desde > 600000) {
+        clearInterval(vueltaTimer.current); vueltaTimer.current = null; return;
+      }
+      let propia = false;
+      try {
+        const href = win.location.href;
+        propia = !!href && href !== "about:blank" && win.location.origin === window.location.origin;
+      } catch (e) { return; }   // sigue en el súper
+      if (!propia) return;
+      clearInterval(vueltaTimer.current); vueltaTimer.current = null;
+      // El close() está permitido porque la abrimos nosotros; el focus() va en su
+      // propio try/catch para que un navegador que lo bloquee no impida cerrarla.
+      try { win.close(); } catch (e) {}
+      try { window.focus(); } catch (e) {}
+    }, 500);
+  }
 
   function handleVaciar() { itemIds.forEach(id => onRemove(id)); onClose(); }
 
@@ -2811,6 +2827,9 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
 
   function handleCargar() {
     if (!autocargables.length) return;
+    // A partir de acá la pestaña la maneja el encadenado, que la reusa por
+    // nombre: dos vigilantes sobre el mismo handle se pisarían.
+    if (vueltaTimer.current) { clearInterval(vueltaTimer.current); vueltaTimer.current = null; }
     setCarga({ actual: 0, total: autocargables.length });
     const cargar = esLaGallega ? cargarCarritoEnLaGallega
                  : esAtomo     ? cargarCarritoEnAtomo
@@ -2928,7 +2947,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
               <div className="confirm-title">Comprar en {superNombre} — Paso 1 de 2</div>
               <p className="confirm-desc">{cfg.requisitos}</p>
               <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open(cfg.loginUrl, cfg.win); setPaso("carrito"); }}>
+                <button className="confirm-btn primary" onClick={() => { vigilarVuelta(window.open(cfg.loginUrl, cfg.win)); setPaso("carrito"); }}>
                   {cfg.botonPaso1}
                 </button>
                 <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
@@ -3075,7 +3094,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
               ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
             </div>
             <div className="confirm-btns">
-              <button className="confirm-btn primary" onClick={() => { window.open(cartUrl, VTEX_WIN); setPaso("listo"); }}>
+              <button className="confirm-btn primary" onClick={() => { window.open(cartUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
                 Cargar productos en el carrito →
               </button>
               <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
@@ -3084,18 +3103,6 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
         ) : (
           <>
             <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-            {/* El carrito es sólo la revisión: la forma de entrega se elige un
-                paso después. El add no permite aterrizar ahí directo (ignora
-                returnUrl), así que se llega con esta segunda navegación, que
-                reusa la pestaña por nombre y por eso conserva el carrito. */}
-            <p className="confirm-desc">
-              Revisá que estén todos los productos y seguí a <strong>Envío</strong>: ahí elegís domicilio o retiro en sucursal.
-            </p>
-            <div className="confirm-btns" style={{marginBottom:6}}>
-              <button className="confirm-btn primary" onClick={() => window.open(buildVtexShippingUrl(superNombre), VTEX_WIN)}>
-                Elegir cómo lo recibís en {superNombre} →
-              </button>
-            </div>
             <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
             <div className="confirm-btns">
               <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
