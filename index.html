@@ -2161,38 +2161,41 @@ const VTEX_SALES_CHANNEL = { VEA: 34, Disco: 33, Jumbo: 32 };
 // Espejo de CENCOSUD_SELLER_POR_REGION en scraper.py, que es LA FUENTE DE VERDAD
 // (de ahí sale el precio que mostramos). Si allá se cambia una sucursal, hay que
 // cambiarla acá: si las dos tablas se separan, el usuario paga un precio distinto
-// del que comparó. Los nombres salen del SLA de retiro de cada seller.
+// del que comparó.
+//
+// El tercer campo es cuántas SUCURSALES DE RETIRO abre ese seller en el checkout
+// (censo del 2026-08-12). Sólo manda el texto del modal. Es el retiro y no el
+// total de opciones a propósito: el retiro no depende de la dirección, mientras
+// que "Envío a Domicilio" aparece únicamente si el domicilio cae en la zona de
+// ese seller, así que prometerlo de antemano sería mentir la mitad de las veces.
 const CENCOSUD_SUCURSAL_POR_REGION = {
   VEA: {
-    nacional:         ["jumboargentinav692lanus692",           "Lanús — Av. Yrigoyen 3043"],
-    caba_gba:         ["jumboargentinav692lanus692",           "Lanús — Av. Yrigoyen 3043"],
-    la_plata:         ["jumboargentinav036laplata2",           "La Plata — Calle 45"],
-    santa_fe_rosario: ["jumboargentinav430funes",              "Funes — Santa Fe"],
-    // OJO: NO es `v700cordoba700`. Ese slug dice "cordoba" pero es la sucursal de
-    // Av. Córdoba 6103, CABA (lo delatan sus retiros: Araoz 265 y Bulnes 1048).
-    // Es la misma trampa de nombre que `j5245sanlorenzo`, que es de Salta.
-    // `v032buchardo` es el seller de la CIUDAD: 11 puntos de retiro y el único de
-    // la plaza con Envío a Domicilio. El nombre acá es genérico a propósito —
-    // el comprador elige entre los 11 en el checkout.
-    cordoba:          ["jumboargentinav032buchardo",           "Ciudad de Córdoba"],
-    mendoza:          ["jumboargentinav546bdalvian",           "Mendoza — Cerro Siete Colores 2496, B° Dalvian"],
-    tucuman:          ["jumboargentinav125sarmientotucuman",   "Tucumán — Av. Alem 240"],
-    salta:            ["jumboargentinav657sarmientoyohiggins", "Salta — Av. Houssay y Colectora"],
+    nacional:         ["jumboargentinav692lanus692",           "Lanús",              2],
+    caba_gba:         ["jumboargentinav692lanus692",           "Lanús",              2],
+    la_plata:         ["jumboargentinav636calle13entre71y72",  "La Plata",           4],
+    santa_fe_rosario: ["jumboargentinav430funes",              "Funes",              1],
+    // OJO: la de Córdoba NO es `v700cordoba700`. Ese slug dice "cordoba" pero es
+    // la sucursal de Av. Córdoba 6103, CABA (lo delatan sus retiros: Araoz 265 y
+    // Bulnes 1048) — la misma trampa que `j5245sanlorenzo`, que es de Salta.
+    cordoba:          ["jumboargentinav032buchardo",           "Ciudad de Córdoba", 10],
+    mendoza:          ["jumboargentinav171sarmientoyalen",     "Gran Mendoza",      21],
+    tucuman:          ["jumboargentinav125sarmientotucuman",   "Tucumán",            7],
+    salta:            ["jumboargentinav657sarmientoyohiggins", "Salta",              9],
   },
   Disco: {
-    nacional:         ["jumboargentinad107", "CABA — Naón 2142"],
-    caba_gba:         ["jumboargentinad107", "CABA — Naón 2142"],
-    cordoba:          ["jumboargentinad028", "Córdoba — Av. Colón 683"],
-    la_plata:         ["jumboargentinad042", "La Plata — Calle 30 N° 777"],
+    nacional:         ["jumboargentinad107", "CABA — Naón 2142",  1],
+    caba_gba:         ["jumboargentinad107", "CABA — Naón 2142",  1],
+    cordoba:          ["jumboargentinad060", "Ciudad de Córdoba", 8],
+    la_plata:         ["jumboargentinad042", "La Plata",          3],
   },
   Jumbo: {
-    nacional:         ["jumboargentinaj5204lomas",     "Lomas de Zamora"],
-    caba_gba:         ["jumboargentinaj5204lomas",     "Lomas de Zamora"],
-    cordoba:          ["jumboargentinaj451nuevocentro","Córdoba — Av. Duarte Quirós 1400"],
-    santa_fe_rosario: ["jumboargentinaj5218rosario",   "Rosario — Nansen 255"],
-    mendoza:          ["jumboargentinaj5222mendoza",   "Mendoza — Chacras, San Martín 6279"],
-    tucuman:          ["jumboargentinaj5227tucuman",   "Tucumán — Av. Fermín Cariola 42"],
-    salta:            ["jumboargentinaj5251salta",     "Salta — 20 de Febrero 1437"],
+    nacional:         ["jumboargentinaj5204lomas",     "Lomas de Zamora",                 3],
+    caba_gba:         ["jumboargentinaj5204lomas",     "Lomas de Zamora",                 3],
+    cordoba:          ["jumboargentinaj451nuevocentro","Córdoba — Av. Duarte Quirós 1400", 1],
+    santa_fe_rosario: ["jumboargentinaj5218rosario",   "Rosario — Nansen 255",             3],
+    mendoza:          ["jumboargentinaj5222mendoza",   "Mendoza",                          3],
+    tucuman:          ["jumboargentinaj5227tucuman",   "Tucumán — Av. Fermín Cariola 42",  2],
+    salta:            ["jumboargentinaj5251salta",     "Salta — 20 de Febrero 1437",       3],
   },
 };
 
@@ -2227,6 +2230,35 @@ function buildVtexCartUrl(superNombre, items, regionCodigo) {
   if (!params) return null;
   return `${baseUrl}/checkout/cart/add?sc=${sc}&${params}`;
 }
+
+// El paso donde el comprador elige CÓMO recibe el pedido. `/checkout/cart/add`
+// siempre aterriza en `/checkout/#/cart`, que es sólo la revisión del carrito y
+// no ofrece nada de entrega — de ahí la impresión de que la forma de entrega
+// venía impuesta. Las opciones viven un paso más adelante, en Envío.
+//
+// El redirect del add está clavado: `returnUrl`, `return` y `redirect` se
+// ignoran los tres (probado, siempre responde `location: /checkout/#/cart`), así
+// que el salto hay que darlo con una segunda navegación de la MISMA pestaña.
+//
+// Tiene que ser este host. `checkout.vea.com.ar` existe pero (a) responde 500 y
+// (b) la cookie `checkout.vtex.com` se emite con `domain=www.vea.com.ar`, así
+// que allá el carrito directamente no está.
+//
+// Ojo con lo que se espera ver: Cencosud declara UN solo deliveryChannel
+// (`delivery`) y mete los retiros dentro como SLA con nombre — "Retiro en Tienda
+// - Lanús Av Yrigoyen 3043", "Envío a Domicilio". O sea que no aparece el
+// clásico interruptor "domicilio / retiro" de VTEX: aparece una lista de
+// opciones de envío, y ahí adentro está todo.
+function buildVtexShippingUrl(superNombre) {
+  const baseUrl = BASE_URLS[superNombre];
+  return baseUrl ? `${baseUrl}/checkout/#/shipping` : null;
+}
+
+// Nombre de ventana compartido por los VTEX, igual que COTO_WIN: el carrito y el
+// paso de envío tienen que caer en la MISMA pestaña, si no el usuario termina con
+// dos y en la segunda parece que no hay nada. Por eso tampoco puede ir
+// `noopener`: perderíamos el destino con nombre.
+const VTEX_WIN = "superprecios_vtex";
 
 // Coto (ATG, no VTEX): su API de carrito exige sesión iniciada y no admite
 // llamadas cross-origin con credenciales (responde `Access-Control-Allow-Origin: *`
@@ -3027,20 +3059,23 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
           <>
             <div className="confirm-title">Comprar en {superNombre} — Paso 2 de 2</div>
             <p className="confirm-desc">Cuando estés listo, cargá los productos en el carrito de {superNombre}.</p>
-            {/* La sucursal la fija el `seller` del link y después el sitio del
-                súper ya no la deja cambiar (ver buildVtexCartUrl), así que hay
-                que decirla ANTES de abrir el carrito. Es la misma con la que
-                comparamos los precios: por eso el total va a coincidir. */}
+            {/* La sucursal la fija el `seller` del link y el sitio del súper ya
+                no la reasigna (ver buildVtexCartUrl), así que hay que decirla
+                ANTES de abrir el carrito. Es la misma con la que comparamos los
+                precios: por eso el total va a coincidir. */}
             {sucursalCompra && (
               <div className="confirm-warning">
-                🏬 El pedido lo prepara <strong>{superNombre} {sucursalCompra}</strong> — es la sucursal con la que comparamos los precios. Para comprar en otra, elegila en {superNombre} <em>antes</em> de cargar el carrito y agregá los productos a mano.
+                🏬 El pedido se arma con los precios de <strong>{superNombre} {sucursalCompra.nombre}</strong>, que son los que comparaste.{" "}
+                {sucursalCompra.retiros > 1
+                  ? <>En el paso de <strong>Envío</strong> elegís entre sus {sucursalCompra.retiros} sucursales para retirar, o envío a domicilio si llegan a tu dirección.</>
+                  : <>En el paso de <strong>Envío</strong> elegís entre retirarlo por esa sucursal o recibirlo a domicilio, si llegan a tu dirección.</>}
               </div>
             )}
             <div className="confirm-warning">
               ⚠️ Verificá que todos los productos se hayan cargado. Algunos ítems pueden no estar disponibles.
             </div>
             <div className="confirm-btns">
-              <button className="confirm-btn primary" onClick={() => { window.open(cartUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
+              <button className="confirm-btn primary" onClick={() => { window.open(cartUrl, VTEX_WIN); setPaso("listo"); }}>
                 Cargar productos en el carrito →
               </button>
               <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
@@ -3049,6 +3084,18 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
         ) : (
           <>
             <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
+            {/* El carrito es sólo la revisión: la forma de entrega se elige un
+                paso después. El add no permite aterrizar ahí directo (ignora
+                returnUrl), así que se llega con esta segunda navegación, que
+                reusa la pestaña por nombre y por eso conserva el carrito. */}
+            <p className="confirm-desc">
+              Revisá que estén todos los productos y seguí a <strong>Envío</strong>: ahí elegís domicilio o retiro en sucursal.
+            </p>
+            <div className="confirm-btns" style={{marginBottom:6}}>
+              <button className="confirm-btn primary" onClick={() => window.open(buildVtexShippingUrl(superNombre), VTEX_WIN)}>
+                Elegir cómo lo recibís en {superNombre} →
+              </button>
+            </div>
             <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
             <div className="confirm-btns">
               <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
@@ -3116,10 +3163,12 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
         const cartUrl = esVtex && !esDino && conSku.length > 0
           ? buildVtexCartUrl(superNombre, conSku.map(i => ({sku_id: i.producto.sku_id, qty: i.cantidad})), regionCodigo)
           : null;
-        // Nombre de la sucursal que va a preparar el pedido, para avisarlo antes
-        // de abrir el carrito: la elige el `seller` de la URL y después no se
-        // puede cambiar desde el sitio del súper (ver buildVtexCartUrl).
-        const sucursalCompra = (sucursalCencosud(superNombre, regionCodigo) || [])[1] || null;
+        // Con qué sucursal se arma el pedido, para avisarlo antes de abrir el
+        // carrito: la elige el `seller` de la URL y después no se puede cambiar
+        // desde el sitio del súper (ver buildVtexCartUrl). `retiros` decide si el
+        // texto habla de UNA sucursal o de una lista donde el comprador elige.
+        const suc = sucursalCencosud(superNombre, regionCodigo);
+        const sucursalCompra = suc ? { nombre: suc[1], retiros: suc[2] } : null;
         const loginUrl = BASE_URLS[superNombre] || null;
         // La cadena que no vende en la región elegida no ofrece compra: el
         // carrito de su sitio no acepta una dirección de esa plaza, así que el
