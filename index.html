@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SuperPrecios AR — Compará y ahorrá en tu supermercado</title>
+  <title>Convi — Te conviene. Compará y ahorrá en tu supermercado</title>
+  <meta name="theme-color" content="#C7CEBE">
+  <!-- Favicon: el isotipo en su encuadre compacto (la hormiga ocupa más del
+       cuadro y la lista va sin renglones), que es el único que se lee a 16 px.
+       Va inline como data URI para no depender de un archivo suelto. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='22' fill='%23C7CEBE'/><g transform='translate(44 44) scale(0.88) translate(-47 -40)' fill='%23A94E33' stroke='%23A94E33' stroke-width='4' stroke-linecap='round'><path d='M40 53 C34 63 32 69 28 77' fill='none'/><path d='M50 55 C48 65 48 71 47 79' fill='none'/><path d='M57 53 C63 61 67 67 71 73' fill='none'/><path d='M54 45 C52 37 51 31 50 25' fill='none'/><path d='M68 36 C74 29 78 25 85 20' fill='none'/><path d='M70 40 C76 36 81 34 87 31' fill='none'/><ellipse cx='26' cy='50' rx='18' ry='14' stroke='none' transform='rotate(-12 26 50)'/><ellipse cx='45' cy='48' rx='10' ry='8' stroke='none'/><circle cx='61' cy='43' r='11' stroke='none'/><rect x='38' y='3' width='28' height='20' rx='5' fill='%23F2EDE0' transform='rotate(-8 52 13)'/></g></svg>">
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
@@ -12,43 +17,57 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #F4F5F8;
+      /* ===== Paleta Convi =====
+         Marca: terracota #A94E33 · tinta #2C3A31 · salvia #C7CEBE · crema #EFE6D6
+         El acento es OSCURO (antes era amarillo claro): sobre fondo de acento
+         el texto va en --on-accent, nunca en negro. */
+      --brand-terracota: #A94E33;
+      --brand-tinta: #2C3A31;
+      --brand-salvia: #C7CEBE;
+      --brand-crema: #EFE6D6;
+      --brand-crema-claro: #F2EDE0;
+
+      --bg: #EFF1EB;
       --surface: #FFFFFF;
       --surface-elevated: #FFFFFF;
-      --surface-2: #FAFBFC;
-      --border: #E6E8EC;
-      --border-light: #EEF0F3;
-      --text-primary: #0E1524;
-      --text-secondary: #59616F;
-      --text-muted: #98A1AF;
-      --accent: #FFD600;
-      --accent-dark: #D9AE00;
-      --accent-soft: #FFF6C9;
-      --ink: #131A28;
+      --surface-2: #F7F8F3;
+      --border: #DEE3D8;
+      --border-light: #EAEEE5;
+      /* Escala de tres pasos, las tres por encima de 4,5:1 sobre blanco y sobre
+         --bg. El gris viejo (#98A1AF) daba 2,6:1 y se usaba en casi todas las
+         etiquetas de la app. */
+      --text-primary: #2C3A31;   /* 12,0:1 */
+      --text-secondary: #4F5C53; /*  7,0:1 */
+      --text-muted: #626E67;     /*  5,3:1 sobre blanco · 4,7:1 sobre --bg */
+      --accent: #A94E33;
+      --accent-dark: #8B3F29;
+      --accent-soft: #F4E4DC;
+      --on-accent: #F7F2EA;
+      --ink: #2C3A31;
       --danger: #EF4444;
       --danger-light: #FEF2F2;
-      --success: #16A34A;
-      --success-light: #EFFCF3;
-      --info: #3B82F6;
-      --info-light: #EFF6FF;
-      --warning: #F59E0B;
-      --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
-      --shadow: 0 1px 3px rgba(16,24,40,0.06), 0 6px 16px -6px rgba(16,24,40,0.10);
-      --shadow-lg: 0 10px 28px -8px rgba(16,24,40,0.16), 0 2px 6px rgba(16,24,40,0.05);
-      --shadow-xl: 0 28px 56px -14px rgba(16,24,40,0.24);
+      --success: #2F7D4F;
+      --success-light: #EDF6F0;
+      --info: #3D7A8C;
+      --info-light: #EDF4F6;
+      --warning: #C2871F;
+      --shadow-sm: 0 1px 2px rgba(44,58,49,0.06);
+      --shadow: 0 1px 3px rgba(44,58,49,0.07), 0 6px 16px -6px rgba(44,58,49,0.12);
+      --shadow-lg: 0 10px 28px -8px rgba(44,58,49,0.18), 0 2px 6px rgba(44,58,49,0.06);
+      --shadow-xl: 0 28px 56px -14px rgba(44,58,49,0.26);
       --radius-sm: 9px;
       --radius: 12px;
       --radius-lg: 16px;
       --radius-xl: 22px;
-      --ring: 0 0 0 3px rgba(255,214,0,0.30);
+      --ring: 0 0 0 3px rgba(169,78,51,0.26);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg);
       background-image:
-        radial-gradient(1100px 520px at 100% -8%, rgba(255,214,0,0.10), transparent 58%),
-        radial-gradient(900px 460px at -8% -4%, rgba(59,130,246,0.05), transparent 55%);
+        radial-gradient(1100px 520px at 100% -8%, rgba(169,78,51,0.08), transparent 58%),
+        radial-gradient(900px 460px at -8% -4%, rgba(199,206,190,0.42), transparent 55%);
       background-attachment: fixed;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: var(--text-primary);
@@ -56,14 +75,14 @@
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
-    ::selection { background: var(--accent); color: #1b1600; }
+    ::selection { background: var(--accent); color: var(--on-accent); }
     :focus-visible { outline: none; box-shadow: var(--ring); border-radius: 8px; }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #D2D7DE; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
-    ::-webkit-scrollbar-thumb:hover { background: #B4BCC7; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb { background: #C7CEBE; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #AAB39F; background-clip: padding-box; }
 
     /* Header */
     .header {
@@ -83,19 +102,47 @@
       display: flex; align-items: center; gap: 11px; cursor: pointer;
       text-decoration: none; user-select: none;
     }
+    /* El isotipo trae su propio redondeo en el viewBox (rx 22 sobre 88), así que
+       la sombra va con drop-shadow y no con box-shadow: drop-shadow sigue la
+       silueta real y box-shadow seguiría el cuadrado del elemento. */
     .header-brand-icon {
-      width: 40px; height: 40px;
-      background: linear-gradient(145deg, #FFE45C 0%, var(--accent) 45%, #FFC400 100%);
-      border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      font-size: 21px;
-      box-shadow: 0 4px 12px -2px rgba(224,178,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6);
+      flex-shrink: 0; display: block;
+      filter: drop-shadow(0 4px 10px rgba(44,58,49,0.20));
       transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
     }
     .header-brand:hover .header-brand-icon { transform: rotate(-6deg) scale(1.05); }
     .header-brand-text { display: flex; flex-direction: column; }
-    .header-brand-title { font-size: 17px; font-weight: 900; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.2; }
-    .header-brand-title span { color: var(--accent-dark); }
-    .header-brand-sub { font-size: 10.5px; color: var(--text-muted); font-weight: 600; }
+    .header-brand-title { font-size: 22px; color: var(--text-primary); line-height: 1.1; }
+    /* La bajada es la mitad corta del eslogan. Al medir menos que el logotipo
+       ya no arrastra el ancho de la columna, así que no hace falta esconderla
+       en ningún breakpoint. */
+    .header-brand-sub {
+      font-size: 11px; color: var(--text-secondary); font-weight: 600;
+      margin-top: 1px; white-space: nowrap; letter-spacing: 0.04em;
+    }
+    /* "Iniciar sesión" no puede partirse en dos renglones en ningún ancho: al
+       hacerlo estira el alto de todo el cabezal. Antes esto vivía sólo dentro
+       del breakpoint de 768 y entre 769 y 1024 se partía igual. */
+    .header-user-btn { white-space: nowrap; }
+
+    /* ===== Logotipo Convi =====
+       El tilde es un SVG inline entre letras. Con `vertical-align: baseline` un
+       elemento reemplazado apoya su borde inferior sobre la línea de base, que
+       es exactamente donde cierra el vértice del tilde. El alto en `em` lo ata
+       al font-size del contenedor: el logo escala solo. */
+    .convi-logotipo {
+      font-weight: 600; letter-spacing: -0.02em; white-space: nowrap;
+      display: inline-block;
+    }
+    .convi-tilde {
+      height: 0.70em; width: auto; display: inline-block;
+      vertical-align: baseline; margin: 0 0.04em;
+      color: var(--accent); overflow: visible;
+    }
+    /* Sobre fondo tinta el terracota queda en 2,2:1 — abajo del mínimo legible.
+       Ahí el logotipo va monocromo en crema. */
+    .convi-logotipo.sobre-oscuro { color: var(--brand-crema-claro); }
+    .convi-logotipo.sobre-oscuro .convi-tilde { color: var(--brand-crema-claro); }
 
     .header-search-wrap { flex: 1; max-width: 520px; position: relative; }
     .header-search-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
@@ -106,7 +153,7 @@
       color: var(--text-primary);
       transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
     }
-    .header-search-wrap input:hover { border-color: #D3D8DF; }
+    .header-search-wrap input:hover { border-color: #CBD2C2; }
     .header-search-wrap input:focus { border-color: var(--accent); background: var(--surface); box-shadow: var(--ring); }
     .header-search-wrap input::placeholder { color: var(--text-muted); font-weight: 500; }
 
@@ -118,7 +165,7 @@
       color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
       font-family: inherit; position: relative;
     }
-    .header-btn:hover { border-color: #D3D8DF; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
+    .header-btn:hover { border-color: #CBD2C2; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
     .header-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: var(--shadow); }
     .header-btn-badge {
       position: absolute; top: -6px; right: -6px;
@@ -129,18 +176,18 @@
   
       background: var(--info); color: #fff;
     }
-    .header-btn-badge.yellow { background: var(--accent); color: #000; }
+    .header-btn-badge.yellow { background: var(--accent); color: var(--on-accent); }
     .header-btn-badge.pink { background: var(--danger); color: #fff; }
 
     .header-user { display: flex; align-items: center; gap: 10px; }
     .header-user-email { font-size: 12px; color: var(--text-secondary); font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .header-user-btn {
       padding: 8px 14px; border-radius: var(--radius); border: none;
-      background: var(--accent); color: #1b1600; font-size: 12.5px; font-weight: 800;
+      background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 800;
       cursor: pointer; font-family: inherit; transition: all 0.15s;
-      box-shadow: 0 2px 8px -2px rgba(224,178,0,0.5);
+      box-shadow: 0 2px 8px -2px rgba(139,63,41,0.42);
     }
-    .header-user-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(224,178,0,0.55); }
+    .header-user-btn:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(139,63,41,0.48); }
     .header-user-btn.ghost {
       background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border); box-shadow: none;
     }
@@ -152,7 +199,7 @@
       background: var(--surface); font-size: 12px; font-weight: 700; color: var(--text-secondary);
       cursor: pointer; outline: none; font-family: inherit; transition: all 0.15s;
     }
-    .region-select:hover { border-color: #D3D8DF; color: var(--text-primary); }
+    .region-select:hover { border-color: #CBD2C2; color: var(--text-primary); }
     .region-select:focus { border-color: var(--accent); box-shadow: var(--ring); }
 
     /* Main layout */
@@ -341,13 +388,13 @@
     .filter-barato-nota {
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
       margin-top: 8px; padding: 7px 9px; border-radius: 10px;
-      background: var(--success-light); border: 1px solid rgba(22,163,74,0.22);
+      background: var(--success-light); border: 1px solid rgba(47,125,79,0.22);
       font-size: 11px; font-weight: 600; color: var(--success); line-height: 1.4;
     }
     .filter-barato-nota button {
       margin-left: auto; font-family: inherit; cursor: pointer;
       font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 8px;
-      background: var(--surface); color: var(--success); border: 1px solid rgba(22,163,74,0.35);
+      background: var(--surface); color: var(--success); border: 1px solid rgba(47,125,79,0.35);
     }
     .filter-barato-nota button:hover { background: var(--success); color: #fff; }
 
@@ -357,7 +404,7 @@
     }
     .filter-toggle:hover { background: var(--surface-2); }
     .toggle-track {
-      width: 38px; height: 22px; border-radius: 11px; background: #D7DBE1;
+      width: 38px; height: 22px; border-radius: 11px; background: #CBD2C2;
       position: relative; transition: background 0.22s; flex-shrink: 0;
     }
     .toggle-track.on { background: var(--danger); }
@@ -383,7 +430,7 @@
       margin-left: 8px; font-family: inherit; cursor: pointer; white-space: nowrap;
       font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 20px;
       background: var(--success-light); color: var(--success);
-      border: 1px solid rgba(22,163,74,0.25);
+      border: 1px solid rgba(47,125,79,0.25);
     }
     .sort-info-chip:hover { background: var(--success); color: #fff; border-color: var(--success); }
     .sort-options { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; background: var(--surface); padding: 4px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
@@ -431,7 +478,7 @@
 
     .card-image-wrap {
       position: relative; padding: 30px 16px 8px;
-      background: linear-gradient(180deg, #F7F8FA 0%, var(--surface) 100%);
+      background: linear-gradient(180deg, #F7F8F3 0%, var(--surface) 100%);
     }
     .card-image {
       width: 100%; height: 150px; object-fit: contain;
@@ -526,7 +573,7 @@
     .card-compare-price { font-weight: 800; color: var(--text-secondary); }
     .card-compare-price.worse { color: var(--text-muted); }
     .card-compare-row.cheaper .card-compare-name,
-    .card-compare-price.cheaper { color: #B45309; }
+    .card-compare-price.cheaper { color: #8A5A12; }
     .card-compare-more {
       font-size: 10.5px; color: var(--text-muted); text-align: center;
       margin-top: 4px; font-weight: 600;
@@ -536,7 +583,7 @@
       margin-top: 5px; text-align: center; background: var(--success-light);
       padding: 4px; border-radius: 8px;
     }
-    .card-compare-savings.cheaper { color: #B45309; background: #FFF7ED; }
+    .card-compare-savings.cheaper { color: #8A5A12; background: #FBF3E3; }
 
     /* Card actions */
     .card-actions {
@@ -549,15 +596,15 @@
       font-family: inherit; display: flex; align-items: center;
       justify-content: center; gap: 5px;
     }
-    .card-btn:hover { background: var(--surface-2); border-color: #D3D8DF; color: var(--text-primary); }
+    .card-btn:hover { background: var(--surface-2); border-color: #CBD2C2; color: var(--text-primary); }
     .card-btn.primary {
       background: var(--ink); color: #fff; border-color: var(--ink);
     }
-    .card-btn.primary:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .card-btn.primary:hover { background: #1E2922; transform: translateY(-1px); box-shadow: var(--shadow); }
     .card-btn.accent {
-      background: var(--accent); color: #1b1600; border-color: var(--accent);
+      background: var(--accent); color: var(--on-accent); border-color: var(--accent);
     }
-    .card-btn.accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 14px -4px rgba(224,178,0,0.5); }
+    .card-btn.accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 6px 14px -4px rgba(139,63,41,0.45); }
     /* Utilidad: texto que solo aparece cuando hay ancho. En desktop la tarjeta
        arranca en 258px y sobran ~88px por botón (alcanza para una palabra); a
        <=640px la grilla pasa a 2 tarjetas por fila (~170px) y ahí NO entra
@@ -621,7 +668,7 @@
       color: var(--text-secondary); cursor: pointer; transition: all 0.14s;
       font-family: inherit; display: flex; align-items: center; justify-content: center;
     }
-    .page-btn:hover:not(:disabled) { border-color: #D3D8DF; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
+    .page-btn:hover:not(:disabled) { border-color: #CBD2C2; color: var(--text-primary); background: var(--surface-2); transform: translateY(-1px); }
     .page-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: var(--shadow-sm); }
     .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .page-input-wrap { display: flex; align-items: center; gap: 6px; margin-left: 4px; }
@@ -681,7 +728,7 @@
       border-radius: var(--radius); font-size: 13px; font-weight: 800;
       text-decoration: none; transition: all 0.15s; width: 100%; justify-content: center;
     }
-    .modal-link:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .modal-link:hover { background: #1E2922; transform: translateY(-1px); box-shadow: var(--shadow); }
 
     /* Welcome / onboarding modal */
     .welcome-modal {
@@ -690,22 +737,17 @@
       box-shadow: var(--shadow-xl); animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
     }
     .welcome-close { position: absolute; top: 14px; right: 14px; z-index: 2; }
+    /* El cabezal del welcome es la marca principal tal cual: hormiga suelta y
+       logotipo sobre salvia, sin cuadrado de por medio. */
     .welcome-hero {
-      text-align: center; padding: 34px 28px 22px;
-      background:
-        radial-gradient(620px 210px at 50% -25%, rgba(255,214,0,0.28), transparent 70%),
-        linear-gradient(180deg, var(--accent-soft), var(--surface));
+      text-align: center; padding: 30px 28px 24px;
+      background: var(--brand-salvia);
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     }
-    .welcome-icon {
-      width: 62px; height: 62px; margin: 0 auto 14px;
-      background: linear-gradient(145deg, #FFE45C 0%, var(--accent) 45%, #FFC400 100%);
-      border-radius: 18px; display: flex; align-items: center; justify-content: center;
-      font-size: 31px; box-shadow: 0 8px 22px -4px rgba(224,178,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
-    }
-    .welcome-title { font-size: 22px; font-weight: 900; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
-    .welcome-title span { color: var(--accent-dark); }
-    .welcome-sub { font-size: 13.5px; color: var(--text-secondary); margin: 8px auto 0; line-height: 1.55; max-width: 370px; font-weight: 500; }
+    .welcome-icon { display: block; margin: 0 auto 10px; }
+    .welcome-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
+    /* Sobre salvia, --text-secondary cae a 3,5:1. Esta tinta aclarada da 5,9:1. */
+    .welcome-sub { font-size: 13.5px; color: #3F4E44; margin: 8px auto 0; line-height: 1.55; max-width: 370px; font-weight: 500; }
     .welcome-steps { padding: 20px 24px 4px; display: flex; flex-direction: column; gap: 13px; }
     .welcome-step { display: flex; gap: 13px; align-items: flex-start; }
     .welcome-step-ico {
@@ -717,17 +759,17 @@
     .welcome-step-d { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
     .welcome-savings {
       margin: 16px 24px 0; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start;
-      background: var(--success-light); border: 1px solid rgba(22,163,74,0.22); border-radius: var(--radius);
-      font-size: 12.5px; color: #166534; line-height: 1.55;
+      background: var(--success-light); border: 1px solid rgba(47,125,79,0.22); border-radius: var(--radius);
+      font-size: 12.5px; color: #24603D; line-height: 1.55;
     }
-    .welcome-savings strong { color: #14532d; font-weight: 800; }
+    .welcome-savings strong { color: #1B4B2E; font-weight: 800; }
     .welcome-savings-emoji { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
 
     /* Promos bancarias en el onboarding. Va en el violeta del selector de medios
        de pago, que es adonde lleva: el color hace de hilo entre los dos. */
     .welcome-bancos {
       margin: 12px 24px 0; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start;
-      background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.22);
+      background: rgba(107,78,125,0.06); border: 1px solid rgba(107,78,125,0.22);
       border-radius: var(--radius); font-size: 12.5px; color: var(--text-secondary); line-height: 1.55;
     }
     .welcome-bancos strong { color: var(--text-primary); font-weight: 800; }
@@ -749,10 +791,10 @@
       display: flex; align-items: center; justify-content: center; gap: 6px;
       margin: 16px 24px 20px; width: calc(100% - 48px);
       padding: 14px; border: none; border-radius: var(--radius);
-      background: var(--ink); color: var(--accent); font-size: 15px; font-weight: 800;
+      background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 800;
       cursor: pointer; font-family: inherit; transition: all 0.15s;
     }
-    .welcome-cta:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .welcome-cta:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
 
     .footer-link-btn {
       margin-top: 14px; background: none; border: none; cursor: pointer; font-family: inherit;
@@ -800,10 +842,10 @@
     .legal-body ul { padding-left: 18px; margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
     .legal-body li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
     .legal-note {
-      background: var(--accent-soft); border: 1px solid #F2E08A; border-radius: var(--radius);
-      padding: 10px 13px; font-size: 12px; color: #7A5C00; line-height: 1.55; margin-bottom: 14px;
+      background: var(--accent-soft); border: 1px solid #E4C4B6; border-radius: var(--radius);
+      padding: 10px 13px; font-size: 12px; color: #7A3B26; line-height: 1.55; margin-bottom: 14px;
     }
-    .legal-note strong { color: #5c4500; font-weight: 800; }
+    .legal-note strong { color: #5E2C1C; font-weight: 800; }
     .legal-foot {
       padding: 12px 24px; border-top: 1px solid var(--border-light);
       font-size: 11px; color: var(--text-muted); background: var(--surface-2);
@@ -821,7 +863,7 @@
       border: none; border-radius: var(--radius); font-size: 14px; font-weight: 800;
       cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 4px;
     }
-    .auth-btn:hover { background: #000; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .auth-btn:hover { background: #1E2922; transform: translateY(-1px); box-shadow: var(--shadow); }
     .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     .auth-link {
       background: none; border: none; color: var(--text-secondary); font-size: 13px;
@@ -833,7 +875,7 @@
       padding: 11px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px;
       font-weight: 600;
     }
-    .auth-alert.success { background: var(--success-light); color: #166534; border: 1px solid rgba(22,163,74,0.2); }
+    .auth-alert.success { background: var(--success-light); color: #24603D; border: 1px solid rgba(47,125,79,0.2); }
     .auth-alert.error { background: var(--danger-light); color: #991b1b; border: 1px solid rgba(239,68,68,0.2); }
 
     /* Mini chart */
@@ -927,8 +969,8 @@
     .cart-total strong { color: var(--text-primary); font-size: 17px; font-weight: 900; }
 
     .cart-dino-note {
-      background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius);
-      padding: 10px 14px; font-size: 12px; color: #92400E; margin-bottom: 16px;
+      background: #FBF4E6; border: 1px solid #EBD9AE; border-radius: var(--radius);
+      padding: 10px 14px; font-size: 12px; color: #7A5312; margin-bottom: 16px;
       font-weight: 500;
     }
 
@@ -959,8 +1001,8 @@
     }
     .lista-resumen-linea { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
     .lista-resumen-linea strong { color: var(--text-primary); font-weight: 900; }
-    .lista-resumen-linea.mixta { color: var(--success, #059669); }
-    .lista-resumen-linea.pago { color: #7C3AED; }
+    .lista-resumen-linea.mixta { color: var(--success, #2F7D4F); }
+    .lista-resumen-linea.pago { color: #6B4E7D; }
     /* La aclaración del tope no es decorativa: sin ella prometemos un ahorro que
        el usuario puede no tener si ya consumió el tope del mes. */
     .lista-resumen-nota {
@@ -972,11 +1014,11 @@
        puede pisar el precio que ve todo el mundo. */
     .lg-promo {
       margin-top: 7px; padding: 6px 7px; border-radius: 8px;
-      background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.18);
+      background: rgba(107,78,125,0.08); border: 1px solid rgba(107,78,125,0.18);
       display: flex; flex-direction: column; gap: 2px;
     }
     .lg-promo-ent {
-      font-size: 10px; font-weight: 800; color: #7C3AED;
+      font-size: 10px; font-weight: 800; color: #6B4E7D;
       text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.3;
     }
     .lg-promo-final { font-size: 13.5px; font-weight: 900; color: var(--text-primary); }
@@ -1120,7 +1162,7 @@
     .cr-dia-corto { display: none; }
     .cr-hoy-tag {
       display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 999px;
-      background: var(--accent); color: var(--ink); font-size: 9.5px;
+      background: var(--accent); color: var(--on-accent); font-size: 9.5px;
       font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px;
       vertical-align: middle;
     }
@@ -1254,8 +1296,8 @@
          no se notaba porque todos medían lo mismo. */
       flex-shrink: 0;
     }
-    .mp-item:hover { border-color: #D3D8DF; }
-    .mp-item.on { border-color: #7C3AED; background: rgba(124,58,237,0.06); }
+    .mp-item:hover { border-color: #CBD2C2; }
+    .mp-item.on { border-color: #6B4E7D; background: rgba(107,78,125,0.06); }
     .mp-item-head {
       display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
       background: none; border: none; cursor: pointer; transition: background 0.15s;
@@ -1293,20 +1335,20 @@
       color: var(--text-secondary); cursor: pointer; font-family: inherit;
       transition: all 0.15s;
     }
-    .mp-tramo:hover { border-color: #B79BEE; }
-    .mp-tramo.on { border-color: #7C3AED; background: #7C3AED; color: #fff; }
+    .mp-tramo:hover { border-color: #A98FB8; }
+    .mp-tramo.on { border-color: #6B4E7D; background: #6B4E7D; color: #fff; }
     .mp-item-check {
       width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border);
       flex-shrink: 0; margin-top: 1px; display: flex; align-items: center;
       justify-content: center; font-size: 11px; color: #fff; font-weight: 900;
     }
-    .mp-item.on .mp-item-check { background: #7C3AED; border-color: #7C3AED; }
+    .mp-item.on .mp-item-check { background: #6B4E7D; border-color: #6B4E7D; }
     .mp-item-nombre { font-size: 13px; font-weight: 800; color: var(--text-primary); }
     .mp-item-supers { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
     .mp-lista { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
     .mp-save {
       margin-top: 14px; width: 100%; padding: 11px; border-radius: var(--radius);
-      border: none; background: #7C3AED; color: #fff; font-size: 13.5px;
+      border: none; background: #6B4E7D; color: #fff; font-size: 13.5px;
       font-weight: 800; cursor: pointer; font-family: inherit;
     }
     .mp-save:disabled { opacity: 0.6; cursor: default; }
@@ -1350,7 +1392,7 @@
     }
     .lg-total-monto { font-size: 15px; font-weight: 900; color: var(--text-primary); }
     .lg-total-nota { font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
-    .lg-total-nota.completa { color: var(--success, #059669); }
+    .lg-total-nota.completa { color: var(--success, #2F7D4F); }
     .lg-total-btn {
       margin-top: 7px; width: 100%; padding: 6px 8px; border-radius: 8px; border: none;
       font-size: 10.5px; font-weight: 800; cursor: pointer; font-family: inherit;
@@ -1396,9 +1438,9 @@
     .lg-cell-btn:hover { background: var(--surface-2); }
     .lg-cell-btn:disabled { cursor: default; color: var(--text-muted); font-weight: 600; }
     .lg-cell-btn:disabled:hover { background: transparent; }
-    .lg-cell.mejor .lg-cell-btn { background: #ECFDF5; color: #065F46; }
-    .lg-cell.mejor .lg-cell-btn:hover { background: #D1FAE5; }
-    .lg-cell.en-carrito .lg-cell-btn { background: var(--accent); color: #1b1600; }
+    .lg-cell.mejor .lg-cell-btn { background: #E8F2EB; color: #1F5A38; }
+    .lg-cell.mejor .lg-cell-btn:hover { background: #D8E9DD; }
+    .lg-cell.en-carrito .lg-cell-btn { background: var(--accent); color: var(--on-accent); }
     /* "En el carrito" tiene que ganarle a "más barato" también en hover: con la
        regla de .mejor la celda perdía el ámbar justo al apuntarle para sacarla,
        o sea que el color decía lo contrario de lo que el clic iba a hacer. */
@@ -1440,8 +1482,8 @@
     .confirm-title { font-size: 18px; font-weight: 900; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.3px; }
     .confirm-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
     .confirm-warning {
-      background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius);
-      padding: 12px 14px; font-size: 12.5px; color: #92400E; margin: 14px 0; line-height: 1.6;
+      background: #FBF4E6; border: 1px solid #EBD9AE; border-radius: var(--radius);
+      padding: 12px 14px; font-size: 12.5px; color: #7A5312; margin: 14px 0; line-height: 1.6;
       font-weight: 500;
     }
     .confirm-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
@@ -1451,10 +1493,10 @@
       text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .confirm-btn:hover { transform: translateY(-1px); }
-    .confirm-btn.primary { background: var(--ink); color: var(--accent); box-shadow: var(--shadow); }
-    .confirm-btn.primary:hover { background: #000; }
+    .confirm-btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow); }
+    .confirm-btn.primary:hover { background: var(--accent-dark); }
     .confirm-btn.secondary { background: var(--surface-2); color: var(--text-secondary); border: 1.5px solid var(--border); }
-    .confirm-btn.secondary:hover { background: var(--surface); color: var(--text-primary); border-color: #D3D8DF; }
+    .confirm-btn.secondary:hover { background: var(--surface); color: var(--text-primary); border-color: #CBD2C2; }
     .confirm-btn.danger { background: var(--danger-light); color: var(--danger); }
     .confirm-btn.danger:hover { background: #FCE4E4; }
 
@@ -1471,7 +1513,7 @@
       background: var(--surface); font-size: 11.5px; font-weight: 800; color: var(--text-secondary);
       cursor: pointer; white-space: nowrap; font-family: inherit; transition: all 0.15s;
     }
-    .confirm-item-btn:hover { background: var(--surface-2); border-color: #D3D8DF; color: var(--text-primary); }
+    .confirm-item-btn:hover { background: var(--surface-2); border-color: #CBD2C2; color: var(--text-primary); }
     .confirm-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Skeleton loading */
@@ -1480,7 +1522,7 @@
       100% { background-position: 200% 0; }
     }
     .skeleton {
-      background: linear-gradient(90deg, var(--surface-2) 25%, #EEF1F4 50%, var(--surface-2) 75%);
+      background: linear-gradient(90deg, var(--surface-2) 25%, #E6EADF 50%, var(--surface-2) 75%);
       background-size: 200% 100%; animation: shimmer 1.4s infinite;
       border-radius: var(--radius-sm);
     }
@@ -1505,7 +1547,7 @@
       font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 10px;
     }
     .tab-badge.pink { background: var(--danger); color: #fff; }
-    .tab-badge.yellow { background: var(--accent); color: #000; }
+    .tab-badge.yellow { background: var(--accent); color: var(--on-accent); }
 
     /* Brand bar: "Todos los productos" + logos de supermercados en movimiento */
     .brandbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -1553,7 +1595,7 @@
       content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%;
       background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.25s;
     }
-    .stat-card:hover { border-color: #D3D8DF; box-shadow: var(--shadow); transform: translateY(-2px); }
+    .stat-card:hover { border-color: #CBD2C2; box-shadow: var(--shadow); transform: translateY(-2px); }
     .stat-card:hover::after { transform: scaleX(1); }
     .stat-value { font-size: 26px; font-weight: 900; color: var(--text-primary); line-height: 1; letter-spacing: -0.5px; }
     .stat-value.accent { color: var(--accent-dark); }
@@ -1640,6 +1682,72 @@
 <script type="text/babel" data-presets="react">
 
 const API = "https://web-production-32c3f.up.railway.app";
+
+/* ===================== Marca Convi =====================
+   Dos piezas que comparten el terracota #A94E33:
+   · el logotipo, donde la "v" de convi es un tilde de aprobación dibujado a mano;
+   · el isotipo, la hormiga que carga la lista de la compra.
+   El tilde se dibuja como RELLENO, no como trazo, para que el vértice de abajo
+   cierre en punta y se apoye en la misma línea de base que la n y la i.
+   Los SVG van inline en cada instancia a propósito: con <defs>/<use> los ids se
+   duplicarían al montar más de un logo en la misma página. */
+
+// El viewBox es el bounding box exacto del tilde, así el alto en `em` deja el
+// vértice justo sobre la línea de base del texto que lo rodea.
+function ConviTilde() {
+  return (
+    <svg className="convi-tilde" viewBox="6.4 3.2 47.2 49" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M6.4 18.1 C11.5 29.8 18.8 41.3 25.8 52.2 C34 37 44 22 53.6 8.3 L45.4 3.2 C38 13.4 31 24.4 26.2 33.5 C22.5 27.4 18 20.4 14.7 13.3 Z"/>
+    </svg>
+  );
+}
+
+// Logotipo: "con" + tilde + "i". Las letras son HTML —heredan la tipografía de
+// la app y el font-size del contenedor— y sólo el tilde es SVG.
+function ConviLogotipo({ className = "" }) {
+  return (
+    <span className={"convi-logotipo " + className} aria-label="convi">
+      <span aria-hidden="true">con</span><ConviTilde/><span aria-hidden="true">i</span>
+    </span>
+  );
+}
+
+// Isotipo: la hormiga dentro del cuadrado redondeado.
+// Tres encuadres, porque un ícono chico no es el grande achicado:
+//   grande (≥64 px)  hormiga al 56% del cuadro, con renglones en la lista
+//   medio  (36-63)   hormiga al 67%, sin renglones: medirían menos de 1 px
+//   chico  (≤35 px)  hormiga al 79% y trazo más grueso, que es lo único legible
+// Con fondo="none" no dibuja el cuadrado y la hormiga ocupa todo el viewBox:
+// es la hormiga suelta de la marca principal, para apoyar sobre salvia.
+function ConviIsotipo({ size = 40, fondo = "#C7CEBE", className = "" }) {
+  const suelta = fondo === "none";
+  const nivel  = suelta ? "suelta" : size <= 35 ? "chico" : size < 64 ? "medio" : "grande";
+  const escala = { suelta: 1.05, chico: 0.88, medio: 0.74, grande: 0.62 }[nivel];
+  const trazo  = { suelta: 3.73, chico: 4,    medio: 4.05, grande: 4.31 }[nivel];
+  const renglones = nivel === "suelta" || nivel === "grande";
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 88 88"
+         role="img" aria-label="Convi">
+      {!suelta && <rect width="88" height="88" rx="22" fill={fondo}/>}
+      <g transform={`translate(44 44) scale(${escala}) translate(-47 -40)`}
+         fill="#A94E33" stroke="#A94E33" strokeWidth={trazo} strokeLinecap="round">
+        <path d="M40 53 C34 63 32 69 28 77" fill="none"/>
+        <path d="M50 55 C48 65 48 71 47 79" fill="none"/>
+        <path d="M57 53 C63 61 67 67 71 73" fill="none"/>
+        <path d="M54 45 C52 37 51 31 50 25" fill="none"/>
+        <path d="M68 36 C74 29 78 25 85 20" fill="none"/>
+        <path d="M70 40 C76 36 81 34 87 31" fill="none"/>
+        <ellipse cx="26" cy="50" rx="18" ry="14" stroke="none" transform="rotate(-12 26 50)"/>
+        <ellipse cx="45" cy="48" rx="10" ry="8" stroke="none"/>
+        <circle cx="61" cy="43" r="11" stroke="none"/>
+        <rect x="38" y="3" width="28" height="20" rx="5" fill="#F2EDE0" transform="rotate(-8 52 13)"/>
+        {renglones && (
+          <path d="M44 8 L60 8 M44 13 L60 13 M44 18 L54 18" fill="none" strokeWidth="2.4" transform="rotate(-8 52 13)"/>
+        )}
+      </g>
+    </svg>
+  );
+}
 
 // ⚠️ BORRADOR / PLANTILLA LEGAL — Este contenido es un punto de partida y NO constituye
 // asesoramiento legal. Antes de publicar al público masivo: (1) completá los datos de abajo,
@@ -2897,7 +3005,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
           ) : (
             <>
               <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
+              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de Convi o los borramos?</p>
               <div className="confirm-btns">
                 <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de La Anónima</button>
@@ -3048,7 +3156,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
           ) : (
             <>
               <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
+              <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de Convi o los borramos?</p>
               <div className="confirm-btns">
                 <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
                 <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
@@ -3103,7 +3211,7 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
         ) : (
           <>
             <div className="confirm-title">¿Cómo quedó el carrito? ✅</div>
-            <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de SuperPrecios AR o los borramos?</p>
+            <p className="confirm-desc">¿Querés mantener estos productos en tu carrito de Convi o los borramos?</p>
             <div className="confirm-btns">
               <button className="confirm-btn secondary" onClick={onClose}>Mantener el carrito aquí</button>
               <button className="confirm-btn danger" onClick={handleVaciar}>Vaciar productos de {superNombre}</button>
@@ -4015,7 +4123,7 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
       <button className="lista-btn" onClick={nuevaLista}>+ Nueva lista</button>
       {listaActivaId && <button className="lista-btn danger" onClick={borrarLista}>Borrar</button>}
       <button className="lista-btn" onClick={() => setShowPagos(true)}
-        style={misPagos.length ? {borderColor:"rgba(124,58,237,0.35)", color:"#7C3AED"} : null}
+        style={misPagos.length ? {borderColor:"rgba(107,78,125,0.35)", color:"#6B4E7D"} : null}
         title="Elegí tus tarjetas para ver los descuentos bancarios aplicados">
         💳<span className="btn-label"> Medios de pago</span>
         {misPagos.length > 0 && <> ({misPagos.length})</>}
@@ -4271,7 +4379,7 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
                   // arriba incluye precios que no se pueden comprar y el
                   // volcado cargaría otra cosa: se desactiva hasta destildarla.
                   <button className="lg-total-btn" disabled={ocupado === "mixta" || hayReferencia}
-                    style={{background: hayReferencia ? "var(--text-muted)" : "#059669"}}
+                    style={{background: hayReferencia ? "var(--text-muted)" : "#2F7D4F"}}
                     title={hayReferencia
                       ? `Destildá ${referencias.join(", ")} para poder repartir la compra: no vende${referencias.length > 1 ? "n" : ""} en tu región.`
                       : undefined}
@@ -4622,9 +4730,9 @@ function LegalModal({ initialTab = "terminos", onClose }) {
           {tab === "terminos" && (
             <>
               <h4>1. Aceptación</h4>
-              <p>Al acceder y usar SuperPrecios AR (el "Servicio") aceptás estos Términos y Condiciones. Si no estás de acuerdo, no utilices el Servicio.</p>
+              <p>Al acceder y usar Convi (el "Servicio") aceptás estos Términos y Condiciones. Si no estás de acuerdo, no utilices el Servicio.</p>
               <h4>2. Descripción del Servicio</h4>
-              <p>SuperPrecios AR es una herramienta informativa que compara precios de productos publicados por distintos supermercados en Argentina, a partir de información de fuentes públicas. El Servicio no vende productos ni interviene en las compras.</p>
+              <p>Convi es una herramienta informativa que compara precios de productos publicados por distintos supermercados en Argentina, a partir de información de fuentes públicas. El Servicio no vende productos ni interviene en las compras.</p>
               <h4>3. Uso permitido</h4>
               <p>Te comprometés a usar el Servicio de buena fe y conforme a la ley. No podés usarlo con fines ilícitos, intentar vulnerar su seguridad, ni extraer masivamente sus datos de forma automatizada sin autorización.</p>
               <h4>4. Cuenta de usuario</h4>
@@ -4688,11 +4796,11 @@ function LegalModal({ initialTab = "terminos", onClose }) {
               <h4>Sobre los datos de precios</h4>
               <ul>
                 <li>Se obtienen de información de acceso público y se actualizan periódicamente; pueden existir errores, demoras o faltantes.</li>
-                <li>SuperPrecios AR no garantiza la exactitud, integridad ni disponibilidad de la información.</li>
+                <li>Convi no garantiza la exactitud, integridad ni disponibilidad de la información.</li>
                 <li>Es una herramienta de comparación informativa: no vende productos ni participa en las transacciones.</li>
               </ul>
               <h4>No afiliación</h4>
-              <p>SuperPrecios AR no está asociado, afiliado, patrocinado ni avalado por {SUPERS}, ni por ningún otro comercio mencionado.</p>
+              <p>Convi no está asociado, afiliado, patrocinado ni avalado por {SUPERS}, ni por ningún otro comercio mencionado.</p>
               <h4>Marcas de terceros</h4>
               <ul>
                 <li>Las marcas, nombres comerciales, logos e imágenes de productos pertenecen a sus respectivos titulares.</li>
@@ -4756,8 +4864,8 @@ function WelcomeModal({ onClose }) {
       <div className="welcome-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close welcome-close" onClick={onClose} aria-label="Cerrar">✕</button>
         <div className="welcome-hero">
-          <div className="welcome-icon">🛒</div>
-          <div className="welcome-title">¡Bienvenido a <span>SuperPrecios</span> AR!</div>
+          <ConviIsotipo size={96} fondo="none" className="welcome-icon"/>
+          <div className="welcome-title">¡Bienvenido a <ConviLogotipo/>!</div>
           <div className="welcome-sub">Comparamos los precios de {SUPER_TODOS.length} supermercados de Argentina para que compres siempre al más barato.</div>
         </div>
         <div className="welcome-steps">
@@ -5352,10 +5460,10 @@ function App() {
       <header className="header">
         <div className="header-inner">
           <a className="header-brand" onClick={resetFilters}>
-            <div className="header-brand-icon">🛒</div>
+            <ConviIsotipo size={40} className="header-brand-icon"/>
             <div className="header-brand-text">
-              <div className="header-brand-title">Super<span>Precios</span> AR</div>
-              <div className="header-brand-sub">Compará precios entre {SUPER_TODOS.length} supermercados</div>
+              <div className="header-brand-title"><ConviLogotipo/></div>
+              <div className="header-brand-sub">Te conviene</div>
             </div>
           </a>
 
