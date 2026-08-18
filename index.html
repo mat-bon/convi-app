@@ -236,6 +236,11 @@
       .header-actions { min-width: 0; }
       .region-select { min-width: 0; }
       .header-user, .header-user-btn { flex-shrink: 0; white-space: nowrap; }
+
+      /* Acá el cabezal ya se arma en tres filas. La marca se lleva la primera
+         entera (flex-basis 100%) y va centrada: sola contra el margen izquierdo
+         quedaba descolgada, y es lo primero que se ve al abrir la app. */
+      .header-brand { flex: 1 1 100%; justify-content: center; }
     }
     /* Piso del encogimiento del <select>. Deslogueado el botón "Iniciar sesión"
        ocupa 110px, así que al select le quedan (ancho - 287)px: a 375px son 88 y
@@ -740,12 +745,13 @@
     /* El cabezal del welcome es la marca principal tal cual: hormiga suelta y
        logotipo sobre salvia, sin cuadrado de por medio. */
     .welcome-hero {
-      text-align: center; padding: 30px 28px 24px;
-      background: var(--brand-salvia);
+      text-align: center; padding: 30px 28px 34px;
+      background: linear-gradient(180deg,
+        var(--brand-salvia) 0%, var(--brand-salvia) 46%, var(--surface) 100%);
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     }
     .welcome-icon { display: block; margin: 0 auto 10px; }
-    .welcome-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
+    .welcome-title { font-size: 26px; font-weight: 500; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
     /* Sobre salvia, --text-secondary cae a 3,5:1. Esta tinta aclarada da 5,9:1. */
     .welcome-sub { font-size: 13.5px; color: #3F4E44; margin: 8px auto 0; line-height: 1.55; max-width: 370px; font-weight: 500; }
     .welcome-steps { padding: 20px 24px 4px; display: flex; flex-direction: column; gap: 13px; }
@@ -1754,8 +1760,8 @@ function ConviIsotipo({ size = 40, fondo = "#C7CEBE", className = "" }) {
 // (2) reemplazá los placeholders [entre corchetes], y (3) hacelo revisar por un profesional
 // en Argentina (sobre todo los descargos de precios/scraping y el uso de marcas de terceros).
 const LEGAL = {
-  responsable:   "SuperPrecios S.A.S.",
-  email:         "info@superprecios.ar",
+  responsable:   "Convi S.A.S.",
+  email:         "info@convi.ar",
   jurisdiccion:  "la Ciudad de Córdoba, Provincia de Córdoba, Argentina",
   actualizacion: "24/07/2026",
 };
@@ -2401,7 +2407,7 @@ const COTO_ADD_DELAY_MS = 900;
 // Nombre de ventana compartido: el login y la carga apuntan a la misma pestaña, así
 // el usuario no termina con dos. Por eso el login NO puede usar `noopener` (perderíamos
 // el handle para redirigirla después).
-const COTO_WIN = "superprecios_coto";
+const COTO_WIN = "convi_coto";
 
 function buildCotoAddUrl(producto, cantidad) {
   const plu = cotoPlu(producto);
@@ -2482,7 +2488,7 @@ function cargarCarritoEnCoto(items, { onProgreso, onFin }) {
 // El parámetro TK que aparece en su JS no se usa (el sitio lo llama con 3 args).
 // Requiere sesión iniciada; sin login el carrito no persiste.
 const LAGALLEGA_ADD_DELAY_MS = 900;
-const LAGALLEGA_WIN = "superprecios_lagallega";
+const LAGALLEGA_WIN = "convi_lagallega";
 const LAGALLEGA_LOGIN_URL = "https://www.lagallega.com.ar/login.asp";
 const LAGALLEGA_CART_URL  = "https://www.lagallega.com.ar/carrito.asp";
 
@@ -2566,7 +2572,7 @@ function cargarCarritoEnLaGallega(items, { onProgreso, onFin }) {
 // Los productos sin stock se ignoran en silencio (el sitio no los agrega y no
 // avisa), igual que en el resto de los súperes.
 const ATOMO_ADD_DELAY_MS = 1800;
-const ATOMO_WIN   = "superprecios_atomo";
+const ATOMO_WIN   = "convi_atomo";
 const ATOMO_TOKEN = "2b07b066ee0df5e4bc6a8ed1822f9503";
 const ATOMO_CART_URL  = `${BASE_URLS.Atomo}/carrito?action=show`;
 const ATOMO_STORE_URL = `${BASE_URLS.Atomo}/`;
@@ -2623,7 +2629,7 @@ function cargarCarritoEnAtomo(items, { onProgreso, onFin }) {
 // A diferencia de Coto (cantidad absoluta), no pudimos verificar si repetir un
 // producto suma o fija la cantidad — Dino no deja ver el carrito sin cuenta.
 const DINO_ADD_DELAY_MS = 3500;   // ATG es lento; con menos, algunos adds se pisan
-const DINO_WIN = "superprecios_dino";
+const DINO_WIN = "convi_dino";
 const DINO_LOGIN_URL = `${BASE_URLS.Dino}/super/login`;
 const DINO_CART_URL  = `${BASE_URLS.Dino}/super/carrito/`;
 
@@ -3570,9 +3576,9 @@ function CronogramaView({ regionCodigo, token, onPedirCuenta }) {
   // Se recuerda: el que agranda la letra la necesita agrandada siempre, no una
   // vez por visita.
   const [tam, setTam] = React.useState(() => {
-    try { return localStorage.getItem("sp_cr_tam") || "m"; } catch { return "m"; }
+    try { return localStorage.getItem("convi_cr_tam") || "m"; } catch { return "m"; }
   });
-  React.useEffect(() => { try { localStorage.setItem("sp_cr_tam", tam); } catch {} }, [tam]);
+  React.useEffect(() => { try { localStorage.setItem("convi_cr_tam", tam); } catch {} }, [tam]);
   // `escala` y no `f`: abajo `f` ya es la fila del día en los dos .map de la
   // semana, y adentro de esos loops es justo donde hay que pasarla.
   const escala = (CR_TAMANOS.find(t => t.k === tam) || CR_TAMANOS[1]).f;
@@ -4917,7 +4923,7 @@ function App() {
   const [tab, setTab] = React.useState("todos");
   const [supersVisibles, setSupersVisibles] = React.useState(() => {
     // Deslogueado: recordamos la selección en localStorage. Logueado: la sobrescribe /preferencia.
-    try { const s = JSON.parse(localStorage.getItem("sp_supers")); return Array.isArray(s) && s.length ? s.filter(x => SUPER_TODOS.includes(x)) : SUPER_TODOS; }
+    try { const s = JSON.parse(localStorage.getItem("convi_supers")); return Array.isArray(s) && s.length ? s.filter(x => SUPER_TODOS.includes(x)) : SUPER_TODOS; }
     catch { return SUPER_TODOS; }
   });
   // Cadena elegida en la columna "+ Barato" del filtro: la lista queda solo con
@@ -4937,22 +4943,22 @@ function App() {
   // Término que la API tuvo que relajar (le sobraba una palabra), o null.
   const [busquedaRelajada, setBusquedaRelajada] = React.useState(null);
   const [totalPaginas, setTotalPaginas] = React.useState(1);
-  const [usuario, setUsuario] = React.useState(() => { try { return JSON.parse(localStorage.getItem("sp_user")); } catch { return null; } });
-  const [token, setToken] = React.useState(() => localStorage.getItem("sp_token") || null);
+  const [usuario, setUsuario] = React.useState(() => { try { return JSON.parse(localStorage.getItem("convi_user")); } catch { return null; } });
+  const [token, setToken] = React.useState(() => localStorage.getItem("convi_token") || null);
   const [showAuth, setShowAuth] = React.useState(false);
   const [showWelcome, setShowWelcome] = React.useState(() => {
-    try { return !localStorage.getItem("sp_welcome_v1"); } catch { return false; }
+    try { return !localStorage.getItem("convi_welcome_v1"); } catch { return false; }
   });
   const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
   const [carritoItems, setCarritoItems] = React.useState([]);
   const [listas, setListas] = React.useState([]);
   const [listaActivaId, setListaActivaId] = React.useState(() => {
-    const saved = localStorage.getItem("sp_lista"); return saved ? Number(saved) : null;
+    const saved = localStorage.getItem("convi_lista"); return saved ? Number(saved) : null;
   });
   const [listaItems, setListaItems] = React.useState([]);
   const [productosMap, setProductosMap] = React.useState({});
   const [regiones, setRegiones] = React.useState([]);
-  const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("sp_region"); return saved ? Number(saved) : null; });
+  const [regionId, setRegionId] = React.useState(() => { const saved = localStorage.getItem("convi_region"); return saved ? Number(saved) : null; });
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   // Qué sección del panel de filtros pidió el usuario en móvil ("super" | "cat").
   // El panel es uno solo, pero los botones dicen qué hay adentro en vez de
@@ -5096,7 +5102,7 @@ function App() {
   React.useEffect(() => {
     if (geoIntentado.current) return;
     if (regiones.length === 0) return;
-    if (regionId || localStorage.getItem("sp_region")) return;
+    if (regionId || localStorage.getItem("convi_region")) return;
     geoIntentado.current = true;
     fetch("https://ipwho.is/?fields=success,country_code,region_code,city")
       .then(r => r.json())
@@ -5114,8 +5120,8 @@ function App() {
 
   function cambiarRegion(id) {
     setRegionId(id);
-    if (id) localStorage.setItem("sp_region", id);
-    else localStorage.removeItem("sp_region");
+    if (id) localStorage.setItem("convi_region", id);
+    else localStorage.removeItem("convi_region");
     if (token) {
       fetch(`${API}/preferencia`, {
         method: "PUT",
@@ -5127,14 +5133,14 @@ function App() {
 
   function handleLogin(access_token, refresh_token, user) {
     setToken(access_token); setUsuario(user);
-    localStorage.setItem("sp_token", access_token);
-    localStorage.setItem("sp_refresh", refresh_token||"");
-    localStorage.setItem("sp_user", JSON.stringify(user));
+    localStorage.setItem("convi_token", access_token);
+    localStorage.setItem("convi_refresh", refresh_token||"");
+    localStorage.setItem("convi_user", JSON.stringify(user));
   }
   function handleLogout() {
     setToken(null); setUsuario(null); setCarritoItems([]); setProductosMap({});
     setListas([]); setListaItems([]);
-    localStorage.removeItem("sp_token"); localStorage.removeItem("sp_refresh"); localStorage.removeItem("sp_user");
+    localStorage.removeItem("convi_token"); localStorage.removeItem("convi_refresh"); localStorage.removeItem("convi_user");
   }
 
   React.useEffect(() => {
@@ -5149,15 +5155,15 @@ function App() {
   }, [token]);
 
   async function refreshToken() {
-    const refresh = localStorage.getItem("sp_refresh");
+    const refresh = localStorage.getItem("convi_refresh");
     if (!refresh) { handleLogout(); return; }
     try {
       const res = await fetch(`${API}/auth/refresh`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({refresh_token:refresh}) });
       if (!res.ok) { handleLogout(); return; }
       const data = await res.json();
       setToken(data.access_token);
-      localStorage.setItem("sp_token", data.access_token);
-      if (data.refresh_token) localStorage.setItem("sp_refresh", data.refresh_token);
+      localStorage.setItem("convi_token", data.access_token);
+      if (data.refresh_token) localStorage.setItem("convi_refresh", data.refresh_token);
     } catch(e) { handleLogout(); }
   }
 
@@ -5206,8 +5212,8 @@ function App() {
   }
 
   React.useEffect(() => {
-    if (listaActivaId) localStorage.setItem("sp_lista", listaActivaId);
-    else localStorage.removeItem("sp_lista");
+    if (listaActivaId) localStorage.setItem("convi_lista", listaActivaId);
+    else localStorage.removeItem("convi_lista");
     cargarListaItems();
   }, [listaActivaId, token]);
 
@@ -5267,7 +5273,7 @@ function App() {
       .then(data => {
         if (data && data.region_id) {
           setRegionId(data.region_id);
-          localStorage.setItem("sp_region", data.region_id);
+          localStorage.setItem("convi_region", data.region_id);
         }
         // Hidratar supers preferidos (null/[] = sin configurar → dejamos SUPER_TODOS)
         if (data && Array.isArray(data.supermercados) && data.supermercados.length) {
@@ -5301,7 +5307,7 @@ function App() {
       }, 600);
       return () => clearTimeout(t);
     }
-    localStorage.setItem("sp_supers", JSON.stringify(supersVisibles));
+    localStorage.setItem("convi_supers", JSON.stringify(supersVisibles));
   }, [supersVisibles]);
 
   React.useEffect(() => {
@@ -5438,7 +5444,7 @@ function App() {
   const totalCarrito = carritoItems.length;
 
   function cerrarWelcome() {
-    try { localStorage.setItem("sp_welcome_v1", "1"); } catch {}
+    try { localStorage.setItem("convi_welcome_v1", "1"); } catch {}
     setShowWelcome(false);
   }
 
@@ -5463,7 +5469,7 @@ function App() {
             <ConviIsotipo size={40} className="header-brand-icon"/>
             <div className="header-brand-text">
               <div className="header-brand-title"><ConviLogotipo/></div>
-              <div className="header-brand-sub">Te conviene</div>
+              <div className="header-brand-sub">Te conviene!</div>
             </div>
           </a>
 
