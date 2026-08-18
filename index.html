@@ -15,12 +15,19 @@
        inventa un ícono con la inicial del título: la "C" de Convi.
        El PNG va a sangre y SIN esquinas redondeadas a propósito — iOS le aplica su
        propia máscara, y unas esquinas transparentes se verían negras alrededor.
-       La URL es ABSOLUTA y apunta a la API de Railway, que sirve el archivo en
-       /convi-180.png: este index.html se aloja aparte y así el ícono no depende
-       de dónde. OJO: duplica el host de la constante API de más abajo — si la API
-       cambia de dominio, hay que cambiarlo en los dos lados o el ícono se corta
-       en silencio (iOS vuelve a la "C" y no avisa). -->
-  <link rel="apple-touch-icon" href="https://web-production-32c3f.up.railway.app/convi-180.png">
+       Las URL son ABSOLUTAS y apuntan a la API de Railway, que sirve los archivos:
+       este index.html se aloja en Vercel y así el ícono no depende de dónde.
+       OJO: duplican el host de la constante API de más abajo — si la API cambia
+       de dominio hay que cambiarlo en los dos lados o el ícono se corta en
+       silencio (iOS vuelve a la "C" y no avisa).
+       TRES TAMAÑOS con `sizes` para que iOS encuentre calce exacto y no
+       reescale, que es lo que se veía borroso con un solo archivo de 180:
+         120 → iPhone @2x · 180 → iPhone @3x (los 60 pt del home screen)
+         512 → lo que pida MÁS de 180 (íconos grandes de iOS 18, Display Zoom,
+               iPad). Bajar de 512 se ve bien; subir de 180 no. -->
+  <link rel="apple-touch-icon" sizes="180x180" href="https://web-production-32c3f.up.railway.app/convi-180.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="https://web-production-32c3f.up.railway.app/convi-120.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="https://web-production-32c3f.up.railway.app/convi-512.png">
   <!-- El nombre debajo del ícono. Sin esto iOS usa el <title> entero y lo recorta
        en "Convi — Te…". No ponemos apple-mobile-web-app-capable: abriría la app sin
        la barra de Safari, y los carritos de los súperes se mandan a pestañas nuevas
