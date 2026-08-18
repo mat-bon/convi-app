@@ -9,6 +9,23 @@
        cuadro y la lista va sin renglones), que es el único que se lee a 16 px.
        Va inline como data URI para no depender de un archivo suelto. -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='22' fill='%23C7CEBE'/><g transform='translate(44 44) scale(0.88) translate(-47 -40)' fill='%23A94E33' stroke='%23A94E33' stroke-width='4' stroke-linecap='round'><path d='M40 53 C34 63 32 69 28 77' fill='none'/><path d='M50 55 C48 65 48 71 47 79' fill='none'/><path d='M57 53 C63 61 67 67 71 73' fill='none'/><path d='M54 45 C52 37 51 31 50 25' fill='none'/><path d='M68 36 C74 29 78 25 85 20' fill='none'/><path d='M70 40 C76 36 81 34 87 31' fill='none'/><ellipse cx='26' cy='50' rx='18' ry='14' stroke='none' transform='rotate(-12 26 50)'/><ellipse cx='45' cy='48' rx='10' ry='8' stroke='none'/><circle cx='61' cy='43' r='11' stroke='none'/><rect x='38' y='3' width='28' height='20' rx='5' fill='%23F2EDE0' transform='rotate(-8 52 13)'/></g></svg>">
+  <!-- Home screen de iOS: Safari IGNORA el favicon SVG de arriba. Para el ícono
+       del escritorio mira SOLO apple-touch-icon, y lo quiere en PNG y como archivo
+       real (el data URI no está soportado de forma confiable). Sin esto iOS se
+       inventa un ícono con la inicial del título: la "C" de Convi.
+       El PNG va a sangre y SIN esquinas redondeadas a propósito — iOS le aplica su
+       propia máscara, y unas esquinas transparentes se verían negras alrededor.
+       La URL es ABSOLUTA y apunta a la API de Railway, que sirve el archivo en
+       /convi-180.png: este index.html se aloja aparte y así el ícono no depende
+       de dónde. OJO: duplica el host de la constante API de más abajo — si la API
+       cambia de dominio, hay que cambiarlo en los dos lados o el ícono se corta
+       en silencio (iOS vuelve a la "C" y no avisa). -->
+  <link rel="apple-touch-icon" href="https://web-production-32c3f.up.railway.app/convi-180.png">
+  <!-- El nombre debajo del ícono. Sin esto iOS usa el <title> entero y lo recorta
+       en "Convi — Te…". No ponemos apple-mobile-web-app-capable: abriría la app sin
+       la barra de Safari, y los carritos de los súperes se mandan a pestañas nuevas
+       que ahí quedan sin barra de direcciones ni botón de volver. -->
+  <meta name="apple-mobile-web-app-title" content="Convi">
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
