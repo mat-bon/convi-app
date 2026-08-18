@@ -36,6 +36,24 @@
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
+  <!-- Vercel Web Analytics. La doc oficial arranca con `npm i @vercel/analytics` y
+       un <Analytics/> en el layout, pero acá no hay nada de eso: no hay bundler ni
+       package.json, React entra por CDN y el JSX lo compila Babel en el navegador.
+       Para HTML plano Vercel documenta este par de tags, que es exactamente lo que
+       el componente termina inyectando.
+       El script NO vive en este repo ni en Railway: lo sirve el edge de Vercel en
+       esa ruta relativa, y recién después de habilitar Web Analytics en el proyecto
+       (Dashboard → Analytics → Enable) y volver a desplegar. Abierto el archivo en
+       local o servido por otro host da 404 y no pasa nada más: la página anda igual.
+       El dashboard muestra además una variante `/<ruta-unica>/script.js`: es lo
+       mismo con la ruta ofuscada para que no la corten los bloqueadores. Se cambia
+       sólo el src.
+       El stub de window.va va PRIMERO a propósito: encola en vaq cualquier
+       va('event', …) disparado antes de que cargue el script, en vez de romper. -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
