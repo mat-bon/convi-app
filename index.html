@@ -1722,6 +1722,109 @@
       .sort-options::-webkit-scrollbar { display: none; }
       .sort-options .sort-btn { flex-shrink: 0; white-space: nowrap; }
     }
+    /* ===== Abono ==========================================================
+       Todo lo de acá se dibuja SÓLO con el paywall prendido (plan.paywall_activo).
+       Mientras esté apagado, la app no menciona el abono en ningún lado. */
+
+    /* El aviso que corona la comparación de la lista. Tres tonos según qué le
+       está pasando al usuario: prueba corriendo, prueba por vencer, ya vencida. */
+    .plan-aviso {
+      display: flex; align-items: flex-start; gap: 11px;
+      padding: 13px 16px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--surface-2);
+      margin-bottom: 12px;
+    }
+    .plan-aviso.calido  { background: var(--accent-soft); border-color: #E4C4B6; }
+    .plan-aviso.urgente { background: #FDF6E7; border-color: #EBD9AE; }
+    .plan-aviso-ico  { font-size: 19px; line-height: 1.35; flex-shrink: 0; }
+    .plan-aviso-cuerpo { flex: 1; min-width: 0; }
+    .plan-aviso-t { font-size: 13.5px; font-weight: 800; color: var(--text-primary); line-height: 1.45; }
+    .plan-aviso-d { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin-top: 3px; }
+    /* El número propio del usuario: lo que se está perdiendo EN ESTA lista.
+       Es el argumento entero, así que se lee antes que el texto que lo rodea. */
+    .plan-aviso-monto { font-size: 19px; font-weight: 800; color: var(--accent-dark); letter-spacing: -0.4px; }
+
+    .plan-cta {
+      border: none; cursor: pointer; flex-shrink: 0; align-self: center;
+      padding: 9px 15px; border-radius: var(--radius-sm);
+      background: var(--accent); color: var(--on-accent);
+      font-size: 12.5px; font-weight: 800; font-family: inherit;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .plan-cta:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .plan-cta.fantasma {
+      background: transparent; color: var(--accent-dark);
+      border: 1.5px solid rgba(169,78,51,0.35);
+    }
+    .plan-cta.fantasma:hover { background: var(--accent-soft); box-shadow: none; }
+
+    /* Chip del header: el estado del plan, siempre a la vista pero sin gritar. */
+    .plan-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 999px; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-size: 11.5px; font-weight: 800; font-family: inherit;
+      color: var(--text-secondary); transition: all 0.15s; white-space: nowrap;
+    }
+    .plan-chip:hover { border-color: var(--accent-dark); color: var(--accent-dark); }
+    .plan-chip.activo { background: var(--accent-soft); border-color: #E4C4B6; color: var(--accent-dark); }
+    .plan-chip.urgente { background: #FDF6E7; border-color: #EBD9AE; color: #8A6516; }
+
+    /* ---- Modal del abono ---- */
+    .plan-modal {
+      background: var(--surface); border-radius: var(--radius-xl); position: relative;
+      width: 100%; max-width: 470px; max-height: 92vh; overflow-y: auto;
+      box-shadow: var(--shadow-xl); animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .plan-hero {
+      text-align: center; padding: 30px 28px 26px;
+      background: linear-gradient(180deg, var(--brand-salvia) 0%, var(--brand-salvia) 42%, var(--surface) 100%);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .plan-hero-t { font-size: 23px; font-weight: 500; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.25; }
+    /* Sobre salvia, --text-secondary cae a 3,5:1. Misma tinta aclarada que usa
+       el welcome, que sí da 5,9:1. */
+    .plan-hero-d { font-size: 13px; color: #3F4E44; margin: 9px auto 0; line-height: 1.55; max-width: 340px; font-weight: 500; }
+    .plan-precio { margin-top: 18px; }
+    .plan-precio-n { font-size: 34px; font-weight: 800; color: var(--text-primary); letter-spacing: -1.2px; line-height: 1; }
+    .plan-precio-p { font-size: 12.5px; color: #3F4E44; font-weight: 700; margin-top: 5px; }
+    .plan-body { padding: 22px 26px 26px; }
+    .plan-feature { display: flex; gap: 11px; align-items: flex-start; padding: 9px 0; }
+    .plan-feature-ico { font-size: 16px; line-height: 1.4; flex-shrink: 0; }
+    .plan-feature-t { font-size: 13.5px; font-weight: 800; color: var(--text-primary); }
+    .plan-feature-d { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
+    .plan-boton {
+      width: 100%; margin-top: 18px; padding: 14px 20px; border: none; cursor: pointer;
+      background: var(--accent); color: var(--on-accent); border-radius: var(--radius);
+      font-size: 14.5px; font-weight: 800; font-family: inherit; transition: all 0.15s;
+    }
+    .plan-boton:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .plan-boton:disabled { opacity: 0.55; cursor: not-allowed; }
+    .plan-nota { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin-top: 13px; text-align: center; }
+    .plan-error {
+      margin-top: 13px; padding: 11px 14px; border-radius: var(--radius-sm);
+      background: var(--danger-light); border: 1px solid #F6CFCF;
+      font-size: 12.5px; color: #A3312F; font-weight: 700; line-height: 1.5;
+    }
+    /* Lo que se le muestra al que YA paga: estado, hasta cuándo, y la baja.
+       La baja va como link discreto y no como botón rojo — esconderla es lo que
+       hace que la gente pida el contracargo en vez de cancelar. */
+    .plan-estado {
+      padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2);
+      border: 1px solid var(--border); font-size: 12.5px; color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .plan-estado strong { color: var(--text-primary); font-weight: 800; }
+    .plan-baja {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: 12px; color: var(--text-muted); text-decoration: underline;
+      padding: 4px; margin-top: 14px; display: block; width: 100%; text-align: center;
+    }
+    .plan-baja:hover { color: var(--danger); }
+    /* Candado sobre el botón de volcado cuando la función quedó del otro lado. */
+    .lg-total-btn.bloqueado { background: var(--text-muted); }
+    .lg-total-btn.bloqueado:hover { background: var(--accent-dark); }
+
   </style>
 <base target="_blank">
 </head>
@@ -1805,7 +1908,7 @@ const LEGAL = {
   responsable:   "Convi S.A.S.",
   email:         "convi.arg@gmail.com",
   jurisdiccion:  "la Ciudad de Córdoba, Provincia de Córdoba, Argentina",
-  actualizacion: "24/07/2026",
+  actualizacion: "18/08/2026",
 };
 
 const SUPER_COLORS = {
@@ -2369,6 +2472,26 @@ function sucursalCencosud(superNombre, regionCodigo) {
   return porRegion[regionCodigo] || porRegion.nacional;
 }
 
+// De qué SUCURSAL es el precio que estamos mostrando, o null si en esa cadena
+// no hace falta aclararlo.
+//
+// Por qué existe: en Cencosud el precio es por tienda, no por cadena ni por
+// zona. Medición del 2026-08-19 sobre las sucursales oficiales, contando sólo
+// ofertas con stock: Disco tiene 17 listas distintas para sus 71 locales y
+// Jumbo 11 para 30, y aun DENTRO de una misma zona de la propia cadena difiere
+// alrededor de la mitad de los productos (hasta ~9% en el peor caso). O sea que
+// "el precio de Disco" no existe: existe el de Naón 2142, que es el que
+// crawleamos y el que carga el carrito.
+//
+// Devuelve null para las cadenas de precio único —Coto, Dia, La Gallega, Átomo,
+// Dino, todas medidas con UNA sola lista— porque ahí el precio es el de la
+// cadena y aclarar una sucursal sería peor: sugiere una precisión que el dato no
+// tiene y que además no necesita.
+function sucursalDelPrecio(superNombre, regionCodigo) {
+  const suc = sucursalCencosud(superNombre, regionCodigo);
+  return suc ? suc[1] : null;
+}
+
 function buildVtexCartUrl(superNombre, items, regionCodigo) {
   const baseUrl = BASE_URLS[superNombre];
   if (!baseUrl) return null;
@@ -2740,10 +2863,13 @@ function MiniChart({ data }) {
 // ---------------------------------------------------------------------------
 // Modal de producto
 // ---------------------------------------------------------------------------
-function Modal({ producto, onClose, onCambiarSuper, supersFiltro }) {
+function Modal({ producto, onClose, onCambiarSuper, supersFiltro, regionCodigo }) {
   const [historial, setHistorial] = React.useState([]);
   const [loadingH, setLoadingH] = React.useState(true);
   const hasOffer = producto.descuento_pct || producto.promocion;
+  // La ficha es el único lugar con espacio para decirlo entero (en la card y en
+  // la grilla va como tooltip). Ver sucursalDelPrecio.
+  const sucursalPrecio = sucursalDelPrecio(producto.supermercado, regionCodigo);
   // Si viene un filtro de supers visibles, ocultar de la comparación los destildados
   const otrosSupers = (producto.otros_supers || []).filter(o => !supersFiltro || supersFiltro.includes(o.supermercado));
 
@@ -2781,6 +2907,12 @@ function Modal({ producto, onClose, onCambiarSuper, supersFiltro }) {
             </div>
           )}
           {producto.promocion && <span style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,fontSize:11,fontWeight:800,padding:"4px 12px",borderRadius:20,letterSpacing:"0.3px",textTransform:"uppercase",color:"#fff",background:promoColor(producto.promocion)}}>{producto.promocion}</span>}
+
+          {sucursalPrecio && (
+            <div style={{marginTop:10,fontSize:12,lineHeight:1.45,color:"var(--text-secondary)",background:"var(--bg)",border:"1px solid var(--border-light)",borderRadius:"var(--radius)",padding:"8px 10px"}}>
+              🏪 Precio de la sucursal <strong style={{color:"var(--text-primary)"}}>{sucursalPrecio}</strong>. En {producto.supermercado} cada sucursal tiene su propia lista, así que en otra puede ser distinto.
+            </div>
+          )}
 
           {otrosSupers.length > 0 && (
             <>
@@ -3298,7 +3430,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
 
   return (
     <div>
-      {modalProd && <Modal producto={modalProd.producto} onClose={() => setModalProd(null)} onCambiarSuper={modalProd.swap ? onCambiarSuper : undefined} />}
+      {modalProd && <Modal producto={modalProd.producto} onClose={() => setModalProd(null)} onCambiarSuper={modalProd.swap ? onCambiarSuper : undefined} regionCodigo={regionCodigo} />}
       {confirmData && (
         <ConfirmCompraModal
           superNombre={confirmData.superNombre}
@@ -3386,7 +3518,7 @@ function CarritoView({ carritoItems, productosMap, onRemove, onUpdateCantidad, o
                     <div className="cart-item-price">
                       {fmt(p.precio * cantidad)}
                       {cantidad > 1 && <span className="unit">{fmt(p.precio)} c/u</span>}
-                      {p.precio_regional && <span className="cart-item-region">📍 tu región</span>}
+                      {p.precio_regional && <span className="cart-item-region" title={sucursalDelPrecio(p.supermercado, regionCodigo) ? `Precio de la sucursal ${sucursalDelPrecio(p.supermercado, regionCodigo)}` : "Precio de tu región"}>📍 tu región</span>}
                     </div>
                     {(p.otros_supers && p.otros_supers.length > 0) && (
                       <button className="cart-item-swap" onClick={() => setModalProd({ producto: p, swap: true })} style={{
@@ -3980,7 +4112,12 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
 // del backend: primero los que tienen la lista completa, después por cuántos
 // productos les faltan, y recién ahí por precio.
 function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, listaActivaId,
-                     setListaActivaId, onListasChange, carritoIds, onCarritoChange }) {
+                     setListaActivaId, onListasChange, carritoIds, onCarritoChange,
+                     plan, onPedirPlan, onAhorroBloqueado, onPlanCambio }) {
+  // ¿Hay que hablar del abono en esta pantalla? Con el paywall apagado, no
+  // existe. `sinAcceso` es el que ya se quedó afuera; el de prueba tiene todo.
+  const paywall   = !!(plan && plan.paywall_activo);
+  const sinAcceso = paywall && plan.plan === "gratis";
   const [data, setData]         = React.useState(null);
   const [cargando, setCargando] = React.useState(true);
   const [error, setError]       = React.useState(null);
@@ -4051,10 +4188,16 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
     }
     fetch(`${API}/listas/${listaActivaId}/comparar?${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(d => { setData(d); setError(null); })
+      .then(d => {
+        setData(d); setError(null);
+        // El backend corre la comparación dos veces para el usuario gratuito y
+        // devuelve la diferencia: lo que ESA lista deja de ahorrar. Es el único
+        // número que convierte, así que se lo pasamos al modal.
+        onAhorroBloqueado && onAhorroBloqueado(d.ahorro_extra_bloqueado || 0);
+      })
       .catch(() => setError("No pudimos cargar la comparación de la lista"))
       .finally(() => setCargando(false));
-  }, [token, listaActivaId, regionId, supersKey]);
+  }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado]);
 
   React.useEffect(() => { setCargando(true); cargar(); }, [cargar]);
 
@@ -4112,6 +4255,10 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
   }
 
   async function volcar(supermercado) {
+    // Si ya sabemos que no tiene acceso, no lo mandamos a chocar contra un 402:
+    // se le muestra qué es lo que está del otro lado. El permiso igual lo aplica
+    // el backend — esto es cortesía, no seguridad.
+    if (sinAcceso) { onPedirPlan && onPedirPlan(); return; }
     setOcupado(supermercado || "mixta");
     try {
       const res = await fetch(`${API}/listas/${listaActivaId}/al-carrito`, {
@@ -4125,13 +4272,20 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
         }),
       });
       const d = await res.json();
-      if (!res.ok) setAviso(d.detail || "No se pudo cargar el carrito");
+      // 402 = la función es del plan pago. Puede llegar aunque el front creyera
+      // que sí tenía acceso: se le venció la prueba en otra pestaña, o gastó la
+      // última compra recién. El servidor es el que sabe.
+      if (res.status === 402) { onPlanCambio && onPlanCambio(); onPedirPlan && onPedirPlan(); }
+      else if (!res.ok) setAviso(d.detail || "No se pudo cargar el carrito");
       else setAviso(
         `Cargamos ${d.agregados} producto${d.agregados !== 1 ? "s" : ""} al carrito` +
         (d.sin_disponibilidad ? ` (${d.sin_disponibilidad} sin disponibilidad ahí)` : "")
       );
     } catch (e) { setAviso("No se pudo cargar el carrito"); }
     setOcupado(null); onCarritoChange();
+    // El volcado consume una compra de la prueba: el contador que muestra el
+    // header quedó viejo.
+    if (paywall) onPlanCambio && onPlanCambio();
     setTimeout(() => setAviso(null), 5000);
   }
 
@@ -4144,6 +4298,7 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
       });
       const d = await res.json();
       if (res.ok) { onListasChange(); setListaActivaId(d.id); }
+      else if (res.status === 402) { onPlanCambio && onPlanCambio(); onPedirPlan && onPedirPlan(); }
       else setAviso(d.detail || "No se pudo crear la lista");
     } catch (e) {}
   }
@@ -4243,9 +4398,63 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
   const ahorroPago  = mejorComp && mejorPago ? mejorComp.total_estimado - costoFinal(mejorPago) : 0;
   const hayTope     = supers.some(s => (s.promo_bancaria?.promos || []).some(p => p.motivo?.includes("tope")));
 
+  // Cuánto le queda de prueba, y si ya es hora de decírselo fuerte. Los
+  // primeros días el cartel es informativo; recién cuando se está por acabar
+  // aparece el botón. Ofrecerle pagar el día uno a alguien que todavía no vio
+  // un ahorro propio es la mejor forma de que se vaya.
+  const prueba  = paywall && plan.plan === "prueba" && plan.prueba.iniciada ? plan.prueba : null;
+  const apremia = prueba && (prueba.dias_restantes <= 5 ||
+                             (prueba.compras_totales > 0 && prueba.compras_restantes <= 2));
+
   return (
     <div>
       {toolbar}
+
+      {sinAcceso && (
+        <div className="plan-aviso calido">
+          <span className="plan-aviso-ico">💳</span>
+          <div className="plan-aviso-cuerpo">
+            {data.ahorro_extra_bloqueado > 0 ? (
+              <>
+                <div className="plan-aviso-t">
+                  En esta lista hay <span className="plan-aviso-monto">{fmt(data.ahorro_extra_bloqueado)}</span> de ahorro que no estamos aplicando
+                </div>
+                <div className="plan-aviso-d">
+                  Es lo que suman tus tarjetas y las promos de hoy sobre estos mismos productos.
+                  Los precios de góndola de acá abajo son gratis y van a seguir siéndolo.
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="plan-aviso-t">Estás viendo los precios de góndola</div>
+                <div className="plan-aviso-d">
+                  El abono cruza tu lista con tus tarjetas, el día y el canal, y te carga
+                  la compra en el súper de un clic.
+                </div>
+              </>
+            )}
+          </div>
+          <button className="plan-cta" onClick={onPedirPlan}>Ver el abono</button>
+        </div>
+      )}
+
+      {prueba && (
+        <div className={`plan-aviso ${apremia ? "urgente" : ""}`}>
+          <span className="plan-aviso-ico">{apremia ? "⏳" : "✨"}</span>
+          <div className="plan-aviso-cuerpo">
+            <div className="plan-aviso-t">
+              {apremia ? "Se te está por terminar la prueba" : "Estás probando Convi completo"}
+            </div>
+            <div className="plan-aviso-d">
+              Te queda{prueba.dias_restantes === 1 ? "" : "n"} <strong>{prueba.dias_restantes} día{prueba.dias_restantes === 1 ? "" : "s"}</strong>
+              {prueba.compras_totales > 0 && <> y <strong>{prueba.compras_restantes} compra{prueba.compras_restantes === 1 ? "" : "s"}</strong></>}.
+              {" "}No cargaste ninguna tarjeta: cuando se termine no se te cobra nada, simplemente
+              dejás de ver el cruce con tus bancos.
+            </div>
+          </div>
+          {apremia && <button className="plan-cta fantasma" onClick={onPedirPlan}>Ver el abono</button>}
+        </div>
+      )}
 
       <div className="lista-resumen">
         {mejorComp ? (
@@ -4402,7 +4611,7 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
                                     <span className="lg-cell-tag lg-swap-quitar">− quitar</span>
                                   </span>
                                 : celda.precio_regional
-                                  ? <span className="lg-cell-tag">📍 tu región</span>
+                                  ? <span className="lg-cell-tag" title={sucursalDelPrecio(s.supermercado, regionCodigo) ? `Precio de la sucursal ${sucursalDelPrecio(s.supermercado, regionCodigo)}` : "Precio de tu región"}>📍 tu región</span>
                                   : <span className="lg-cell-add">+ carrito</span>}
                           </>
                         ) : "—"}
@@ -4427,12 +4636,16 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
                   // arriba incluye precios que no se pueden comprar y el
                   // volcado cargaría otra cosa: se desactiva hasta destildarla.
                   <button className="lg-total-btn" disabled={ocupado === "mixta" || hayReferencia}
-                    style={{background: hayReferencia ? "var(--text-muted)" : "#2F7D4F"}}
+                    style={{background: hayReferencia ? "var(--text-muted)"
+                                      : sinAcceso ? "var(--accent)" : "#2F7D4F"}}
                     title={hayReferencia
                       ? `Destildá ${referencias.join(", ")} para poder repartir la compra: no vende${referencias.length > 1 ? "n" : ""} en tu región.`
+                      : sinAcceso ? "Cargar la compra repartida es una función del abono"
                       : undefined}
                     onClick={() => volcar(null)}>
-                    {ocupado === "mixta" ? "…" : <>💚<span className="btn-label"> Compra mixta</span> {fmt(mixta.total)}</>}
+                    {ocupado === "mixta" ? "…"
+                      : sinAcceso ? <>🔒<span className="btn-label"> Compra mixta</span> {fmt(mixta.total)}</>
+                      : <>💚<span className="btn-label"> Compra mixta</span> {fmt(mixta.total)}</>}
                   </button>
                 )}
               </th>
@@ -4452,9 +4665,13 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
                       como referencia de precio, sin volcado: su carrito no se
                       puede cerrar desde acá (ver SUPER_POR_REGION). */}
                   {superLlegaA(s.supermercado, regionCodigo) ? (
-                    <button className="lg-total-btn" disabled={ocupado === s.supermercado || s.cubiertos === 0}
+                    <button className={`lg-total-btn ${sinAcceso ? "bloqueado" : ""}`}
+                      disabled={ocupado === s.supermercado || s.cubiertos === 0}
+                      title={sinAcceso ? "Cargar la lista al carrito es una función del abono" : undefined}
                       onClick={() => volcar(s.supermercado)}>
-                      {ocupado === s.supermercado ? "…" : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
+                      {ocupado === s.supermercado ? "…"
+                        : sinAcceso ? <>🔒 Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>
+                        : <>Cargar {s.cubiertos}<span className="btn-label"> al carrito</span></>}
                     </button>
                   ) : (
                     <div className="lg-total-nota" title={`${s.supermercado} no vende en tu región`}>
@@ -4471,7 +4688,7 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
       {/* Misma ficha que en la pestaña de productos. Sin onCambiarSuper: acá el
           cambio de súper se hace tocando la celda de la grilla, y ofrecerlo
           también desde el modal haría dos caminos para lo mismo. */}
-      {ficha && <Modal producto={ficha} onClose={() => setFicha(null)} supersFiltro={supersVisibles}/>}
+      {ficha && <Modal producto={ficha} onClose={() => setFicha(null)} supersFiltro={supersVisibles} regionCodigo={regionCodigo}/>}
     </div>
   );
 }
@@ -4523,7 +4740,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
 
         <div className="card-price-block">
           <span className={`card-price ${hasOffer?"offer":""}`}>{fmt(p.precio)}</span>
-          {p.precio_regional && <span className="card-region">📍 tu región</span>}
+          {p.precio_regional && <span className="card-region" title={sucursalDelPrecio(p.supermercado, regionCodigo) ? `Precio de la sucursal ${sucursalDelPrecio(p.supermercado, regionCodigo)}` : "Precio de tu región"}>📍 tu región</span>}
           {(hasOffer || p.precio_original) && (
             <div className="card-price-side">
               {hasOffer && <span className="card-discount-inline">{p.descuento_pct ? `-${p.descuento_pct}%` : "OFERTA"}</span>}
@@ -4787,17 +5004,32 @@ function LegalModal({ initialTab = "terminos", onClose }) {
               <p>Algunas funciones requieren registro. Sos responsable de la confidencialidad de tus credenciales y de la actividad de tu cuenta, y debés brindar información veraz.</p>
               <h4>5. Precios orientativos</h4>
               <p>Los precios y promociones son orientativos, provienen de fuentes públicas y pueden contener errores, demoras o diferencias con el precio real vigente en cada supermercado. Verificá siempre el precio final en el sitio oficial del comercio antes de comprar (ver "Descargos y marcas").</p>
-              <h4>6. Propiedad intelectual</h4>
+              {/* Lo mínimo que la Ley 24.240 y las resoluciones de comercio
+                  electrónico exigen que esté escrito ANTES de cobrar: qué se
+                  cobra, cada cuánto, que se renueva sola, cómo se da de baja y
+                  el derecho de revocación de 10 días corridos. Conviene que un
+                  abogado lo revise antes de prender el cobro. */}
+              <h4>6. Plan gratuito y abono</h4>
+              <p>El Servicio tiene un plan gratuito y un abono pago. La comparación de precios de góndola, el buscador y el cronograma de promociones bancarias son y seguirán siendo gratuitos. El abono habilita funciones adicionales, entre ellas el cruce de tu lista con tus medios de pago y la carga de la lista en el sitio del supermercado.</p>
+              <p>Podés probar las funciones del abono sin costo y sin cargar ningún medio de pago, por el plazo y la cantidad de usos que se te informan dentro de la aplicación. Terminada la prueba no se genera ningún cargo automático: simplemente dejás de acceder a esas funciones hasta que contrates el abono.</p>
+              <h4>7. Precio, cobro y renovación</h4>
+              <p>El abono es mensual, se informa en pesos argentinos con impuestos incluidos y se renueva automáticamente cada mes hasta que lo des de baja. El cobro lo procesa Mercado Pago mediante una autorización de débito automático que otorgás en su plataforma: {LEGAL.responsable} no accede ni almacena los datos de tu tarjeta.</p>
+              <p>Podemos modificar el precio del abono. La modificación rige únicamente para las suscripciones nuevas: si ya estás suscripto, conservás el precio vigente al momento de tu alta mientras no des de baja el abono. Si en el futuro fuera necesario modificar el precio de una suscripción en curso, te lo notificaremos previamente y por medio fehaciente, y podrás darte de baja sin cargo antes de que rija el nuevo importe.</p>
+              <p>Si un cobro no pudiera efectuarse, Mercado Pago puede reintentarlo durante algunos días. Conservás el acceso hasta el final del período efectivamente abonado.</p>
+              <h4>8. Baja y derecho de revocación</h4>
+              <p>Podés dar de baja el abono en cualquier momento y sin expresión de causa, desde la propia aplicación —en la sección de tu plan, accesible desde el encabezado— o desde tu cuenta de Mercado Pago. La baja interrumpe las renovaciones futuras: conservás el acceso hasta el final del período que ya abonaste y no se generan cargos posteriores.</p>
+              <p>Conforme al artículo 34 de la Ley N.° 24.240, tenés derecho a revocar la contratación dentro de los diez (10) días corridos contados desde la fecha de alta, sin responsabilidad alguna y con reintegro de lo abonado. Para ejercerlo, escribinos a {LEGAL.email} desde el correo asociado a tu cuenta.</p>
+              <h4>9. Propiedad intelectual</h4>
               <p>El Servicio, su diseño y su código pertenecen a {LEGAL.responsable} o sus licenciantes. Las marcas y logos de los supermercados pertenecen a sus respectivos titulares; su uso es meramente identificatorio y no implica afiliación.</p>
-              <h4>7. Limitación de responsabilidad</h4>
+              <h4>10. Limitación de responsabilidad</h4>
               <p>El Servicio se ofrece "tal cual" y "según disponibilidad", sin garantías de exactitud, disponibilidad o adecuación a un fin. En la máxima medida permitida por la ley, {LEGAL.responsable} no será responsable por daños derivados del uso o la imposibilidad de uso del Servicio, ni por decisiones de compra basadas en la información provista.</p>
-              <h4>8. Enlaces de terceros</h4>
+              <h4>11. Enlaces de terceros</h4>
               <p>El Servicio puede enlazar a sitios de supermercados u otros terceros. No controlamos ni respondemos por su contenido, disponibilidad o políticas.</p>
-              <h4>9. Modificaciones</h4>
+              <h4>12. Modificaciones</h4>
               <p>Podemos modificar el Servicio o estos Términos en cualquier momento. Los cambios rigen desde su publicación y el uso continuado implica su aceptación.</p>
-              <h4>10. Ley aplicable y jurisdicción</h4>
+              <h4>13. Ley aplicable y jurisdicción</h4>
               <p>Estos Términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de {LEGAL.jurisdiccion}, sin perjuicio de las normas de orden público aplicables a consumidores.</p>
-              <h4>11. Contacto</h4>
+              <h4>14. Contacto</h4>
               <p>Consultas: {LEGAL.email}.</p>
             </>
           )}
@@ -4958,6 +5190,207 @@ function WelcomeModal({ onClose }) {
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// El abono
+// ---------------------------------------------------------------------------
+// Una sola pantalla para los cuatro estados posibles, porque son el mismo lugar
+// desde el punto de vista del usuario ("¿qué plan tengo?"): prueba corriendo,
+// prueba vencida, abono al día, cortesía.
+//
+// Nada de acá decide permisos. El front es todo cliente y cualquier chequeo
+// nuestro se saltea desde la consola: el permiso REAL lo aplica el backend en
+// cada endpoint (ver tiene_plan en api.py). Esto es la vidriera.
+function PlanModal({ token, plan, ahorroBloqueado, onClose, onCambio }) {
+  const [ocupado, setOcupado] = React.useState(false);
+  const [error, setError]     = React.useState(null);
+
+  const abono   = (plan && plan.abono)  || {};
+  const prueba  = (plan && plan.prueba) || {};
+  const cual    = (plan && plan.plan) || "prueba";
+  const precio  = abono.monto || abono.precio_vigente;
+
+  async function suscribirme() {
+    setOcupado(true); setError(null);
+    try {
+      const res = await fetch(`${API}/suscripcion`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        // Adónde nos tiene que devolver MP. El backend lo valida contra sus
+        // orígenes permitidos y lo ignora si no es uno nuestro.
+        body: JSON.stringify({ back_url: `${window.location.origin}/?suscripcion=ok` }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.init_point) {
+        setError(d.detail || "No pudimos iniciar el alta. Probá de nuevo en un rato.");
+        setOcupado(false);
+        return;
+      }
+      // A partir de acá el usuario está en el dominio de Mercado Pago: los datos
+      // de la tarjeta no pasan nunca por nosotros.
+      window.location.href = d.init_point;
+    } catch (e) {
+      setError("No pudimos conectarnos. Revisá tu conexión.");
+      setOcupado(false);
+    }
+  }
+
+  async function darDeBaja() {
+    const hasta = abono.periodo_fin ? fmtFecha(abono.periodo_fin) : null;
+    if (!window.confirm(
+      "¿Dar de baja el abono?" +
+      (hasta ? `\n\nVas a poder seguir usándolo hasta el ${hasta}, que es el período que ya pagaste.` : "")
+    )) return;
+    setOcupado(true); setError(null);
+    try {
+      const res = await fetch(`${API}/suscripcion`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      if (!res.ok) setError(d.detail || "No pudimos procesar la baja.");
+      else { onCambio && onCambio(); onClose(); return; }
+    } catch (e) {
+      setError("No pudimos conectarnos. Revisá tu conexión.");
+    }
+    setOcupado(false);
+  }
+
+  // Qué incluye. El orden no es decorativo: primero lo que el usuario está por
+  // perder (o perdió), que es lo que lo trajo hasta acá.
+  const incluye = [
+    ["💳", "Tu lista cruzada con tus tarjetas",
+     "El día, el canal y los topes de reintegro de cada banco aplicados sobre TU lista. Es donde está el ahorro grande."],
+    ["🛒", "Carrito de un clic",
+     "La lista entera cargada en el sitio del súper. Sin buscar treinta productos a mano."],
+    ["📋", "Listas sin tope",
+     `El plan gratuito permite ${plan?.max_listas_gratis ?? 2}.`],
+  ];
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="plan-modal" onClick={e => e.stopPropagation()}>
+        <div className="welcome-close">
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        {cual === "cortesia" ? (
+          <>
+            <div className="plan-hero">
+              <ConviIsotipo size={54} className="welcome-icon"/>
+              <div className="plan-hero-t">Tenés acceso completo</div>
+              <div className="plan-hero-d">
+                Sin cargo y sin vencimiento. Gracias por haber estado desde el principio.
+              </div>
+            </div>
+            <div className="plan-body">
+              {incluye.map(([ico, t, d]) => (
+                <div className="plan-feature" key={t}>
+                  <span className="plan-feature-ico">{ico}</span>
+                  <div><div className="plan-feature-t">{t}</div><div className="plan-feature-d">{d}</div></div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : cual === "pago" ? (
+          <>
+            <div className="plan-hero">
+              <ConviIsotipo size={54} className="welcome-icon"/>
+              <div className="plan-hero-t">Tu abono está al día</div>
+              <div className="plan-hero-d">Tenés todas las funciones habilitadas.</div>
+            </div>
+            <div className="plan-body">
+              <div className="plan-estado">
+                {abono.estado === "morosa" ? (
+                  <>
+                    ⚠️ <strong>No pudimos cobrar el último mes.</strong> Mercado Pago va a
+                    reintentarlo en los próximos días. Si tu tarjeta venció o cambió,
+                    actualizala desde tu cuenta de Mercado Pago.
+                    {abono.periodo_fin && <><br/>Podés seguir usando todo hasta el <strong>{fmtFecha(abono.periodo_fin)}</strong>.</>}
+                  </>
+                ) : abono.estado === "cancelada" ? (
+                  <>
+                    Diste de baja el abono.
+                    {abono.periodo_fin && <> Podés seguir usándolo hasta el <strong>{fmtFecha(abono.periodo_fin)}</strong>, que es el período que ya pagaste.</>}
+                  </>
+                ) : (
+                  <>
+                    Abono mensual de <strong>{fmt(abono.monto)}</strong>.
+                    {abono.periodo_fin && <> Próxima renovación alrededor del <strong>{fmtFecha(abono.periodo_fin)}</strong>.</>}
+                    {/* Sólo si su precio quedó por debajo del vigente. Que el
+                        usuario SEPA que tiene un precio viejo es la mitad del
+                        valor de respetárselo. */}
+                    {abono.precio_vigente && abono.monto && abono.precio_vigente > abono.monto && (
+                      <><br/>Mantenés el precio con el que te suscribiste: hoy el abono sale {fmt(abono.precio_vigente)}.</>
+                    )}
+                  </>
+                )}
+              </div>
+              {abono.estado !== "cancelada" && (
+                <button className="plan-baja" onClick={darDeBaja} disabled={ocupado}>
+                  {ocupado ? "Procesando…" : "Dar de baja el abono"}
+                </button>
+              )}
+              {error && <div className="plan-error">{error}</div>}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="plan-hero">
+              <ConviIsotipo size={54} className="welcome-icon"/>
+              <div className="plan-hero-t">
+                {cual === "prueba" ? "Seguí ahorrando sin límite" : "Desbloqueá el ahorro completo"}
+              </div>
+              <div className="plan-hero-d">
+                {/* Si sabemos cuánto se está perdiendo EN SU lista, ese número
+                    es el argumento. Un monto propio convence donde un cartel de
+                    "función premium" sólo molesta. */}
+                {ahorroBloqueado > 0
+                  ? <>En la lista que estás mirando ahora hay <strong>{fmt(ahorroBloqueado)}</strong> de ahorro que no estamos aplicando.</>
+                  : <>Comparar precios es gratis y va a seguir siéndolo. El abono es para cruzar tu lista con tus tarjetas y cerrar la compra de un clic.</>}
+              </div>
+              {precio > 0 && (
+                <div className="plan-precio">
+                  <div className="plan-precio-n">{fmt(precio)}</div>
+                  <div className="plan-precio-p">por mes · cancelás cuando quieras</div>
+                </div>
+              )}
+            </div>
+            <div className="plan-body">
+              {cual === "prueba" && prueba.iniciada && (
+                <div className="plan-estado" style={{marginBottom:14}}>
+                  Te quedan <strong>{prueba.dias_restantes} día{prueba.dias_restantes !== 1 ? "s" : ""}</strong>
+                  {prueba.compras_totales > 0 && <> y <strong>{prueba.compras_restantes} compra{prueba.compras_restantes !== 1 ? "s" : ""}</strong></>}
+                  {" "}de prueba. No hace falta que hagas nada hasta que se termine: no cargaste ninguna tarjeta.
+                </div>
+              )}
+              {incluye.map(([ico, t, d]) => (
+                <div className="plan-feature" key={t}>
+                  <span className="plan-feature-ico">{ico}</span>
+                  <div><div className="plan-feature-t">{t}</div><div className="plan-feature-d">{d}</div></div>
+                </div>
+              ))}
+
+              {abono.se_puede_cobrar ? (
+                <button className="plan-boton" onClick={suscribirme} disabled={ocupado}>
+                  {ocupado ? "Abriendo Mercado Pago…" : "Suscribirme"}
+                </button>
+              ) : (
+                <div className="plan-estado" style={{marginTop:18}}>
+                  El abono todavía no está abierto. Seguís teniendo todo.
+                </div>
+              )}
+              {error && <div className="plan-error">{error}</div>}
+              <div className="plan-nota">
+                Se paga por Mercado Pago. Los datos de tu tarjeta no pasan por Convi.
+                Podés dar de baja cuando quieras desde acá o desde tu cuenta de Mercado Pago.
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [productos, setProductos] = React.useState([]);
   const [stats, setStats] = React.useState({});
@@ -4988,6 +5421,15 @@ function App() {
   const [usuario, setUsuario] = React.useState(() => { try { return JSON.parse(localStorage.getItem("convi_user")); } catch { return null; } });
   const [token, setToken] = React.useState(() => localStorage.getItem("convi_token") || null);
   const [showAuth, setShowAuth] = React.useState(false);
+  // Plan del usuario: prueba, abono o cortesía (ver PlanModal). Con el paywall
+  // apagado el backend contesta plan "pago" para todos y `paywall_activo` en
+  // false, así que nada de esto se dibuja.
+  const [plan, setPlan] = React.useState(null);
+  const [showPlan, setShowPlan] = React.useState(false);
+  // Lo que la lista abierta deja de ahorrar por estar del lado gratuito. Lo
+  // calcula el backend sobre SU lista (no sobre un promedio) y lo sube
+  // ListaView; vive acá porque quien lo muestra es el modal, que cuelga de App.
+  const [ahorroBloqueado, setAhorroBloqueado] = React.useState(0);
   const [showWelcome, setShowWelcome] = React.useState(() => {
     try { return !localStorage.getItem("convi_welcome_v1"); } catch { return false; }
   });
@@ -5137,6 +5579,44 @@ function App() {
       .then(data => { if (Array.isArray(data)) setRegiones(data); })
       .catch(() => {});
   }, []);
+
+  const cargarPlan = React.useCallback(() => {
+    if (!token) { setPlan(null); return Promise.resolve(null); }
+    return fetch(`${API}/mi-plan`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(p => { setPlan(p); return p; })
+      .catch(() => null);
+  }, [token]);
+  React.useEffect(() => { cargarPlan(); }, [cargarPlan]);
+
+  // Vuelta de Mercado Pago después de autorizar el débito.
+  //
+  // No esperamos el webhook: puede demorar unos segundos y el usuario volvería
+  // de pagar a una pantalla que le dice que no pagó, que es la peor de todas
+  // las pantallas. Le preguntamos a MP nosotros, y reintentamos un rato porque
+  // la preapproval tarda en pasar a `authorized`.
+  const vueltaMP = React.useRef(false);
+  React.useEffect(() => {
+    if (!token || vueltaMP.current) return;
+    if (!new URLSearchParams(window.location.search).get("suscripcion")) return;
+    vueltaMP.current = true;
+    // Se limpia la URL en el acto: un F5 no tiene que volver a disparar esto.
+    window.history.replaceState({}, "", window.location.pathname);
+    let intentos = 0;
+    const preguntar = () => {
+      fetch(`${API}/suscripcion/sincronizar`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r))
+        .then(p => {
+          setPlan(p);
+          if (p.plan !== "pago" && ++intentos < 5) setTimeout(preguntar, 2000);
+          else setShowPlan(true);
+        })
+        .catch(() => { if (++intentos < 5) setTimeout(preguntar, 2000); else setShowPlan(true); });
+    };
+    preguntar();
+  }, [token]);
 
   // Autodetección de región por IP (solo si el usuario todavía no eligió una).
   // Usa ipwho.is (https, sin API key) y mapea el código de provincia AR a nuestras regiones.
@@ -5502,7 +5982,11 @@ function App() {
       {showWelcome && <WelcomeModal onClose={cerrarWelcome}/>}
       {legalTab && <LegalModal initialTab={legalTab} onClose={()=>setLegalTab(null)}/>}
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onLogin={handleLogin}/>}
-      {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)} supersFiltro={supersVisibles}/>}
+      {showPlan && token && (
+        <PlanModal token={token} plan={plan} ahorroBloqueado={ahorroBloqueado}
+          onClose={()=>setShowPlan(false)} onCambio={cargarPlan}/>
+      )}
+      {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)} supersFiltro={supersVisibles} regionCodigo={regionCodigo}/>}
 
       {/* Header */}
       <header className="header">
@@ -5543,6 +6027,29 @@ function App() {
               🛒<span className="btn-label">Carrito</span>
               {totalCarrito > 0 && <span className="header-btn-badge yellow">{totalCarrito}</span>}
             </button>
+
+            {/* Estado del plan. Sólo con el paywall prendido: mientras esté
+                apagado nadie tiene por qué ver una cuenta regresiva de algo que
+                no lo limita en nada. */}
+            {token && plan && plan.paywall_activo && (
+              <button
+                className={`plan-chip ${
+                  plan.plan === "pago" && plan.abono.estado !== "morosa" ? "activo"
+                  : plan.plan === "cortesia" ? "activo"
+                  : (plan.plan === "gratis" || plan.abono.estado === "morosa"
+                     || (plan.plan === "prueba" && plan.prueba.dias_restantes <= 5)) ? "urgente"
+                  : ""}`}
+                onClick={()=>setShowPlan(true)}
+                title="Ver tu plan">
+                {plan.abono.estado === "morosa" ? <>⚠️<span className="btn-label"> Revisá tu pago</span></>
+                 : plan.plan === "cortesia" ? <>✨<span className="btn-label"> Acceso completo</span></>
+                 : plan.plan === "pago"     ? <>✨<span className="btn-label"> Abono al día</span></>
+                 : plan.plan === "prueba"   ? (plan.prueba.iniciada
+                     ? <>⏳<span className="btn-label"> Prueba: </span>{plan.prueba.dias_restantes}<span className="btn-label"> días</span></>
+                     : <>⏳<span className="btn-label"> Prueba gratis</span></>)
+                 : <>🔓<span className="btn-label"> Mejorar plan</span></>}
+              </button>
+            )}
 
             {usuario ? (
               <div className="header-user">
@@ -5646,6 +6153,10 @@ function App() {
               onListasChange={() => { cargarListas(); cargarListaItems(); }}
               carritoIds={carritoIds}
               onCarritoChange={cargarCarrito}
+              plan={plan}
+              onPedirPlan={()=>setShowPlan(true)}
+              onAhorroBloqueado={setAhorroBloqueado}
+              onPlanCambio={cargarPlan}
             />
           ) : (
             <>
