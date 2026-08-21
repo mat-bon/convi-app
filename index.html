@@ -5,6 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Convi — Te conviene. Compará y ahorrá en tu supermercado</title>
   <meta name="theme-color" content="#C7CEBE">
+  <meta name="description" content="Cargá tu lista de compras y te decimos en qué supermercado te sale más barata. Comparamos 12 cadenas de Argentina con los precios de tu región, más el cronograma de descuentos bancarios. Gratis.">
+  <link rel="canonical" href="https://convi.ar/">
+
+  <!-- Open Graph y Twitter Card. Esto NO es SEO: es lo que decide si el link
+       llega con tarjeta o pelado cuando alguien comparte convi.ar por WhatsApp,
+       que es por lejos el canal donde esto se va a compartir. Sin estas
+       etiquetas WhatsApp muestra la URL sola, sin imagen ni título, y el
+       mensaje pierde todo el contexto justo en el momento en que un usuario nos
+       está recomendando.
+       La `og:image` tiene que ser URL ABSOLUTA: los scrapers de WhatsApp,
+       Facebook y Twitter no resuelven rutas relativas. Va servida desde la API
+       de Railway por el mismo motivo que los apple-touch-icon de más abajo —
+       este index.html se aloja en Vercel y así la imagen no depende de dónde.
+       OJO: este es el TERCER lugar que duplica el host de la constante API. Si
+       la API cambia de dominio hay que tocarlo también acá, o los links pasan a
+       compartirse sin imagen en silencio y sin error.
+       Las medidas 1200x630 van declaradas a propósito: sin `og:image:width` y
+       `og:image:height`, Facebook y WhatsApp muestran la tarjeta chica la
+       primera vez (mientras bajan la imagen para medirla) y recién la agrandan
+       en la segunda, que es la que ya nadie ve. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Convi">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:url" content="https://convi.ar/">
+  <meta property="og:title" content="Convi — Compará tu lista en 12 supermercados">
+  <meta property="og:description" content="Cargá tu lista de compras y te decimos dónde te sale más barata. Los precios de tu región y los descuentos bancarios del día. Gratis, sin descargar nada.">
+  <meta property="og:image" content="https://web-production-32c3f.up.railway.app/convi-og.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Convi: compará el precio de tu lista de compras en 12 supermercados de Argentina">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Convi — Compará tu lista en 12 supermercados">
+  <meta name="twitter:description" content="Cargá tu lista y te decimos dónde te sale más barata. 12 cadenas, los precios de tu región y los descuentos bancarios del día. Gratis.">
+  <meta name="twitter:image" content="https://web-production-32c3f.up.railway.app/convi-og.png">
+
+  <!-- Manifest: es lo que habilita "instalar" en Android/Chrome. Va en el MISMO
+       origen que esta página y con ruta relativa, no en la API: el `start_url`
+       del manifest tiene que caer dentro del scope del origen que lo sirve, así
+       que un manifest servido desde Railway apuntando a convi.ar sería inválido
+       y el navegador lo descarta.
+       El `display` es `minimal-ui` y NO `standalone`, por la misma razón por la
+       que más abajo no se pone `apple-mobile-web-app-capable`: los carritos de
+       los súperes se abren en pestañas nuevas, y en `standalone` esas pestañas
+       quedan sin barra de direcciones ni botón de volver. `minimal-ui` conserva
+       la navegación y aun así Chrome la considera instalable; `browser` también
+       conservaría la barra pero deja de ofrecer la instalación. -->
+  <link rel="manifest" href="/manifest.json">
+
   <!-- Favicon: el isotipo en su encuadre compacto (la hormiga ocupa más del
        cuadro y la lista va sin renglones), que es el único que se lee a 16 px.
        Va inline como data URI para no depender de un archivo suelto. -->
@@ -1056,6 +1105,23 @@
     .lista-resumen-nota {
       font-size: 11.5px; color: var(--text-muted); font-weight: 600; line-height: 1.5;
     }
+
+    /* Compartir. Va al final del resumen y separado por una línea: es la única
+       acción del bloque, y mezclada entre las líneas de resultado se lee como
+       una más. En terracota lleno porque es lo único accionable acá — el resto
+       del resumen es lectura. */
+    .lista-compartir {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-top: 4px; padding-top: 11px; border-top: 1px solid var(--border);
+    }
+    .lista-compartir-btn {
+      padding: 8px 14px; border-radius: var(--radius); border: 1.5px solid var(--accent);
+      background: var(--accent); color: var(--on-accent);
+      font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit;
+      transition: filter 0.15s;
+    }
+    .lista-compartir-btn:hover { filter: brightness(1.08); }
+    .lista-compartir-nota { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
 
     /* Badge de promo bancaria en la fila de totales. El total de góndola queda
        como número principal: el descuento depende de con qué pagues, así que no
@@ -4126,6 +4192,10 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
   const [showPagos, setShowPagos] = React.useState(false);
   const [misPagos, setMisPagos]   = React.useState([]);
   const [ficha, setFicha]         = React.useState(null);
+  // Feedback del botón de compartir. Va acá arriba y no como variable local
+  // porque el fallback a portapapeles no abre ninguna hoja del sistema: sin un
+  // cambio visible, al usuario le parece que el botón no hizo nada.
+  const [compartido, setCompartido] = React.useState(null);
 
   // Ficha del producto de una fila de la lista, con la MISMA forma que espera
   // <Modal> en la pestaña de productos. Se arma con lo que ya trajo /comparar
@@ -4398,6 +4468,58 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
   const ahorroPago  = mejorComp && mejorPago ? mejorComp.total_estimado - costoFinal(mejorPago) : 0;
   const hayTope     = supers.some(s => (s.promo_bancaria?.promos || []).some(p => p.motivo?.includes("tope")));
 
+  // ---- Compartir el resultado -------------------------------------------
+  // La comparación es el momento en que el usuario tiene algo para contar, y
+  // hasta ahora ese momento moría en su pantalla. El texto lleva la BRECHA y no
+  // sólo el total: "me sale $X en tal súper" no le dice nada a quien lo recibe,
+  // "entre el más barato y el más caro hay $Y" sí.
+  // NO se nombra al súper más CARO a propósito: la app compara, no denuncia, y
+  // un mensaje que circula por WhatsApp señalando a una cadena es exactamente
+  // lo que no queremos que se lea como nuestra voz.
+  // Se prefieren los súperes con la lista COMPLETA cuando hay al menos dos:
+  // ahí la brecha son dos totales medidos, sin nada estimado en el medio, que
+  // es lo único que da para afirmar un número en un mensaje que va a circular.
+  // Si no llegan a dos se cae a todos, y sigue siendo honesto: `total_estimado`
+  // ya valoriza lo que le falta a cada súper al precio de referencia del
+  // producto (ver el paso 6 de comparar_lista en database.py), justamente para
+  // que al que no tiene todo no le quede un total más bajo por tener menos
+  // cosas. Lo que se pierde es precisión, no comparabilidad.
+  const baseComp = completos.length >= 2 ? completos : supers;
+  const compBarato = baseComp.length ? baseComp.reduce((a, b) => (b.total_estimado < a.total_estimado ? b : a)) : null;
+  const compCaro   = baseComp.length ? baseComp.reduce((a, b) => (b.total_estimado > a.total_estimado ? b : a)) : null;
+  const puedeCompartir = !!(compBarato && compCaro && compCaro.total_estimado > compBarato.total_estimado);
+
+  const compartirResultado = async () => {
+    if (!puedeCompartir) return;
+    const dif = compCaro.total_estimado - compBarato.total_estimado;
+    const n   = items.length;
+    const texto =
+      `Comparé mi lista de ${n} producto${n === 1 ? "" : "s"} en ${baseComp.length} supermercados.\n` +
+      `Más barato: ${compBarato.supermercado}, ${fmt(compBarato.total_estimado)}.\n` +
+      `Entre el más barato y el más caro hay ${fmt(dif)} de diferencia.`;
+    // El UTM entra por la URL compartida: es la única forma de saber cuánto
+    // tráfico trae este botón, y es justamente la métrica que decide si el loop
+    // de compartir funciona o no.
+    const url = "https://convi.ar/?utm_source=compartir&utm_medium=app";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Convi", text: texto, url });
+        return;
+      }
+      // Escritorio y navegadores sin Web Share: al portapapeles. La URL va
+      // DENTRO del texto porque acá no hay un campo aparte donde meterla.
+      await navigator.clipboard.writeText(`${texto}\n${url}`);
+      setCompartido("copiado");
+      setTimeout(() => setCompartido(null), 2500);
+    } catch (e) {
+      // AbortError = el usuario cerró la hoja de compartir. No es un error y no
+      // se avisa nada: avisar acá es regañar a alguien por cambiar de opinión.
+      if (e && e.name === "AbortError") return;
+      setCompartido("error");
+      setTimeout(() => setCompartido(null), 3500);
+    }
+  };
+
   // Cuánto le queda de prueba, y si ya es hora de decírselo fuerte. Los
   // primeros días el cartel es informativo; recién cuando se está por acabar
   // aparece el botón. Ofrecerle pagar el día uno a alguien que todavía no vio
@@ -4520,6 +4642,18 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
           <div className="lista-resumen-nota">
             Los topes de reintegro son por mes o por semana y por cuenta: calculamos suponiendo
             que todavía no lo usaste. Si ya lo consumiste, el ahorro real va a ser menor.
+          </div>
+        )}
+        {puedeCompartir && (
+          <div className="lista-compartir">
+            <button className="lista-compartir-btn" onClick={compartirResultado}>
+              {compartido === "copiado" ? "✅ Copiado" : "🔗 Compartir este resultado"}
+            </button>
+            <span className="lista-compartir-nota">
+              {compartido === "copiado"  ? "Pegalo donde quieras."
+               : compartido === "error"  ? "No se pudo compartir. Probá de nuevo."
+               : "Mandáselo a quien hace las compras con vos."}
+            </span>
           </div>
         )}
       </div>
@@ -5262,7 +5396,14 @@ function PlanModal({ token, plan, ahorroBloqueado, onClose, onCambio }) {
     ["🛒", "Carrito de un clic",
      "La lista entera cargada en el sitio del súper. Sin buscar treinta productos a mano."],
     ["📋", "Listas sin tope",
-     `El plan gratuito permite ${plan?.max_listas_gratis ?? 2}.`],
+     // El singular importa: con el tope en 1, "permite 1 listas" es el tipo de
+     // detalle que le baja la nota a toda la pantalla que decide una compra.
+     (() => {
+       const n = plan?.max_listas_gratis ?? 1;
+       return n === 1
+         ? "El plan gratuito permite una sola lista."
+         : `El plan gratuito permite ${n} listas.`;
+     })()],
   ];
 
   return (
