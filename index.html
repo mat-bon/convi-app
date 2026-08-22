@@ -1152,6 +1152,14 @@
       line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px;
     }
     .tk-alerta.warn { background: var(--danger-light); }
+    .tk-crudo {
+      margin-top: 10px; max-height: 220px; overflow: auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10.5px; line-height: 1.5; color: var(--text-secondary);
+      white-space: pre-wrap; word-break: break-word;
+    }
     .tk-buscar {
       width: 100%; padding: 9px 12px; border-radius: var(--radius);
       border: 1.5px solid var(--border); background: var(--surface);
@@ -4396,15 +4404,110 @@ function prepararParaOCR(file, maxLado = 2000) {
   });
 }
 
+// ¿Está el ticket de costado? Es EL problema de esta función, no un caso raro:
+// un ticket es largo y angosto, así que la gente lo fotografía apaisado. Y
+// Tesseract con el texto a 90° no devuelve "poco": devuelve basura total
+// ("Nun NNE RW El", "238288528 a") y cero productos.
+//
+// Cómo se detecta, sin pagar una pasada de OCR: se proyecta la cantidad de
+// píxeles oscuros sobre cada eje y se cuenta cuántas veces cada perfil cruza su
+// propia media. A lo largo de los renglones el perfil oscila a la frecuencia de
+// las LETRAS (muchos cruces); perpendicular a ellos, a la frecuencia de las
+// LÍNEAS, que están mucho más separadas (pocos cruces). O sea que el eje con
+// MENOS cruces es el de los renglones.
+//
+// Va sobre la imagen ya binarizada a propósito: sobre la foto cruda, una mesa
+// oscura cuenta como tinta y el perfil mide el mueble en vez del texto.
+function ejeDeLosRenglones(canvas) {
+  const g = canvas.getContext("2d", { willReadFrequently: true });
+  const { data } = g.getImageData(0, 0, canvas.width, canvas.height);
+  const W = canvas.width, H = canvas.height;
+  const filas = new Float64Array(H), cols = new Float64Array(W);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4] < 128) { filas[y]++; cols[x]++; }
+    }
+  }
+  const cruces = a => {
+    let m = 0; for (const v of a) m += v; m /= a.length;
+    if (m <= 0.5) return Infinity;           // hoja en blanco: sin opinión
+    let n = 0, arriba = a[0] > m;
+    for (let i = 1; i < a.length; i++) {
+      const ahora = a[i] > m;
+      if (ahora !== arriba) { n++; arriba = ahora; }
+    }
+    return n / a.length * 1000;
+  };
+  return cruces(filas) <= cruces(cols) ? 0 : 90;   // grados a rotar
+}
+
+function rotarCanvas(canvas, grados) {
+  if (!grados) return canvas;
+  const r = document.createElement("canvas");
+  const vertical = grados === 90 || grados === 270;
+  r.width  = vertical ? canvas.height : canvas.width;
+  r.height = vertical ? canvas.width  : canvas.height;
+  const g = r.getContext("2d", { willReadFrequently: true });
+  g.translate(r.width / 2, r.height / 2);
+  g.rotate(grados * Math.PI / 180);
+  g.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+  return r;
+}
+
+// Cuántos renglones del texto parecen de verdad una línea de ticket: algo que
+// puede ser un código y algo que puede ser un importe. Es el juez final de si
+// la orientación era la correcta — mucho más confiable que cualquier heurística
+// sobre la imagen, porque mide el resultado y no una pista.
+function puntajeTicket(texto) {
+  return (texto || "").split("\n")
+    .filter(l => /\d{4,}/.test(l) && /[\d.,]{3,}\s*$/.test(l.trim()))
+    .length;
+}
+
 async function ocrLocal(file, onProgreso) {
   const Tesseract = await cargarTesseract();
-  const imagen = await prepararParaOCR(file);
-  const { data } = await Tesseract.recognize(imagen, "spa+eng", {
-    logger: m => {
-      if (m.status === "recognizing text" && onProgreso) onProgreso(m.progress || 0);
-    },
+  const base = await prepararParaOCR(file);
+
+  // El blob binarizado vuelve a canvas para poder medirlo y rotarlo.
+  const img = new Image();
+  await new Promise((ok, mal) => {
+    img.onload = ok; img.onerror = mal; img.src = URL.createObjectURL(base);
   });
-  return data.text || "";
+  const lienzo = document.createElement("canvas");
+  lienzo.width = img.width; lienzo.height = img.height;
+  lienzo.getContext("2d", { willReadFrequently: true }).drawImage(img, 0, 0);
+  URL.revokeObjectURL(img.src);
+
+  // Sólo 'spa': sumar 'eng' duplica los ~10 MB de datos de idioma que hay que
+  // bajar la primera vez, y en un ticket argentino no aporta nada.
+  const pasada = async (canvas, desde, hasta) => {
+    const { data } = await Tesseract.recognize(canvas, "spa", {
+      logger: m => {
+        if (m.status === "recognizing text" && onProgreso) {
+          onProgreso(desde + (hasta - desde) * (m.progress || 0));
+        }
+      },
+    });
+    return data.text || "";
+  };
+
+  // Primero la orientación que dice la proyección; si el resultado no parece un
+  // ticket, se prueban las otras. Cada intento cuesta una pasada, así que se
+  // ordenan por probabilidad y se corta apenas una da bien.
+  const primero = ejeDeLosRenglones(lienzo);
+  const orden = primero === 0 ? [0, 90, 270, 180] : [90, 270, 0, 180];
+  const tramos = [[0, .45], [.45, .7], [.7, .9], [.9, 1]];
+
+  let mejorTexto = "", mejorPuntaje = -1;
+  for (let i = 0; i < orden.length; i++) {
+    const texto = await pasada(rotarCanvas(lienzo, orden[i]), ...tramos[i]);
+    const p = puntajeTicket(texto);
+    if (p > mejorPuntaje) { mejorPuntaje = p; mejorTexto = texto; }
+    // Con dos renglones que cierran ya sabemos que la orientación es esta.
+    if (p >= 2) break;
+  }
+  if (onProgreso) onProgreso(1);
+  return mejorTexto;
 }
 
 // Buscador para las líneas que el ticket no pudo resolver (las del mostrador de
@@ -4463,6 +4566,11 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
   // pedirle al usuario que la saque de nuevo.
   const [foto, setFoto]         = React.useState(null);
   const [progreso, setProgreso] = React.useState(0);
+  // Lo que leyó el OCR, tal cual. Se muestra sólo cuando no se reconoció nada:
+  // sin esto, un ticket que falla es una pantalla vacía sin ninguna pista de
+  // por qué —ni para el usuario ni para nosotros.
+  const [textoCrudo, setTextoCrudo] = React.useState("");
+  const [verCrudo, setVerCrudo]     = React.useState(false);
   const [rescatados, setRescatados] = React.useState({});  // índice de sin_match → producto
   const inputRef = React.useRef(null);
 
@@ -4482,6 +4590,7 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
     setPaso("leyendo"); setError(null); setProgreso(0);
     try {
       const texto = await ocrLocal(file, setProgreso);
+      setTextoCrudo(texto);
       const res = await fetch(`${API}/listas/${listaId}/desde-texto`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -4663,6 +4772,28 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
                   {i.cantidad > 1 && <div className="tk-cant">×{i.cantidad}</div>}
                 </div>
               ))}
+
+              {data.items.length === 0 && (
+                <div className="tk-alerta warn">
+                  <strong>No pudimos reconocer ningún producto.</strong>
+                  <div style={{marginTop:6,lineHeight:1.55}}>
+                    Casi siempre es la foto: probá con el ticket <strong>estirado sobre una
+                    superficie plana</strong>, con buena luz, encuadrando sólo el detalle de
+                    productos y de cerca — que las letras se lean bien en la foto.
+                  </div>
+                  {textoCrudo && (
+                    <>
+                      <button className="lista-btn" style={{marginTop:10}}
+                              onClick={() => setVerCrudo(v => !v)}>
+                        {verCrudo ? "Ocultar" : "Ver"} lo que leímos de la foto
+                      </button>
+                      {verCrudo && (
+                        <pre className="tk-crudo">{textoCrudo.trim() || "(no se leyó ningún texto)"}</pre>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {data.sin_match.length > 0 && (
                 <>
