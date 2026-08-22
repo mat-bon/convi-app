@@ -1163,6 +1163,18 @@
       font-size: 12px; color: var(--text-primary); border-radius: 7px;
     }
     .tk-sug:hover { background: var(--surface-2); }
+    /* La mira no es decoración: sin una referencia visual la gente apunta de
+       lejos o en diagonal, que es justo donde ningún lector engancha. */
+    .tk-camara { position: relative; }
+    .tk-mira {
+      position: absolute; left: 12%; right: 12%; top: 32%; bottom: 32%;
+      border: 2px solid rgba(255,255,255,0.9); border-radius: 10px;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,0.28); pointer-events: none;
+    }
+    .tk-mira::after {
+      content: ""; position: absolute; left: 6%; right: 6%; top: 50%;
+      height: 2px; background: rgba(233,90,60,0.85); transform: translateY(-50%);
+    }
     .tk-video {
       width: 100%; border-radius: var(--radius-lg); background: #000;
       aspect-ratio: 4/3; object-fit: cover; display: block;
@@ -4704,11 +4716,17 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
 // y Android. Safari no lo trae, así que ahí se baja ZXing sólo cuando hace
 // falta, y si tampoco se puede queda la carga a mano — que siempre funciona.
 function EscanerModal({ token, regionId, onProducto, onClose }) {
-  const videoRef = React.useRef(null);
-  const pararRef = React.useRef(null);
-  const [estado, setEstado] = React.useState("iniciando"); // iniciando|leyendo|buscando|manual
-  const [error, setError]   = React.useState(null);
-  const [manual, setManual] = React.useState("");
+  const videoRef  = React.useRef(null);
+  const lienzoRef = React.useRef(null);   // canvas donde caen los cuadros
+  const pararRef  = React.useRef(null);
+  const leerRef   = React.useRef(null);   // el detector, sea cual sea
+  const buscarRef = React.useRef(null);   // último buscarEan, sin re-montar nada
+
+  const [estado, setEstado]   = React.useState("iniciando"); // iniciando|leyendo|buscando|manual
+  const [error, setError]     = React.useState(null);
+  const [tardando, setTardando] = React.useState(false);
+  const [manual, setManual]   = React.useState("");
+  const [motor, setMotor]     = React.useState(null);
 
   const buscarEan = React.useCallback(async (ean) => {
     setEstado("buscando");
@@ -4729,57 +4747,68 @@ function EscanerModal({ token, regionId, onProducto, onClose }) {
     }
   }, [token, regionId, onProducto, onClose]);
 
+  // El efecto de abajo NO puede depender de buscarEan: `onClose` se crea de cero
+  // en cada render del App (`onClose={()=>setShowEscaner(false)}`), así que
+  // buscarEan cambia de identidad todo el tiempo. Con [buscarEan] en las
+  // dependencias, cualquier re-render del App apagaba y volvía a prender la
+  // cámara — y el lector nunca llegaba a leer nada. Va por ref: siempre el
+  // último, sin re-montar.
+  buscarRef.current = buscarEan;
+
+  // Un cuadro del video al canvas. Devuelve null mientras el video no tenga
+  // dimensiones reales: pedirle un cuadro antes de eso da una imagen vacía y el
+  // detector "no encuentra nada" para siempre sin decir por qué.
+  function tomarCuadro() {
+    const v = videoRef.current, c = lienzoRef.current;
+    if (!v || !c || !v.videoWidth || !v.videoHeight) return null;
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    c.getContext("2d", { willReadFrequently: true }).drawImage(v, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  // Botón de disparo. El lector ya prueba solo cada 350 ms, pero sin un botón la
+  // pantalla no da ninguna señal de estar haciendo algo, y si no engancha uno se
+  // queda mirando el video sin saber si está roto. Acá el intento es explícito y
+  // la respuesta también.
+  async function capturar() {
+    if (!leerRef.current) return;
+    const c = tomarCuadro();
+    if (!c) { setError("La cámara todavía no está lista, esperá un segundo"); return; }
+    setError(null);
+    const cod = await leerRef.current(c);
+    if (cod) buscarRef.current(cod);
+    else setError("No se leyó el código. Acercate un poco más y que quede derecho y bien iluminado.");
+  }
+
   React.useEffect(() => {
     let vivo = true;
     let stream = null;
 
-    async function arrancar() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setEstado("manual"); setError("Este navegador no da acceso a la cámara"); return;
-      }
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }, audio: false,
-        });
-      } catch (e) {
-        // Permiso denegado o cámara ocupada. No es un error nuestro y no hay
-        // nada que reintentar: se ofrece tipear el número.
-        setEstado("manual");
-        setError("No pudimos abrir la cámara. Escribí el número de abajo del código.");
-        return;
-      }
-      if (!vivo) { stream.getTracks().forEach(t => t.stop()); return; }
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try { await videoRef.current.play(); } catch (e) {}
-      }
-      pararRef.current = () => stream.getTracks().forEach(t => t.stop());
-
-      const formatos = ["ean_13", "ean_8", "upc_a", "upc_e"];
+    // Devuelve una función (canvas) -> código | null, o null si no hay con qué.
+    async function armarLector() {
+      // 1) BarcodeDetector nativo (Android/Chrome). Existe en window en lugares
+      //    donde igual no sirve, así que se le pregunta qué formatos soporta de
+      //    verdad en vez de confiar en que esté declarado. Y se le pasan SOLO
+      //    los que dijo soportar: 'upc_a', por ejemplo, no está en Chrome.
       if ("BarcodeDetector" in window) {
-        let det;
-        try { det = new window.BarcodeDetector({ formats: formatos }); }
-        catch (e) { det = null; }
-        if (det) {
-          setEstado("leyendo");
-          const tic = setInterval(async () => {
-            if (!vivo || !videoRef.current) return;
-            try {
-              const hits = await det.detect(videoRef.current);
-              if (hits && hits.length && hits[0].rawValue) {
-                clearInterval(tic);
-                buscarEan(hits[0].rawValue.replace(/\D/g, ""));
-              }
-            } catch (e) {}
-          }, 400);
-          const previo = pararRef.current;
-          pararRef.current = () => { clearInterval(tic); previo(); };
-          return;
-        }
+        try {
+          const soportados = await window.BarcodeDetector.getSupportedFormats();
+          const quiero = ["ean_13", "ean_8", "upc_a", "upc_e"].filter(f => soportados.includes(f));
+          if (quiero.length) {
+            const det = new window.BarcodeDetector({ formats: quiero });
+            setMotor("nativo");
+            return async (canvas) => {
+              try {
+                const hits = await det.detect(canvas);
+                return hits && hits.length ? String(hits[0].rawValue).replace(/\D/g, "") : null;
+              } catch (e) { return null; }
+            };
+          }
+        } catch (e) { /* sin soporte real: sigue con ZXing */ }
       }
 
-      // Safari y compañía: ZXing por CDN, y sólo acá — no le cargamos 200 KB a
-      // los que tienen el detector nativo.
+      // 2) ZXing por CDN (Safari y compañía). Se baja sólo si hace falta.
       try {
         await new Promise((ok, mal) => {
           if (window.ZXing) return ok();
@@ -4788,24 +4817,102 @@ function EscanerModal({ token, regionId, onProducto, onClose }) {
           s.onload = ok; s.onerror = mal;
           document.head.appendChild(s);
         });
-        if (!vivo) return;
-        const lector = new window.ZXing.BrowserMultiFormatReader();
-        setEstado("leyendo");
-        lector.decodeFromVideoElement(videoRef.current, (result) => {
-          if (result && vivo) buscarEan(String(result.getText()).replace(/\D/g, ""));
+        if (!window.ZXing || !window.ZXing.MultiFormatReader) return null;
+        const lector = new window.ZXing.MultiFormatReader();
+        setMotor("zxing");
+        // Se le arma el bitmap a mano en vez de usar los helpers de <video>/<img>.
+        // Los helpers obligan a pasar por un data URL o por el DOM en CADA
+        // cuadro, que a 1920x1080 y 3 veces por segundo funde un celular; acá el
+        // ImageData que ya tenemos se convierte a luminancia y va directo.
+        //
+        // (decode(canvas) NO sirve: espera un <video> o un <img> y tira
+        // IndexSizeError con un canvas.)
+        return async (canvas) => {
+          try {
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const lum = new Uint8ClampedArray(canvas.width * canvas.height);
+            for (let i = 0, j = 0; i < id.data.length; i += 4, j++) {
+              lum[j] = (id.data[i] * 0.299 + id.data[i+1] * 0.587 + id.data[i+2] * 0.114) | 0;
+            }
+            const fuente = new window.ZXing.RGBLuminanceSource(lum, canvas.width, canvas.height);
+            const bmp = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(fuente));
+            const r = lector.decode(bmp);
+            return r ? String(r.getText()).replace(/\D/g, "") : null;
+          } catch (e) { return null; }   // NotFoundException = no hay código en el cuadro
+          finally { try { lector.reset(); } catch (e) {} }
+        };
+      } catch (e) { return null; }
+    }
+
+    async function arrancar() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setEstado("manual"); setError("Este navegador no da acceso a la cámara"); return;
+      }
+      try {
+        // Se pide la mayor resolución posible: un código de barras necesita
+        // bastantes píxeles por barra para leerse, y a 640x480 sólo engancha si
+        // uno lo pega al lente.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" },
+                   width:  { ideal: 1920 },
+                   height: { ideal: 1080 } },
+          audio: false,
         });
-        const previo = pararRef.current;
-        pararRef.current = () => { try { lector.reset(); } catch (e) {} previo(); };
       } catch (e) {
         setEstado("manual");
-        setError("Tu navegador no puede leer códigos. Escribí el número de abajo del código.");
+        setError("No pudimos abrir la cámara. Escribí el número de abajo del código.");
+        return;
       }
+      if (!vivo) { stream.getTracks().forEach(t => t.stop()); return; }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        try { await videoRef.current.play(); } catch (e) { /* autoplay quisquilloso */ }
+      }
+      pararRef.current = () => stream.getTracks().forEach(t => t.stop());
+
+      const leer = await armarLector();
+      if (!vivo) return;
+      if (!leer) {
+        setEstado("manual");
+        setError("Tu navegador no puede leer códigos. Escribí el número de abajo del código.");
+        return;
+      }
+      leerRef.current = leer;
+      setEstado("leyendo");
+
+      // Si a los 12 segundos no enganchó, se lo decimos en vez de dejarlo
+      // mirando un video que no reacciona.
+      const avisoLento = setTimeout(() => { if (vivo) setTardando(true); }, 12000);
+
+      let ocupado = false;
+      const tic = setInterval(async () => {
+        if (!vivo || ocupado) return;
+        const c = tomarCuadro();
+        if (!c) return;
+        ocupado = true;
+        try {
+          const cod = await leer(c);
+          if (cod && vivo) {
+            clearInterval(tic);
+            clearTimeout(avisoLento);
+            buscarRef.current(cod);
+          }
+        } finally { ocupado = false; }
+      }, 350);
+
+      const previo = pararRef.current;
+      pararRef.current = () => { clearInterval(tic); clearTimeout(avisoLento); previo(); };
     }
 
     arrancar();
-    return () => { vivo = false; if (pararRef.current) pararRef.current();
-                   else if (stream) stream.getTracks().forEach(t => t.stop()); };
-  }, [buscarEan]);
+    return () => {
+      vivo = false;
+      if (pararRef.current) pararRef.current();
+      else if (stream) stream.getTracks().forEach(t => t.stop());
+    };
+  }, []);   // ← una sola vez. Ver el comentario de buscarRef.
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -4819,16 +4926,31 @@ function EscanerModal({ token, regionId, onProducto, onClose }) {
 
           {estado !== "manual" && (
             <>
-              <video ref={videoRef} className="tk-video" playsInline muted autoPlay/>
+              <div className="tk-camara">
+                <video ref={videoRef} className="tk-video" playsInline muted autoPlay/>
+                <div className="tk-mira"/>
+              </div>
+              <canvas ref={lienzoRef} style={{display:"none"}}/>
               <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.55,marginTop:11}}>
                 {estado === "buscando"
                   ? "Buscando el producto…"
-                  : "Apuntá al código de barras del envase. Te decimos en qué súper está más barato."}
+                  : "Apuntá al código de barras, que entre dentro del recuadro."}
               </p>
+              <button className="tk-cta" onClick={capturar} disabled={estado === "buscando"}>
+                Leer el código ahora
+              </button>
+              {tardando && (
+                <div className="tk-alerta" style={{marginTop:12,marginBottom:0}}>
+                  ¿No engancha? Suele ser por poca luz o por estar demasiado cerca.
+                  Probá a unos 15 cm, con el código derecho — o escribí el número acá abajo.
+                </div>
+              )}
             </>
           )}
 
-          <div className="modal-section-title">O escribí el número</div>
+          <div className="modal-section-title">
+            {estado === "manual" ? "Escribí el número del código" : "O escribí el número"}
+          </div>
           <div style={{display:"flex",gap:8}}>
             <input className="tk-buscar" value={manual} inputMode="numeric"
                    placeholder="7790895067556"
