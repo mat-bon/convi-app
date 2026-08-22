@@ -238,7 +238,7 @@
     .header-search-wrap { flex: 1; max-width: 520px; position: relative; }
     .header-search-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
     .header-search-wrap input {
-      width: 100%; padding: 11px 16px 11px 42px; font-size: 13.5px;
+      width: 100%; padding: 11px 42px 11px 42px; font-size: 13.5px;
       border: 1.5px solid var(--border); border-radius: 999px;
       background: var(--surface-2); outline: none; font-family: inherit; font-weight: 500;
       color: var(--text-primary);
@@ -247,6 +247,15 @@
     .header-search-wrap input:hover { border-color: #CBD2C2; }
     .header-search-wrap input:focus { border-color: var(--accent); background: var(--surface); box-shadow: var(--ring); }
     .header-search-wrap input::placeholder { color: var(--text-muted); font-weight: 500; }
+    .header-scan {
+      position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .header-scan:hover { background: var(--surface); color: var(--accent-dark); }
+    .header-scan:active { transform: translateY(-50%) scale(0.92); }
 
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .header-btn {
@@ -1087,6 +1096,91 @@
     }
     .lista-btn:hover { background: var(--surface-2); color: var(--text-primary); }
     .lista-btn.danger:hover { background: var(--danger-light); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+
+    /* Ticket y escáner ---------------------------------------------------- */
+    .tk-supers { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0 4px; }
+    .tk-super {
+      padding: 8px 13px; border-radius: 999px; border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 12.5px; font-weight: 700;
+      color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .tk-super:hover { border-color: var(--accent); color: var(--text-primary); }
+    .tk-super.on {
+      background: var(--ink); color: #fff; border-color: var(--ink);
+    }
+    .tk-cta {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; margin-top: 18px; padding: 14px 20px; border: none;
+      background: var(--ink); color: #fff; border-radius: var(--radius);
+      font-size: 13.5px; font-weight: 800; font-family: inherit; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tk-cta:hover:not(:disabled) { background: #1E2922; transform: translateY(-1px); }
+    .tk-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tk-cta.sec { background: var(--surface-2); color: var(--text-primary); }
+    .tk-cta.sec:hover:not(:disabled) { background: var(--border-light); transform: none; }
+
+    .tk-fila {
+      display: flex; align-items: center; gap: 11px; padding: 9px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .tk-fila:last-child { border-bottom: none; }
+    .tk-check {
+      width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #fff; font-weight: 800; transition: all 0.15s;
+    }
+    .tk-check.on { background: var(--ink); border-color: var(--ink); }
+    .tk-img {
+      width: 38px; height: 38px; border-radius: 8px; object-fit: contain;
+      background: var(--surface-2); flex-shrink: 0;
+    }
+    .tk-nombre { font-size: 12.5px; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
+    .tk-desc {
+      font-size: 10.5px; color: var(--text-muted); margin-top: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .tk-cant {
+      margin-left: auto; flex-shrink: 0; font-size: 12px; font-weight: 800;
+      color: var(--text-secondary); background: var(--surface-2);
+      padding: 3px 9px; border-radius: 999px;
+    }
+    .tk-alerta {
+      background: var(--info-light); border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--radius); padding: 11px 13px; font-size: 12px;
+      line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px;
+    }
+    .tk-alerta.warn { background: var(--danger-light); }
+    .tk-buscar {
+      width: 100%; padding: 9px 12px; border-radius: var(--radius);
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-size: 12.5px; font-family: inherit; color: var(--text-primary);
+    }
+    .tk-sug {
+      display: block; width: 100%; text-align: left; padding: 8px 10px;
+      border: none; background: none; font-family: inherit; cursor: pointer;
+      font-size: 12px; color: var(--text-primary); border-radius: 7px;
+    }
+    .tk-sug:hover { background: var(--surface-2); }
+    .tk-video {
+      width: 100%; border-radius: var(--radius-lg); background: #000;
+      aspect-ratio: 4/3; object-fit: cover; display: block;
+    }
+    .tk-barra {
+      height: 5px; background: var(--border-light); border-radius: 999px;
+      overflow: hidden; margin: 12px auto 0; max-width: 240px;
+    }
+    .tk-barra > div {
+      height: 100%; background: var(--ink); border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+    .tk-spinner {
+      width: 26px; height: 26px; border: 3px solid var(--border);
+      border-top-color: var(--ink); border-radius: 50%;
+      animation: tkgira 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes tkgira { to { transform: rotate(360deg); } }
 
     /* Resumen: va FUERA del scroll horizontal a propósito. Como las columnas se
        ordenan por cobertura y no por precio, el súper más barato puede quedar
@@ -2209,6 +2303,10 @@ const CAT_LABELS = Object.fromEntries(Object.entries(CATEGORIAS).map(([k,v]) => 
 const SUBCAT_LABELS = Object.fromEntries(Object.values(CATEGORIAS).flatMap(v => Object.entries(v.subs)));
 
 function fmt(n) { return n != null ? "$" + Math.round(n).toLocaleString("es-AR") : "—"; }
+// Igual que fmt pero sin el signo: para contadores, no para plata. El locale
+// es el mismo a propósito — el separador de miles tiene que ser el punto en
+// toda la app, así "100.756 precios" y "$3.490" se leen parejo.
+function fmtNum(n) { return (n != null ? n : 0).toLocaleString("es-AR"); }
 
 function relTime(ts) {
   if (!ts) return null;
@@ -3042,14 +3140,14 @@ function Paginacion({ paginaActual, totalPaginas, onCambiar }) {
       <button className="page-btn" onClick={()=>onCambiar(paginaActual-1)} disabled={paginaActual===1}>←</button>
       {items.map((item,i) => item==="..."
         ? <span key={"e"+i} style={{color:"var(--text-muted)",padding:"0 4px",fontSize:13,fontWeight:700}}>...</span>
-        : <button key={item} className={"page-btn "+(item===paginaActual?"active":"")} onClick={()=>onCambiar(item)}>{item}</button>
+        : <button key={item} className={"page-btn "+(item===paginaActual?"active":"")} onClick={()=>onCambiar(item)}>{fmtNum(item)}</button>
       )}
       <div className="page-input-wrap">
         <span>Ir a</span>
         <input type="number" min="1" max={totalPaginas} value={inputVal}
           onChange={e=>setInputVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&irAPagina()} onBlur={irAPagina}
           className="page-input"/>
-        <span>de {totalPaginas}</span>
+        <span>de {fmtNum(totalPaginas)}</span>
       </div>
       <button className="page-btn" onClick={()=>onCambiar(paginaActual+1)} disabled={paginaActual===totalPaginas}>→</button>
     </div>
@@ -4172,6 +4270,579 @@ function MediosPagoModal({ token, onClose, onGuardado }) {
 }
 
 // ---------------------------------------------------------------------------
+// Cámara: cargar un ticket y escanear un código de barras
+// ---------------------------------------------------------------------------
+
+// La foto de un celular moderno pesa 3-5 MB y llega a 4000px de lado. A la API
+// se le manda a 1600px, que es de sobra para leer un ticket y baja el subido a
+// ~300 KB: con datos móviles en la puerta del súper, la diferencia entre que
+// funcione y que no.
+function comprimirFoto(file, maxLado = 1600, calidad = 0.72) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width  = Math.max(1, Math.round(img.width  * escala));
+      c.height = Math.max(1, Math.round(img.height * escala));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("compresion")), "image/jpeg", calidad);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("lectura")); };
+    img.src = url;
+  });
+}
+
+// OCR en el celular del usuario. Cuesta CERO: no hay servidor ni modelo de por
+// medio, el reconocimiento lo hace el navegador y al backend sólo le mandamos
+// el texto.
+//
+// Que esto alcance depende de que acá sólo hagan falta DÍGITOS: la descripción
+// es una etiqueta para mostrar, no decide qué producto es. Y los códigos se
+// pueden validar (dígito verificador del EAN, o existir en el catálogo), así
+// que un OCR que se equivoca no mete un producto equivocado en silencio.
+const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+
+function cargarTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  return new Promise((ok, mal) => {
+    const s = document.createElement("script");
+    s.src = TESSERACT_CDN;
+    s.onload = () => window.Tesseract ? ok(window.Tesseract) : mal(new Error("sin Tesseract"));
+    s.onerror = () => mal(new Error("no se pudo bajar el lector"));
+    document.head.appendChild(s);
+  });
+}
+
+// El preprocesado es lo que decide si el ticket se lee o no. Una foto de papel
+// térmico tiene poco contraste y sombras del pliegue; Tesseract sobre el JPEG
+// crudo devuelve basura, y sobre la misma imagen binarizada anda bastante bien.
+//
+// Se sube a 2000px (más resolución = más definición de dígito, y como no se
+// sube a ningún lado el peso no importa), se pasa a gris y se binariza con
+// umbral LOCAL: un umbral global tira a negro la mitad de la foto en cuanto hay
+// una sombra, que es lo normal en un ticket apoyado en la mesa.
+function prepararParaOCR(file, maxLado = 2000) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width  = Math.max(1, Math.round(img.width  * escala));
+      c.height = Math.max(1, Math.round(img.height * escala));
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+
+      const datos = ctx.getImageData(0, 0, c.width, c.height);
+      const px = datos.data, ancho = c.width, alto = c.height;
+
+      // 1) A gris, con los pesos de luminancia.
+      const gris = new Uint8ClampedArray(ancho * alto);
+      for (let i = 0, g = 0; i < px.length; i += 4, g++) {
+        gris[g] = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
+      }
+
+      // 2) Umbral local: cada píxel se compara contra el promedio de su
+      //    entorno, así una sombra que oscurece toda una zona no se la come.
+      //    El promedio sale de una imagen integral, que lo hace O(1) por píxel
+      //    en vez de O(radio²) — sin esto son varios segundos en un celular.
+      const suma = new Float64Array((ancho + 1) * (alto + 1));
+      for (let y = 0; y < alto; y++) {
+        let fila = 0;
+        for (let x = 0; x < ancho; x++) {
+          fila += gris[y * ancho + x];
+          suma[(y + 1) * (ancho + 1) + (x + 1)] = suma[y * (ancho + 1) + (x + 1)] + fila;
+        }
+      }
+      const radio = Math.max(8, Math.round(ancho / 40));
+      for (let y = 0; y < alto; y++) {
+        for (let x = 0; x < ancho; x++) {
+          const x0 = Math.max(0, x - radio), y0 = Math.max(0, y - radio);
+          const x1 = Math.min(ancho - 1, x + radio), y1 = Math.min(alto - 1, y + radio);
+          const n = (x1 - x0 + 1) * (y1 - y0 + 1);
+          const total = suma[(y1 + 1) * (ancho + 1) + (x1 + 1)]
+                      - suma[y0 * (ancho + 1) + (x1 + 1)]
+                      - suma[(y1 + 1) * (ancho + 1) + x0]
+                      + suma[y0 * (ancho + 1) + x0];
+          // El -8 de margen evita que el ruido del papel en blanco se vuelva
+          // texto: sólo gana el negro que es claramente más oscuro que su zona.
+          const v = gris[y * ancho + x] * n < total * 0.92 - 8 * n ? 0 : 255;
+          const i = (y * ancho + x) * 4;
+          px[i] = px[i + 1] = px[i + 2] = v;
+          px[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(datos, 0, 0);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("canvas")), "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("lectura")); };
+    img.src = url;
+  });
+}
+
+async function ocrLocal(file, onProgreso) {
+  const Tesseract = await cargarTesseract();
+  const imagen = await prepararParaOCR(file);
+  const { data } = await Tesseract.recognize(imagen, "spa+eng", {
+    logger: m => {
+      if (m.status === "recognizing text" && onProgreso) onProgreso(m.progress || 0);
+    },
+  });
+  return data.text || "";
+}
+
+// Buscador para las líneas que el ticket no pudo resolver (las del mostrador de
+// carnicería, sobre todo). No hace falta ningún motor de matching nuevo: es el
+// buscador que la app ya tiene, con la descripción del ticket como punto de
+// partida. Convierte "no se pudieron cargar 4 productos" en "cargá estos 4 de
+// a un toque", que es una pantalla completamente distinta para el usuario.
+function BuscarManual({ token, descripcion, onElegir }) {
+  // De "ROAST.BEEF.ASIS.XK" arrancamos con "ROAST": la primera palabra larga es
+  // casi siempre el rubro, y las que siguen son abreviaturas que no matchean.
+  const inicial = (descripcion || "").split(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]+/)
+                    .filter(t => t.length >= 3)[0] || "";
+  const [q, setQ] = React.useState(inicial);
+  const [res, setRes] = React.useState([]);
+  const [buscando, setBuscando] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!q || q.trim().length < 3) { setRes([]); return; }
+    let vigente = true;
+    setBuscando(true);
+    const t = setTimeout(() => {
+      fetch(`${API}/productos?busqueda=${encodeURIComponent(q.trim())}&por_pagina=6`,
+            { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        .then(r => r.ok ? r.json() : { productos: [] })
+        .then(d => { if (vigente) { setRes(d.productos || []); setBuscando(false); } })
+        .catch(() => { if (vigente) { setRes([]); setBuscando(false); } });
+    }, 350);
+    return () => { vigente = false; clearTimeout(t); };
+  }, [q, token]);
+
+  return (
+    <div style={{marginTop:6}}>
+      <input className="tk-buscar" value={q} onChange={e => setQ(e.target.value)}
+             placeholder="Buscalo por nombre…" />
+      {buscando && <div style={{fontSize:11,color:"var(--text-muted)",padding:"6px 2px"}}>Buscando…</div>}
+      {res.map(p => (
+        <button key={p.id} className="tk-sug" onClick={() => onElegir(p)}>
+          {p.nombre} <span style={{color:"var(--text-muted)"}}>· {p.supermercado}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
+  // Si el usuario tiene un solo súper tildado, ese es. Con varios no se
+  // adivina: elegir mal la cadena no da "no encontrado", da otro producto
+  // (ver el comentario de ticket.py sobre los códigos compartidos).
+  const [superElegido, setSuperElegido] = React.useState(
+    supersVisibles && supersVisibles.length === 1 ? supersVisibles[0] : null);
+  const [paso, setPaso]   = React.useState("elegir");   // elegir|leyendo|revisar|guardando
+  const [data, setData]   = React.useState(null);
+  const [error, setError] = React.useState(null);
+  const [elegidos, setElegidos] = React.useState(new Set());
+  // La foto queda guardada para poder reintentar con el lector avanzado sin
+  // pedirle al usuario que la saque de nuevo.
+  const [foto, setFoto]         = React.useState(null);
+  const [progreso, setProgreso] = React.useState(0);
+  const [rescatados, setRescatados] = React.useState({});  // índice de sin_match → producto
+  const inputRef = React.useRef(null);
+
+  function alLeer(d) {
+    setData(d);
+    // Todo tildado salvo lo que el control de precio marcó raro: eso lo mira
+    // el usuario antes de que entre.
+    setElegidos(new Set(d.items.filter(i => !i.sospechoso).map(i => i.producto_id)));
+    setPaso("revisar");
+  }
+
+  // Camino PRIMARIO y gratis: el OCR corre acá, en el celular. Al backend le
+  // mandamos texto, no la foto — no hay ninguna llamada a un modelo.
+  async function subir(file) {
+    if (!file) return;
+    setFoto(file);
+    setPaso("leyendo"); setError(null); setProgreso(0);
+    try {
+      const texto = await ocrLocal(file, setProgreso);
+      const res = await fetch(`${API}/listas/${listaId}/desde-texto`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ supermercado: superElegido, texto }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "No pudimos leer el ticket"); setPaso("elegir"); return; }
+      alLeer(d);
+    } catch (e) {
+      setError("No pudimos leer el ticket en este teléfono");
+      setPaso("elegir");
+    }
+  }
+
+  // Plan B, y sólo si el servidor dice que está habilitado: la foto se manda al
+  // modelo de visión. Se dispara a mano desde la pantalla de revisión, nunca
+  // solo, porque esta es la que cuesta plata por uso.
+  async function reintentarConIA() {
+    if (!foto) return;
+    setPaso("leyendo"); setError(null); setProgreso(null);
+    try {
+      const blob = await comprimirFoto(foto);
+      const fd = new FormData();
+      fd.append("supermercado", superElegido);
+      fd.append("foto", blob, "ticket.jpg");
+      const res = await fetch(`${API}/listas/${listaId}/desde-ticket`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd,
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "No pudimos leer el ticket"); setPaso("revisar"); return; }
+      alLeer(d);
+    } catch (e) {
+      setError("No pudimos procesar la foto");
+      setPaso("revisar");
+    }
+  }
+
+  function alternar(pid) {
+    setElegidos(prev => {
+      const s = new Set(prev);
+      s.has(pid) ? s.delete(pid) : s.add(pid);
+      return s;
+    });
+  }
+
+  async function guardar() {
+    setPaso("guardando");
+    const items = data.items
+      .filter(i => elegidos.has(i.producto_id))
+      .map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad }));
+    Object.entries(rescatados).forEach(([idx, p]) => {
+      items.push({ producto_id: p.id, cantidad: data.sin_match[idx]?.cantidad || 1 });
+    });
+    try {
+      const res = await fetch(`${API}/listas/${listaId}/items-batch`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        // uso_id cierra la fila del medidor con lo que realmente se agregó.
+        body: JSON.stringify({ items, uso_id: data.uso_id || null }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "No se pudo guardar"); setPaso("revisar"); return; }
+      onCargado(d);
+      onClose();
+    } catch (e) { setError("No se pudo guardar"); setPaso("revisar"); }
+  }
+
+  const totalAGuardar = elegidos.size + Object.keys(rescatados).length;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">🧾 Cargar desde un ticket</div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+
+          {error && <div className="tk-alerta warn">{error}</div>}
+
+          {paso === "elegir" && (
+            <>
+              <p style={{fontSize:12.5,color:"var(--text-secondary)",lineHeight:1.6}}>
+                Sacale una foto al detalle del ticket y te cargamos los productos en la lista.
+                La foto <strong>se lee en tu teléfono y no se sube a ningún lado</strong>.
+                Primero decinos <strong>de qué súper es</strong>: algunos tickets identifican
+                el producto con un código interno de la cadena, así que con el súper
+                equivocado cargaríamos otra cosa.
+              </p>
+              <div className="tk-supers">
+                {(supersVisibles && supersVisibles.length ? supersVisibles : SUPER_TODOS).map(s => (
+                  <button key={s} className={`tk-super ${superElegido === s ? "on" : ""}`}
+                          onClick={() => setSuperElegido(s)}>
+                    {superElegido === s ? "✓ " : ""}{s}
+                  </button>
+                ))}
+              </div>
+              <input ref={inputRef} type="file" accept="image/*" capture="environment"
+                     style={{display:"none"}}
+                     onChange={e => subir(e.target.files && e.target.files[0])}/>
+              <button className="tk-cta" disabled={!superElegido}
+                      onClick={() => inputRef.current && inputRef.current.click()}>
+                📷 {superElegido ? `Sacarle la foto al ticket de ${superElegido}` : "Elegí el súper primero"}
+              </button>
+            </>
+          )}
+
+          {paso === "leyendo" && (
+            <div style={{textAlign:"center",padding:"30px 0"}}>
+              <div className="tk-spinner"/>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>
+                Leyendo el ticket…
+              </div>
+              <div style={{fontSize:11.5,color:"var(--text-muted)",marginTop:5}}>
+                {progreso === null
+                  ? "Tarda unos segundos"
+                  : "Se lee acá en tu teléfono, no se sube la foto"}
+              </div>
+              {progreso !== null && (
+                <div className="tk-barra"><div style={{width:`${Math.round(progreso*100)}%`}}/></div>
+              )}
+            </div>
+          )}
+
+          {(paso === "revisar" || paso === "guardando") && data && (
+            <>
+              {data.cadena_dudosa && (
+                <div className="tk-alerta warn">
+                  Casi ningún código de este ticket existe en <strong>{data.supermercado}</strong>.
+                  Puede que sea de otro súper — revisá antes de agregarlo.
+                </div>
+              )}
+              <div className="tk-alerta">
+                Reconocimos <strong>{data.items.length}</strong> de {data.total_lineas} productos.
+                Destildá lo que no quieras agregar.
+              </div>
+
+              {/* El OCR del teléfono es gratis pero no siempre alcanza: con papel
+                  arrugado o poca luz se le escapan dígitos. Si rindió poco, se le
+                  ofrece el lector avanzado — que cuesta, y por eso se dispara a
+                  mano y sólo si está habilitado en el servidor. */}
+              {data.via === "ocr" && data.fallback_disponible &&
+               data.total_lineas > 0 && data.items.length < data.total_lineas * 0.6 && (
+                <div className="tk-alerta warn">
+                  Se nos escaparon varios. Suele pasar con el ticket arrugado o con
+                  poca luz — probá con el lector avanzado, que lee bastante mejor.
+                  <button className="tk-cta sec" style={{marginTop:10}}
+                          onClick={reintentarConIA}>
+                    ✨ Reintentar con el lector avanzado
+                  </button>
+                </div>
+              )}
+              {data.via === "ocr" && !data.fallback_disponible &&
+               data.total_lineas > 0 && data.items.length < data.total_lineas * 0.6 && (
+                <div className="tk-alerta warn">
+                  Se nos escaparon varios. Probá sacando la foto con el ticket bien
+                  estirado y buena luz, o cargalos a mano acá abajo.
+                </div>
+              )}
+
+              {data.items.map(i => (
+                <div key={i.producto_id} className="tk-fila">
+                  <div className={`tk-check ${elegidos.has(i.producto_id) ? "on" : ""}`}
+                       onClick={() => alternar(i.producto_id)}>
+                    {elegidos.has(i.producto_id) ? "✓" : ""}
+                  </div>
+                  {i.imagen_url
+                    ? <img className="tk-img" src={i.imagen_url} alt="" loading="lazy"/>
+                    : <div className="tk-img"/>}
+                  <div style={{minWidth:0,flex:1}}>
+                    <div className="tk-nombre">{i.nombre}</div>
+                    <div className="tk-desc">
+                      {i.descripcion}
+                      {i.sospechoso && <span style={{color:"var(--danger)",fontWeight:800}}>
+                        {" "}· el precio no coincide, verificá
+                      </span>}
+                    </div>
+                  </div>
+                  {i.cantidad > 1 && <div className="tk-cant">×{i.cantidad}</div>}
+                </div>
+              ))}
+
+              {data.sin_match.length > 0 && (
+                <>
+                  <div className="modal-section-title">
+                    Estos no los pudimos identificar ({data.sin_match.length})
+                  </div>
+                  <p style={{fontSize:11.5,color:"var(--text-muted)",lineHeight:1.55,marginBottom:8}}>
+                    Suelen ser los del mostrador de carnicería o fiambrería, que se pesan
+                    en el momento y no usan el código del catálogo. Buscalos acá si los querés.
+                  </p>
+                  {data.sin_match.map((s, idx) => (
+                    <div key={idx} style={{padding:"9px 0",borderBottom:"1px solid var(--border-light)"}}>
+                      <div className="tk-desc" style={{fontSize:11.5}}>{s.descripcion}</div>
+                      {rescatados[idx]
+                        ? <div style={{display:"flex",alignItems:"center",gap:8,marginTop:5}}>
+                            <span className="tk-nombre" style={{flex:1}}>✓ {rescatados[idx].nombre}</span>
+                            <button className="lista-btn"
+                                    onClick={() => setRescatados(p => { const n={...p}; delete n[idx]; return n; })}>
+                              Quitar
+                            </button>
+                          </div>
+                        : <BuscarManual token={token} descripcion={s.descripcion}
+                                        onElegir={p => setRescatados(prev => ({...prev, [idx]: p}))}/>}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <button className="tk-cta" disabled={paso === "guardando" || totalAGuardar === 0}
+                      onClick={guardar}>
+                {paso === "guardando" ? "Agregando…"
+                  : totalAGuardar === 0 ? "No hay nada tildado"
+                  : `Agregar ${totalAGuardar} producto${totalAGuardar !== 1 ? "s" : ""} a la lista`}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Escáner de código de barras
+// ---------------------------------------------------------------------------
+// Acá no hay nada que adivinar: el código de barras del envase ES el EAN, que
+// es la clave con la que ya está indexada la base (31.884 EAN-13 reales). O
+// sea que esto es un lookup, no un matching — al revés que el ticket.
+//
+// Se lee en el celular, no en el servidor: BarcodeDetector es nativo en Chrome
+// y Android. Safari no lo trae, así que ahí se baja ZXing sólo cuando hace
+// falta, y si tampoco se puede queda la carga a mano — que siempre funciona.
+function EscanerModal({ token, regionId, onProducto, onClose }) {
+  const videoRef = React.useRef(null);
+  const pararRef = React.useRef(null);
+  const [estado, setEstado] = React.useState("iniciando"); // iniciando|leyendo|buscando|manual
+  const [error, setError]   = React.useState(null);
+  const [manual, setManual] = React.useState("");
+
+  const buscarEan = React.useCallback(async (ean) => {
+    setEstado("buscando");
+    try {
+      const url = `${API}/productos/por-ean/${ean}` + (regionId ? `?region_id=${regionId}` : "");
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (res.status === 404) {
+        setError(`No tenemos el producto ${ean} en el catálogo`);
+        setEstado("leyendo");
+        return;
+      }
+      if (!res.ok) throw new Error();
+      onProducto(await res.json());
+      onClose();
+    } catch (e) {
+      setError("No se pudo consultar el producto");
+      setEstado("leyendo");
+    }
+  }, [token, regionId, onProducto, onClose]);
+
+  React.useEffect(() => {
+    let vivo = true;
+    let stream = null;
+
+    async function arrancar() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setEstado("manual"); setError("Este navegador no da acceso a la cámara"); return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } }, audio: false,
+        });
+      } catch (e) {
+        // Permiso denegado o cámara ocupada. No es un error nuestro y no hay
+        // nada que reintentar: se ofrece tipear el número.
+        setEstado("manual");
+        setError("No pudimos abrir la cámara. Escribí el número de abajo del código.");
+        return;
+      }
+      if (!vivo) { stream.getTracks().forEach(t => t.stop()); return; }
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        try { await videoRef.current.play(); } catch (e) {}
+      }
+      pararRef.current = () => stream.getTracks().forEach(t => t.stop());
+
+      const formatos = ["ean_13", "ean_8", "upc_a", "upc_e"];
+      if ("BarcodeDetector" in window) {
+        let det;
+        try { det = new window.BarcodeDetector({ formats: formatos }); }
+        catch (e) { det = null; }
+        if (det) {
+          setEstado("leyendo");
+          const tic = setInterval(async () => {
+            if (!vivo || !videoRef.current) return;
+            try {
+              const hits = await det.detect(videoRef.current);
+              if (hits && hits.length && hits[0].rawValue) {
+                clearInterval(tic);
+                buscarEan(hits[0].rawValue.replace(/\D/g, ""));
+              }
+            } catch (e) {}
+          }, 400);
+          const previo = pararRef.current;
+          pararRef.current = () => { clearInterval(tic); previo(); };
+          return;
+        }
+      }
+
+      // Safari y compañía: ZXing por CDN, y sólo acá — no le cargamos 200 KB a
+      // los que tienen el detector nativo.
+      try {
+        await new Promise((ok, mal) => {
+          if (window.ZXing) return ok();
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+          s.onload = ok; s.onerror = mal;
+          document.head.appendChild(s);
+        });
+        if (!vivo) return;
+        const lector = new window.ZXing.BrowserMultiFormatReader();
+        setEstado("leyendo");
+        lector.decodeFromVideoElement(videoRef.current, (result) => {
+          if (result && vivo) buscarEan(String(result.getText()).replace(/\D/g, ""));
+        });
+        const previo = pararRef.current;
+        pararRef.current = () => { try { lector.reset(); } catch (e) {} previo(); };
+      } catch (e) {
+        setEstado("manual");
+        setError("Tu navegador no puede leer códigos. Escribí el número de abajo del código.");
+      }
+    }
+
+    arrancar();
+    return () => { vivo = false; if (pararRef.current) pararRef.current();
+                   else if (stream) stream.getTracks().forEach(t => t.stop()); };
+  }, [buscarEan]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:440}}>
+        <div className="modal-header">
+          <div className="modal-title">📷 Escanear un producto</div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {error && <div className="tk-alerta warn">{error}</div>}
+
+          {estado !== "manual" && (
+            <>
+              <video ref={videoRef} className="tk-video" playsInline muted autoPlay/>
+              <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.55,marginTop:11}}>
+                {estado === "buscando"
+                  ? "Buscando el producto…"
+                  : "Apuntá al código de barras del envase. Te decimos en qué súper está más barato."}
+              </p>
+            </>
+          )}
+
+          <div className="modal-section-title">O escribí el número</div>
+          <div style={{display:"flex",gap:8}}>
+            <input className="tk-buscar" value={manual} inputMode="numeric"
+                   placeholder="7790895067556"
+                   onChange={e => setManual(e.target.value.replace(/\D/g, "").slice(0, 14))}/>
+            <button className="lista-btn" disabled={manual.length < 8}
+                    onClick={() => buscarEan(manual)}>Buscar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ListaView — grilla producto x supermercado
 // ---------------------------------------------------------------------------
 // Una fila por producto, una columna por súper. Las columnas vienen ordenadas
@@ -4192,6 +4863,10 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
   const [showPagos, setShowPagos] = React.useState(false);
   const [misPagos, setMisPagos]   = React.useState([]);
   const [ficha, setFicha]         = React.useState(null);
+  // showTicket guarda el id de la lista donde va a cargar, no un booleano: la
+  // lista puede haberse creado recién al abrir el modal (ver asegurarLista) y
+  // el setState de listaActivaId todavía no se vería desde acá.
+  const [showTicket, setShowTicket]   = React.useState(null);
   // Feedback del botón de compartir. Va acá arriba y no como variable local
   // porque el fallback a portapapeles no abre ninguna hoja del sistema: sin un
   // cambio visible, al usuario le parece que el botón no hizo nada.
@@ -4373,6 +5048,31 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
     } catch (e) {}
   }
 
+  // El ticket y el escáner tienen que poder ser lo PRIMERO que hace alguien que
+  // recién entra, así que no los frenamos pidiéndole que cree una lista antes:
+  // si no tiene ninguna, se le crea al vuelo (mismo criterio que toggleLista).
+  async function asegurarLista() {
+    if (listaActivaId) return listaActivaId;
+    try {
+      const res = await fetch(`${API}/listas`, {
+        method: "POST", headers: authJson, body: JSON.stringify({ nombre: "Mi lista" }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        if (res.status === 402) { onPlanCambio && onPlanCambio(); onPedirPlan && onPedirPlan(); }
+        else setAviso(d.detail || "No se pudo crear la lista");
+        return null;
+      }
+      onListasChange(); setListaActivaId(d.id);
+      return d.id;
+    } catch (e) { setAviso("No se pudo crear la lista"); return null; }
+  }
+
+  async function abrirTicket() {
+    const id = await asegurarLista();
+    if (id) setShowTicket(id);
+  }
+
   async function borrarLista() {
     if (!window.confirm("¿Borrar esta lista? No se puede deshacer.")) return;
     try {
@@ -4394,6 +5094,10 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
         </select>
       )}
       <button className="lista-btn" onClick={nuevaLista}>+ Nueva lista</button>
+      <button className="lista-btn" onClick={abrirTicket}
+              title="Sacale una foto al ticket y te cargamos los productos">
+        🧾<span className="btn-label"> Cargar ticket</span>
+      </button>
       {listaActivaId && <button className="lista-btn danger" onClick={borrarLista}>Borrar</button>}
       <button className="lista-btn" onClick={() => setShowPagos(true)}
         style={misPagos.length ? {borderColor:"rgba(107,78,125,0.35)", color:"#6B4E7D"} : null}
@@ -4409,6 +5113,28 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
         <MediosPagoModal token={token} onClose={() => setShowPagos(false)}
           onGuardado={ents => { setMisPagos(ents); cargar(); }}/>
       )}
+      {showTicket && (
+        <TicketModal token={token} listaId={showTicket} supersVisibles={supersVisibles}
+          onClose={() => setShowTicket(null)}
+          onCargado={d => {
+            const partes = [];
+            if (d.agregados)    partes.push(`${d.agregados} producto${d.agregados !== 1 ? "s" : ""}`);
+            if (d.actualizados) partes.push(`${d.actualizados} actualizado${d.actualizados !== 1 ? "s" : ""}`);
+            setAviso(partes.length
+              ? `Cargamos ${partes.join(" y ")}` +
+                (d.sin_lugar ? ` (${d.sin_lugar} no entraron, la lista está llena)` : "")
+              : "Ya estaban todos en la lista");
+            onListasChange(); cargar();
+            setTimeout(() => setAviso(null), 6000);
+          }}/>
+      )}
+      {/* La ficha vive acá por el mismo motivo que el modal de medios de pago:
+          la abren las filas de la grilla, pero TAMBIÉN el escáner, que está en
+          este toolbar y por lo tanto existe en los estados de vacío, carga y
+          error. Con la ficha en el return final, escanear un producto con la
+          lista todavía vacía no mostraba nada. */}
+      {ficha && <Modal producto={ficha} onClose={() => setFicha(null)}
+                       supersFiltro={supersVisibles} regionCodigo={regionCodigo}/>}
     </div>
   );
 
@@ -4822,7 +5548,6 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
       {/* Misma ficha que en la pestaña de productos. Sin onCambiarSuper: acá el
           cambio de súper se hace tocando la celda de la grilla, y ofrecerlo
           también desde el modal haría dos caminos para lo mismo. */}
-      {ficha && <Modal producto={ficha} onClose={() => setFicha(null)} supersFiltro={supersVisibles} regionCodigo={regionCodigo}/>}
     </div>
   );
 }
@@ -5553,6 +6278,7 @@ function App() {
   const [orden, setOrden] = React.useState("popular");
   const [busqueda, setBusqueda] = React.useState("");
   const [modalProducto, setModalProducto] = React.useState(null);
+  const [showEscaner, setShowEscaner]     = React.useState(false);
   const [porPagina, setPorPagina] = React.useState(30);
   const [pagina, setPagina] = React.useState(1);
   const [totalProductos, setTotalProductos] = React.useState(0);
@@ -6128,6 +6854,10 @@ function App() {
           onClose={()=>setShowPlan(false)} onCambio={cargarPlan}/>
       )}
       {modalProducto && <Modal producto={modalProducto} onClose={()=>setModalProducto(null)} supersFiltro={supersVisibles} regionCodigo={regionCodigo}/>}
+      {showEscaner && (
+        <EscanerModal token={token} regionId={regionId}
+          onClose={()=>setShowEscaner(false)} onProducto={setModalProducto}/>
+      )}
 
       {/* Header */}
       <header className="header">
@@ -6143,6 +6873,18 @@ function App() {
           <div className="header-search-wrap">
             <span>🔍</span>
             <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar productos..."/>
+            {/* Escanear es la otra forma de "buscar un producto", así que va acá
+                y no escondido en otra pestaña: parado en la góndola con el
+                producto en la mano, tipear el nombre es el camino largo. */}
+            <button className="header-scan" onClick={()=>setShowEscaner(true)}
+                    title="Escanear el código de barras de un producto"
+                    aria-label="Escanear código de barras">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
+                   stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+                <path d="M7 12h10"/>
+              </svg>
+            </button>
           </div>
 
           <div className="header-actions">
@@ -6156,17 +6898,17 @@ function App() {
 
             <button className={`header-btn ${tab==="favoritos"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
               ❤️<span className="btn-label">Favoritos</span>
-              {stats.favoritos > 0 && <span className="header-btn-badge pink">{stats.favoritos}</span>}
+              {stats.favoritos > 0 && <span className="header-btn-badge pink">{fmtNum(stats.favoritos)}</span>}
             </button>
 
             <button className={`header-btn ${tab==="lista"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("lista");}}>
               📋<span className="btn-label">Mi lista</span>
-              {listaItems.length > 0 && <span className="header-btn-badge">{listaItems.length}</span>}
+              {listaItems.length > 0 && <span className="header-btn-badge">{fmtNum(listaItems.length)}</span>}
             </button>
 
             <button className={`header-btn ${tab==="carrito"?"active":""}`} onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");}}>
               🛒<span className="btn-label">Carrito</span>
-              {totalCarrito > 0 && <span className="header-btn-badge yellow">{totalCarrito}</span>}
+              {totalCarrito > 0 && <span className="header-btn-badge yellow">{fmtNum(totalCarrito)}</span>}
             </button>
 
             {/* Estado del plan. Sólo con el paywall prendido: mientras esté
@@ -6304,15 +7046,15 @@ function App() {
               {/* Stats */}
               <div className="stats-bar">
                 <div className="stat-card" onClick={resetFilters}>
-                  <div className="stat-value accent">{stats.total_productos||0}</div>
+                  <div className="stat-value accent">{fmtNum(stats.total_productos)}</div>
                   <div className="stat-label">Precios monitoreados</div>
                 </div>
                 <div className="stat-card" onClick={()=>{if(!token){setShowAuth(true);return;}setTab("favoritos");}}>
-                  <div className="stat-value success">{stats.favoritos||0}</div>
+                  <div className="stat-value success">{fmtNum(stats.favoritos)}</div>
                   <div className="stat-label">En tu lista de favoritos</div>
                 </div>
                 <div className="stat-card" onClick={()=>{if(!token){setShowAuth(true);return;}setTab("carrito");}}>
-                  <div className="stat-value">{totalCarrito}</div>
+                  <div className="stat-value">{fmtNum(totalCarrito)}</div>
                   <div className="stat-label">En tu carrito</div>
                 </div>
               </div>
@@ -6320,7 +7062,7 @@ function App() {
               {/* Sort bar */}
               <div className="sort-bar">
                 <span className="sort-info">
-                  {loading ? "Cargando..." : <><strong>{totalProductos}</strong> producto{totalProductos!==1?"s":""} · página <strong>{pagina}</strong> de <strong>{totalPaginas}</strong></>}
+                  {loading ? "Cargando..." : <><strong>{fmtNum(totalProductos)}</strong> producto{totalProductos!==1?"s":""} · página <strong>{fmtNum(pagina)}</strong> de <strong>{fmtNum(totalPaginas)}</strong></>}
                   {masBaratoEn && (
                     <button className="sort-info-chip" onClick={()=>setMasBaratoEn(null)}
                       title="Quitar el filtro y volver a ver todos los productos">
