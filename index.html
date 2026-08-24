@@ -4900,6 +4900,10 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
                       {i.sospechoso && <span style={{color:"var(--danger)",fontWeight:800}}>
                         {" "}· el precio no coincide, verificá
                       </span>}
+                      {i.reparado && !i.sospechoso &&
+                        <span style={{color:"var(--warning)",fontWeight:700}}>
+                          {" "}· código borroso, lo dedujimos por el precio
+                        </span>}
                     </div>
                   </div>
                   {i.cantidad > 1 && <div className="tk-cant">×{i.cantidad}</div>}
