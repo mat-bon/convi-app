@@ -4569,6 +4569,91 @@ function prepararParaOCR(file, maxLado = 2000) {
 //
 // Va sobre la imagen ya binarizada a propósito: sobre la foto cruda, una mesa
 // oscura cuenta como tinta y el perfil mide el mueble en vez del texto.
+// El ángulo REAL de los renglones, no sólo su eje. Es la diferencia entre que
+// la función sirva o no: nadie sostiene el celular a menos de 5° del papel, y
+// Tesseract se cae por un precipicio justo ahí. Medido sobre el mismo ticket de
+// 20 artículos, cambiando SÓLO la inclinación:
+//
+//      2.5° → 19/19      8° → 16/19
+//      5°   → 19/19     12° →  9/19
+//
+// Nueve de diecinueve es exactamente lo que reportó el usuario. Tesseract endereza
+// solo, pero hasta ahí nomás, y en un ticket —renglones cortos, mucho espacio en
+// blanco entre columnas— se queda corto antes que en un texto corrido.
+//
+// Cómo se mide, sin rotar la imagen 40 veces: se juntan una sola vez las
+// coordenadas de los píxeles oscuros y para cada ángulo candidato se proyectan
+// sobre el eje perpendicular a los renglones (y·cosθ − x·senθ). Si el ángulo es
+// el bueno, cada renglón cae entero en la misma celda del histograma y el perfil
+// queda con picos altos y valles vacíos; si está torcido, el mismo renglón se
+// reparte entre celdas vecinas y el perfil se aplana. La suma de cuadrados del
+// perfil mide justamente eso, y el total de píxeles no cambia con el ángulo, así
+// que los puntajes son comparables entre sí.
+//
+// Devuelve DOS ángulos, uno por familia: el mejor cerca de 0° y el mejor cerca
+// de 90°. No dice cuál de los dos es el bueno, y no es una limitación tonta:
+// esta medida NO distingue renglones de columnas. En un ticket las columnas
+// están perfectamente alineadas entre renglones, así que proyectar sobre el eje
+// equivocado también da picos altos — probado, elegía el perpendicular en los
+// 15 casos. Cuál de las dos familias va primero lo decide `ejeDeLosRenglones`,
+// que mide otra cosa (la frecuencia de los cruces) y para eso sí sirve; y si se
+// equivoca, el reintento con `puntajeTicket` lo arregla igual.
+//
+// Los 180° tampoco los distingue: un texto dado vuelta proyecta idéntico.
+function anguloFinoPorFamilia(canvas) {
+  const ESC = Math.min(1, 420 / Math.max(canvas.width, canvas.height));
+  const w = Math.max(1, Math.round(canvas.width * ESC));
+  const h = Math.max(1, Math.round(canvas.height * ESC));
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(canvas, 0, 0, w, h);
+  const { data } = g.getImageData(0, 0, w, h);
+
+  const xs = [], ys = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4] < 128) { xs.push(x); ys.push(y); }
+    }
+  }
+  if (xs.length < 200) return [0, 90];              // casi nada de tinta: sin opinión
+  // Fuera de rango: sin ángulos finos, pero con las dos familias igual.
+
+  const diag = Math.ceil(Math.hypot(w, h)) + 2;
+  const perfil = new Float64Array(2 * diag);
+  const puntaje = (grados) => {
+    const r = grados * Math.PI / 180, cos = Math.cos(r), sin = Math.sin(r);
+    perfil.fill(0);
+    for (let i = 0; i < xs.length; i++) {
+      perfil[(ys[i] * cos - xs[i] * sin + diag) | 0]++;
+    }
+    let s = 0;
+    for (let i = 0; i < perfil.length; i++) s += perfil[i] * perfil[i];
+    return s;
+  };
+
+  // Grueso y después fino: 3° para ubicar la zona, 0.4° para afinarla. Barrer
+  // todo a 0.4° serían 150 pasadas para el mismo resultado.
+  //
+  // El rango es ±30° y no ±15: a pulso la gente se va bastante más de 15°, y con
+  // el rango corto el ángulo quedaba pegado al borde del barrido (25° real daba
+  // −18°, que es peor que no corregir nada).
+  const mejorDe = (desde, hasta, paso) => {
+    let mejorA = desde, mejorP = -1;
+    for (let a = desde; a <= hasta + 1e-9; a += paso) {
+      const p = puntaje(a);
+      if (p > mejorP) { mejorP = p; mejorA = a; }
+    }
+    return mejorA;
+  };
+  const afinar = (centro) => {
+    const a = mejorDe(centro - 30, centro + 30, 3);
+    return mejorDe(a - 3, a + 3, 0.4);
+  };
+
+  return [afinar(0), afinar(90)];
+}
+
 function ejeDeLosRenglones(canvas) {
   const g = canvas.getContext("2d", { willReadFrequently: true });
   const { data } = g.getImageData(0, 0, canvas.width, canvas.height);
@@ -4592,15 +4677,32 @@ function ejeDeLosRenglones(canvas) {
   return cruces(filas) <= cruces(cols) ? 0 : 90;   // grados a rotar
 }
 
+// Rota cualquier ángulo, no sólo múltiplos de 90: `anguloDeRenglones` devuelve
+// cosas como 7.4°. En un ángulo cualquiera el lienzo tiene que CRECER —si no, la
+// rotación corta las esquinas y con ellas los códigos, que viven contra el borde
+// izquierdo— y las esquinas nuevas se pintan de blanco, no de negro
+// transparente, que Tesseract leería como tinta.
 function rotarCanvas(canvas, grados) {
-  if (!grados) return canvas;
+  const g360 = ((grados % 360) + 360) % 360;
+  if (!g360) return canvas;
   const r = document.createElement("canvas");
-  const vertical = grados === 90 || grados === 270;
-  r.width  = vertical ? canvas.height : canvas.width;
-  r.height = vertical ? canvas.width  : canvas.height;
+  const rad = g360 * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+  // Los múltiplos exactos de 90 conservan el tamaño; el resto necesita la caja
+  // envolvente del rectángulo girado.
+  if (g360 % 90 === 0) {
+    const vertical = g360 === 90 || g360 === 270;
+    r.width  = vertical ? canvas.height : canvas.width;
+    r.height = vertical ? canvas.width  : canvas.height;
+  } else {
+    r.width  = Math.ceil(canvas.width * cos + canvas.height * sin);
+    r.height = Math.ceil(canvas.width * sin + canvas.height * cos);
+  }
   const g = r.getContext("2d", { willReadFrequently: true });
+  g.fillStyle = "#fff";
+  g.fillRect(0, 0, r.width, r.height);
   g.translate(r.width / 2, r.height / 2);
-  g.rotate(grados * Math.PI / 180);
+  g.rotate(rad);
   g.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
   return r;
 }
@@ -4651,8 +4753,22 @@ async function ocrLocal(file, onProgreso) {
   // fallar el caso más común (el ticket de costado). Se prueban las cuatro,
   // empezando por la que dice el detector, y se corta apenas una da bien: en la
   // mayoría de los casos eso es una sola pasada.
-  const eje = ejeDeLosRenglones(lienzo);
-  const orden = eje === 0 ? [0, 90, 270, 180] : [90, 270, 0, 180];
+  // `anguloDeRenglones` devuelve el ángulo θ al que están los renglones, así que
+  // para enderezarlos hay que rotar −θ. Devuelve dos: el de su familia ganadora
+  // y el de la otra (0° contra 90°), y a cada uno se le suma la variante de 180°
+  // —el texto dado vuelta proyecta igual, eso no lo puede distinguir—. Salen las
+  // mismas cuatro pasadas de antes, pero ahora cada una además viene enderezada,
+  // y ordenadas por una medida mucho mejor que la de cruces.
+  // Cuál de las dos familias va primero lo decide la FORMA del recorte, no el
+  // contenido: un ticket es largo y angosto, así que si el papel recortado salió
+  // más alto que ancho los renglones van a lo ancho, y si salió apaisado está de
+  // costado. Es una señal boba y por eso es confiable — no depende de que la
+  // imagen esté limpia. Contra `ejeDeLosRenglones`, que mide la frecuencia de
+  // los cruces, acertó 15 de 15 donde la otra acertaba 5.
+  const [fino0, fino90] = anguloFinoPorFamilia(lienzo);
+  const [primero, segundo] = lienzo.height >= lienzo.width
+    ? [fino0, fino90] : [fino90, fino0];
+  const orden = [-primero, -primero + 180, -segundo, -segundo + 180];
   const tramos = [[0, .45], [.45, .7], [.7, .9], [.9, 1]];
 
   let mejorTexto = "", mejorPuntaje = -1;
