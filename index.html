@@ -805,7 +805,8 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .modal {
       background: var(--surface); border-radius: var(--radius-xl);
-      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+      width: 100%; max-width: 560px; overflow-y: auto;
+      max-height: 90vh; max-height: min(100%, 90dvh);
       box-shadow: var(--shadow-xl); animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid rgba(255,255,255,0.6);
     }
@@ -836,12 +837,42 @@
     .modal-link:hover { background: #1E2922; transform: translateY(-1px); box-shadow: var(--shadow); }
 
     /* Welcome / onboarding modal */
+    /* El modal es el MARCO y no scrollea; el que scrollea es `.welcome-scroll`,
+       adentro. Así la ✕ —absoluta contra el marco— queda arriba a la derecha en
+       cualquier posición del scroll. Cuando el que scrolleaba era el modal, la
+       cruz se iba con el contenido y para cerrar había que volver hasta arriba.
+
+       El tope de alto va en `dvh`, con `vh` de reserva para navegadores viejos:
+       en Safari de iPhone `vh` mide la ventana SIN las barras del navegador, así
+       que 92vh en un iPhone 13 son 776px contra ~650px visibles. Como el overlay
+       centra, esos ~126px de más se reparten mitad y mitad: arriba se comía la ✕
+       entera y abajo el botón de empezar. El `min()` con 100% ata además el
+       modal a la caja del overlay, que ya descuenta barras y su propio padding. */
     .welcome-modal {
       background: var(--surface); border-radius: var(--radius-xl); position: relative;
-      width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+      width: 100%; max-width: 480px;
+      max-height: 92vh; max-height: min(100%, 92dvh);
+      display: flex; flex-direction: column; overflow: hidden;
       box-shadow: var(--shadow-xl); animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
     }
-    .welcome-close { position: absolute; top: 14px; right: 14px; z-index: 2; }
+    /* `min-height: 0` no es opcional: un flex item no achica por debajo de su
+       contenido, y sin eso el cuerpo empuja el marco más allá del tope de alto
+       (o sea, vuelve el bug). `overscroll-behavior` evita que al llegar al final
+       el scroll siga de largo con la página de atrás. */
+    .welcome-scroll {
+      min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* Ahora el contenido le pasa por abajo, así que la ✕ lleva fondo propio y
+       sombra para no perderse contra el texto. Y pasa de 34 a 40px: no llega a
+       los 44 que pide iOS, pero es el diámetro más grande que no le come aire
+       al cabezal en un teléfono. */
+    .welcome-close {
+      position: absolute; top: 12px; right: 12px; z-index: 3;
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(4px);
+      box-shadow: 0 2px 8px rgba(44,58,49,0.16);
+    }
     /* El cabezal del welcome es la marca principal tal cual: hormiga suelta y
        logotipo sobre salvia, sin cuadrado de por medio. */
     .welcome-hero {
@@ -884,11 +915,12 @@
       display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 11px;
     }
     .welcome-bancos-mas { font-size: 11.5px; font-weight: 800; color: var(--text-muted); }
-    /* El botón se pega abajo del modal. Con los cinco pasos, el bloque de ahorro
-       y el de bancos el contenido pasa de 900px, y el modal está topeado en 92vh:
-       sin esto el CTA del onboarding queda fuera de pantalla hasta que el usuario
-       scrollea. En pantallas donde todo entra, `sticky` no hace nada. El pie
-       lleva el fondo del modal para que el contenido no se vea pasar por debajo. */
+    /* El botón se pega abajo del cuerpo que scrollea. Con los cinco pasos, el
+       bloque de ahorro y el de bancos el contenido pasa de 1000px contra los
+       ~600 que entran en un teléfono: sin esto el CTA del onboarding queda fuera
+       de pantalla hasta que el usuario scrollea. En pantallas donde todo entra,
+       `sticky` no hace nada. El pie lleva el fondo del modal para que el
+       contenido no se vea pasar por debajo. */
     .welcome-pie {
       position: sticky; bottom: 0; background: var(--surface);
       box-shadow: 0 -14px 14px -14px rgba(0,0,0,0.14);
@@ -921,7 +953,8 @@
     /* Legal modal */
     .legal-modal {
       background: var(--surface); border-radius: var(--radius-xl);
-      width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;
+      width: 100%; max-width: 640px; display: flex; flex-direction: column;
+      max-height: 90vh; max-height: min(100%, 90dvh);
       overflow: hidden; box-shadow: var(--shadow-xl); animation: slideUp 0.28s cubic-bezier(0.16,1,0.3,1);
     }
     .legal-header {
@@ -1705,6 +1738,7 @@
     .confirm-modal {
       background: var(--surface); border-radius: var(--radius-xl);
       width: 100%; max-width: 460px; padding: 28px;
+      max-height: 92vh; max-height: min(100%, 92dvh); overflow-y: auto;
       box-shadow: var(--shadow-xl); animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .confirm-title { font-size: 18px; font-weight: 900; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.3px; }
@@ -1951,9 +1985,13 @@
     .plan-chip.urgente { background: #FDF6E7; border-color: #EBD9AE; color: #8A6516; }
 
     /* ---- Modal del abono ---- */
+    /* Misma forma que el welcome (hero largo + ✕ absoluta), mismo arreglo:
+       marco quieto, `.welcome-scroll` adentro y el tope en dvh. */
     .plan-modal {
       background: var(--surface); border-radius: var(--radius-xl); position: relative;
-      width: 100%; max-width: 470px; max-height: 92vh; overflow-y: auto;
+      width: 100%; max-width: 470px;
+      max-height: 92vh; max-height: min(100%, 92dvh);
+      display: flex; flex-direction: column; overflow: hidden;
       box-shadow: var(--shadow-xl); animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
     }
     .plan-hero {
@@ -4336,6 +4374,88 @@ function cargarTesseract() {
   });
 }
 
+// PRIMER PASO, Y EL QUE MÁS PESA: recortar el ticket.
+//
+// Una foto a pulso tiene el ticket ocupando una fracción del encuadre y el
+// resto es mesa. Eso arruina el OCR por dos motivos a la vez: al bajar la
+// imagen a 2000px las letras del ticket quedan diminutas, y la textura de la
+// mesa (las vetas de la madera) se binariza como si fuera tinta y Tesseract la
+// lee como texto. Medido sobre una foto simulada realista: sin recortar da
+// 0 de 7 códigos en 30 s; recortando, 7 de 7 en 8 s.
+//
+// El ticket es papel claro sobre un fondo más oscuro, así que se lo busca por
+// brillo: Otsu para separar papel de fondo sin umbral fijo, y después el tramo
+// CONTIGUO más largo en cada eje —contiguo para que un reflejo suelto en la
+// otra punta no agrande el recorte—. La búsqueda va sobre una copia de 500px
+// (instantánea) y el recorte se aplica sobre el original en resolución plena.
+function recortarTicket(canvas) {
+  const ESC = 500 / Math.max(canvas.width, canvas.height);
+  if (ESC >= 1) return canvas;                       // ya es chica: no hay nada que ganar
+  const w = Math.round(canvas.width * ESC), h = Math.round(canvas.height * ESC);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(canvas, 0, 0, w, h);
+  const { data } = g.getImageData(0, 0, w, h);
+
+  const gris = new Uint8ClampedArray(w * h);
+  const hist = new Uint32Array(256);
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    const v = (data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114) | 0;
+    gris[j] = v; hist[v]++;
+  }
+
+  // Otsu: el umbral que mejor separa los dos grupos de brillo de esta foto.
+  const N = w * h;
+  let suma = 0; for (let i = 0; i < 256; i++) suma += i * hist[i];
+  let sumaB = 0, pesoB = 0, mejor = 0, umbral = 128;
+  for (let t = 0; t < 256; t++) {
+    pesoB += hist[t]; if (!pesoB) continue;
+    const pesoF = N - pesoB; if (!pesoF) break;
+    sumaB += t * hist[t];
+    const mB = sumaB / pesoB, mF = (suma - sumaB) / pesoF;
+    const entre = pesoB * pesoF * (mB - mF) * (mB - mF);
+    if (entre > mejor) { mejor = entre; umbral = t; }
+  }
+
+  const filas = new Float64Array(h), cols = new Float64Array(w);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (gris[y * w + x] > umbral) { filas[y]++; cols[x]++; }
+    }
+  }
+  const tramo = (a, total) => {
+    let iniMejor = 0, largoMejor = 0, i = 0;
+    while (i < a.length) {
+      if (a[i] / total > 0.25) {
+        let j = i; while (j < a.length && a[j] / total > 0.25) j++;
+        if (j - i > largoMejor) { largoMejor = j - i; iniMejor = i; }
+        i = j;
+      } else i++;
+    }
+    return largoMejor ? [iniMejor, iniMejor + largoMejor] : [0, a.length];
+  };
+  const [y0, y1] = tramo(filas, w), [x0, x1] = tramo(cols, h);
+
+  const inv = 1 / ESC, m = 8;
+  const rx = Math.max(0, Math.round((x0 - m) * inv));
+  const ry = Math.max(0, Math.round((y0 - m) * inv));
+  const rw = Math.min(canvas.width  - rx, Math.round((x1 - x0 + 2 * m) * inv));
+  const rh = Math.min(canvas.height - ry, Math.round((y1 - y0 + 2 * m) * inv));
+
+  // Si el recorte sale absurdo (casi toda la foto, o una franja mínima porque
+  // el ticket llena el encuadre y no hay contraste con el fondo), se deja la
+  // imagen como está: recortar mal es peor que no recortar.
+  const parte = (rw * rh) / (canvas.width * canvas.height);
+  if (rw < 120 || rh < 120 || parte > 0.92) return canvas;
+
+  const r = document.createElement("canvas");
+  r.width = rw; r.height = rh;
+  r.getContext("2d", { willReadFrequently: true })
+   .drawImage(canvas, rx, ry, rw, rh, 0, 0, rw, rh);
+  return r;
+}
+
 // El preprocesado es lo que decide si el ticket se lee o no. Una foto de papel
 // térmico tiene poco contraste y sombras del pliegue; Tesseract sobre el JPEG
 // crudo devuelve basura, y sobre la misma imagen binarizada anda bastante bien.
@@ -4350,12 +4470,19 @@ function prepararParaOCR(file, maxLado = 2000) {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+      // Primero el recorte, sobre la imagen en resolución plena: así los 2000px
+      // de presupuesto se gastan en el ticket y no en la mesa.
+      const entera = document.createElement("canvas");
+      entera.width = img.width; entera.height = img.height;
+      entera.getContext("2d", { willReadFrequently: true }).drawImage(img, 0, 0);
+      const rec = recortarTicket(entera);
+
+      const escala = Math.min(1, maxLado / Math.max(rec.width, rec.height));
       const c = document.createElement("canvas");
-      c.width  = Math.max(1, Math.round(img.width  * escala));
-      c.height = Math.max(1, Math.round(img.height * escala));
+      c.width  = Math.max(1, Math.round(rec.width  * escala));
+      c.height = Math.max(1, Math.round(rec.height * escala));
       const ctx = c.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0, c.width, c.height);
+      ctx.drawImage(rec, 0, 0, c.width, c.height);
 
       const datos = ctx.getImageData(0, 0, c.width, c.height);
       const px = datos.data, ancho = c.width, alto = c.height;
@@ -4494,8 +4621,14 @@ async function ocrLocal(file, onProgreso) {
   // Primero la orientación que dice la proyección; si el resultado no parece un
   // ticket, se prueban las otras. Cada intento cuesta una pasada, así que se
   // ordenan por probabilidad y se corta apenas una da bien.
-  const primero = ejeDeLosRenglones(lienzo);
-  const orden = primero === 0 ? [0, 90, 270, 180] : [90, 270, 0, 180];
+  // El detector de eje sirve para ORDENAR los intentos, no para descartarlos.
+  // Sobre imágenes sintéticas limpias acertaba 4 de 4, pero sobre fotos con
+  // ruido real se equivoca, y recortar la lista a dos orientaciones hacía
+  // fallar el caso más común (el ticket de costado). Se prueban las cuatro,
+  // empezando por la que dice el detector, y se corta apenas una da bien: en la
+  // mayoría de los casos eso es una sola pasada.
+  const eje = ejeDeLosRenglones(lienzo);
+  const orden = eje === 0 ? [0, 90, 270, 180] : [90, 270, 0, 180];
   const tramos = [[0, .45], [.45, .7], [.7, .9], [.9, 1]];
 
   let mejorTexto = "", mejorPuntaje = -1;
@@ -6255,44 +6388,46 @@ function WelcomeModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="welcome-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close welcome-close" onClick={onClose} aria-label="Cerrar">✕</button>
-        <div className="welcome-hero">
-          <ConviIsotipo size={96} fondo="none" className="welcome-icon"/>
-          <div className="welcome-title">¡Bienvenido a <ConviLogotipo/>!</div>
-          <div className="welcome-sub">Comparamos los precios de {SUPER_TODOS.length} supermercados de Argentina para que compres siempre al más barato.</div>
-        </div>
-        <div className="welcome-steps">
-          {pasos.map((p, i) => (
-            <div className="welcome-step" key={i}>
-              <span className="welcome-step-ico">{p.ico}</span>
-              <div>
-                <div className="welcome-step-t">{p.t}</div>
-                <div className="welcome-step-d">{p.d}</div>
+        <div className="welcome-scroll">
+          <div className="welcome-hero">
+            <ConviIsotipo size={96} fondo="none" className="welcome-icon"/>
+            <div className="welcome-title">¡Bienvenido a <ConviLogotipo/>!</div>
+            <div className="welcome-sub">Comparamos los precios de {SUPER_TODOS.length} supermercados de Argentina para que compres siempre al más barato.</div>
+          </div>
+          <div className="welcome-steps">
+            {pasos.map((p, i) => (
+              <div className="welcome-step" key={i}>
+                <span className="welcome-step-ico">{p.ico}</span>
+                <div>
+                  <div className="welcome-step-t">{p.t}</div>
+                  <div className="welcome-step-d">{p.d}</div>
+                </div>
               </div>
+            ))}
+          </div>
+          <div className="welcome-savings">
+            <span className="welcome-savings-emoji">💚</span>
+            <div>
+              <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos!
             </div>
-          ))}
-        </div>
-        <div className="welcome-savings">
-          <span className="welcome-savings-emoji">💚</span>
-          <div>
-            <strong>¿Cuánto podés ahorrar?</strong> El mismo producto puede costar hasta un 30–40% más caro en un súper que en otro. Comparando, tu compra del mes puede ahorrarte miles de pesos!
           </div>
-        </div>
-        <div className="welcome-bancos">
-          <span className="welcome-bancos-emoji">💳</span>
-          <div>
-            <strong>¡PROMOS BANCARIAS!</strong> Tildá tus tarjetas y te decimos cuánto te
-            sale la lista <strong>a vos!</strong> Los descuentos aplican sobre el total de la compra
-             o con reintegro a tu cuenta.
-            {tira.length > 0 && (
-              <div className="welcome-bancos-logos">
-                {tira.map(e => <PagoLogo key={e} nombre={e} size={26}/>)}
-                {mas > 0 && <span className="welcome-bancos-mas">+{mas}</span>}
-              </div>
-            )}
+          <div className="welcome-bancos">
+            <span className="welcome-bancos-emoji">💳</span>
+            <div>
+              <strong>¡PROMOS BANCARIAS!</strong> Tildá tus tarjetas y te decimos cuánto te
+              sale la lista <strong>a vos!</strong> Los descuentos aplican sobre el total de la compra
+               o con reintegro a tu cuenta.
+              {tira.length > 0 && (
+                <div className="welcome-bancos-logos">
+                  {tira.map(e => <PagoLogo key={e} nombre={e} size={26}/>)}
+                  {mas > 0 && <span className="welcome-bancos-mas">+{mas}</span>}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="welcome-pie">
-          <button className="welcome-cta" onClick={onClose}>Empezar a ahorrar →</button>
+          <div className="welcome-pie">
+            <button className="welcome-cta" onClick={onClose}>Empezar a ahorrar →</button>
+          </div>
         </div>
       </div>
     </div>
@@ -6387,10 +6522,9 @@ function PlanModal({ token, plan, ahorroBloqueado, onClose, onCambio }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="plan-modal" onClick={e => e.stopPropagation()}>
-        <div className="welcome-close">
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+        <button className="modal-close welcome-close" onClick={onClose} aria-label="Cerrar">✕</button>
 
+        <div className="welcome-scroll">
         {cual === "cortesia" ? (
           <>
             <div className="plan-hero">
@@ -6505,6 +6639,7 @@ function PlanModal({ token, plan, ahorroBloqueado, onClose, onCambio }) {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
