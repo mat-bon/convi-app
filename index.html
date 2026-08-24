@@ -4424,16 +4424,40 @@ function recortarTicket(canvas) {
       if (gris[y * w + x] > umbral) { filas[y]++; cols[x]++; }
     }
   }
+  // El tramo de papel sobre un eje. Lo que NO puede hacer es cortar en el
+  // primer renglón oscuro: un ticket real viene DOBLADO, y la sombra del
+  // pliegue cruza el papel de lado a lado y hunde la densidad por debajo del
+  // umbral. Sin puentear ese hueco el tramo se parte en dos y nos quedamos con
+  // MEDIO ticket — y la mitad que queda afuera no se lee nunca, por más que se
+  // mejore todo lo demás.
+  //
+  // Medido con un ticket de 20 artículos: sin puentear, un solo pliegue al
+  // medio deja el recorte en 54% del papel y 9 de 19 códigos; doblado en cuatro,
+  // 28% y 4 de 19. Con el puente, los tres casos vuelven a 19 de 19.
+  //
+  // El hueco máximo es 12% del eje: una sombra de pliegue es una banda angosta,
+  // y algo realmente separado (un plato, una servilleta) está más lejos que eso.
+  // Y errar hacia un recorte GRANDE es barato —a lo sumo entra un poco de mesa,
+  // que ya sabemos manejar— mientras que errar hacia uno chico pierde productos.
   const tramo = (a, total) => {
-    let iniMejor = 0, largoMejor = 0, i = 0;
+    const denso = i => a[i] / total > 0.25;
+    const maxHueco = Math.max(4, Math.round(a.length * 0.12));
+    const crudos = [];
+    let i = 0;
     while (i < a.length) {
-      if (a[i] / total > 0.25) {
-        let j = i; while (j < a.length && a[j] / total > 0.25) j++;
-        if (j - i > largoMejor) { largoMejor = j - i; iniMejor = i; }
-        i = j;
-      } else i++;
+      if (denso(i)) { let j = i; while (j < a.length && denso(j)) j++; crudos.push([i, j]); i = j; }
+      else i++;
     }
-    return largoMejor ? [iniMejor, iniMejor + largoMejor] : [0, a.length];
+    if (!crudos.length) return [0, a.length];
+    const unidos = [crudos[0].slice()];
+    for (let k = 1; k < crudos.length; k++) {
+      const ult = unidos[unidos.length - 1];
+      if (crudos[k][0] - ult[1] <= maxHueco) ult[1] = crudos[k][1];
+      else unidos.push(crudos[k].slice());
+    }
+    let mejor = unidos[0];
+    for (const t of unidos) if (t[1] - t[0] > mejor[1] - mejor[0]) mejor = t;
+    return mejor;
   };
   const [y0, y1] = tramo(filas, w), [x0, x1] = tramo(cols, h);
 
@@ -4704,6 +4728,28 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
   // por qué —ni para el usuario ni para nosotros.
   const [textoCrudo, setTextoCrudo] = React.useState("");
   const [verCrudo, setVerCrudo]     = React.useState(false);
+  const [copiado, setCopiado]       = React.useState(false);
+
+  // Seleccionar un <pre> largo con el dedo en el celular es imposible, y este
+  // texto sólo sirve si se puede sacar de la pantalla. navigator.clipboard pide
+  // contexto seguro y no está en todos los Safari, así que queda el textarea
+  // como plan B: feo, pero funciona en todos lados.
+  async function copiarCrudo() {
+    const txt = textoCrudo.trim();
+    try {
+      await navigator.clipboard.writeText(txt);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch {}
+      document.body.removeChild(ta);
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
   const [rescatados, setRescatados] = React.useState({});  // índice de sin_match → producto
   const inputRef = React.useRef(null);
 
@@ -4918,17 +4964,6 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
                     superficie plana</strong>, con buena luz, encuadrando sólo el detalle de
                     productos y de cerca — que las letras se lean bien en la foto.
                   </div>
-                  {textoCrudo && (
-                    <>
-                      <button className="lista-btn" style={{marginTop:10}}
-                              onClick={() => setVerCrudo(v => !v)}>
-                        {verCrudo ? "Ocultar" : "Ver"} lo que leímos de la foto
-                      </button>
-                      {verCrudo && (
-                        <pre className="tk-crudo">{textoCrudo.trim() || "(no se leyó ningún texto)"}</pre>
-                      )}
-                    </>
-                  )}
                 </div>
               )}
 
@@ -4957,6 +4992,35 @@ function TicketModal({ token, listaId, supersVisibles, onCargado, onClose }) {
                     </div>
                   ))}
                 </>
+              )}
+
+              {/* El texto crudo del OCR. Va SIEMPRE que haya OCR, no sólo
+                  cuando no entró nada: el caso más útil para diagnosticar es
+                  justamente el parcial —entraron 5 de 20— y ahí antes quedaba
+                  escondido porque colgaba del cartel de "no reconocimos nada". */}
+              {textoCrudo && (
+                <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid var(--border-light)"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <button className="lista-btn" onClick={() => setVerCrudo(v => !v)}>
+                      {verCrudo ? "Ocultar" : "Ver"} lo que leímos de la foto
+                    </button>
+                    {verCrudo && (
+                      <button className="lista-btn" onClick={copiarCrudo}>
+                        {copiado ? "✓ Copiado" : "Copiar texto"}
+                      </button>
+                    )}
+                  </div>
+                  {verCrudo && (
+                    <>
+                      <p style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.55,margin:"8px 0 0"}}>
+                        Esto es lo que la cámara alcanzó a leer del ticket. Si se cargaron
+                        menos productos de los que esperabas, este texto es lo que sirve
+                        para entender por qué.
+                      </p>
+                      <pre className="tk-crudo">{textoCrudo.trim() || "(no se leyó ningún texto)"}</pre>
+                    </>
+                  )}
+                </div>
               )}
 
               <button className="tk-cta" disabled={paso === "guardando" || totalAGuardar === 0}
