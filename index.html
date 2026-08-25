@@ -3215,41 +3215,124 @@ function Paginacion({ paginaActual, totalPaginas, onCambiar }) {
 // ---------------------------------------------------------------------------
 // AuthModal
 // ---------------------------------------------------------------------------
-function AuthModal({ onClose, onLogin }) {
-  const [modo, setModo] = React.useState("login");
+function AuthModal({ onClose, onLogin, modoInicial = "login" }) {
+  // login | register | recuperar
+  const [modo, setModo] = React.useState(modoInicial);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [msg, setMsg] = React.useState("");
 
+  const RUTA = { login: "login", register: "register", recuperar: "reset-password" };
+
   async function handleSubmit() {
     setError(""); setMsg(""); setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/${modo==="login"?"login":"register"}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email,password}) });
+      // El recupero manda SÓLO el email: el endpoint contesta siempre lo mismo
+      // exista o no la cuenta, para no delatar quién está registrado.
+      const cuerpo = modo === "recuperar" ? { email } : { email, password };
+      const res = await fetch(`${API}/auth/${RUTA[modo]}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cuerpo) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail||"Error");
       if (modo==="login") { onLogin(data.access_token, data.refresh_token, data.user); onClose(); }
+      else if (modo==="recuperar") { setMsg(data.message || "Si el email está registrado, vas a recibir un correo en breve"); }
       else { setMsg("¡Registro exitoso! Revisá tu email para confirmar tu cuenta."); setModo("login"); }
     } catch(e) { setError(e.message); }
     setLoading(false);
   }
 
+  function cambiarA(nuevo) { setModo(nuevo); setError(""); setMsg(""); }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:400}} onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title">{modo==="login"?"Iniciar sesión":"Crear cuenta"}</div>
+          <div className="modal-title">
+            {modo==="login" ? "Iniciar sesión" : modo==="register" ? "Crear cuenta" : "Recuperar contraseña"}
+          </div>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
           {msg && <div className="auth-alert success">{msg}</div>}
           {error && <div className="auth-alert error">{error}</div>}
-          <input className="auth-input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-          <input className="auth-input" type="password" placeholder="Contraseña" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
-          <button className="auth-btn" onClick={handleSubmit} disabled={loading}>{loading?"Cargando...":modo==="login"?"Iniciar sesión":"Crear cuenta"}</button>
+          {modo==="recuperar" && (
+            <p style={{fontSize:13,lineHeight:1.55,color:"var(--text-secondary)",margin:"0 0 12px"}}>
+              Poné tu email y te mandamos un enlace para elegir una contraseña nueva.
+            </p>
+          )}
+          <input className="auth-input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}
+                 onKeyDown={e=>e.key==="Enter"&&modo==="recuperar"&&handleSubmit()}/>
+          {modo!=="recuperar" && (
+            <input className="auth-input" type="password" placeholder="Contraseña" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+          )}
+          <button className="auth-btn" onClick={handleSubmit} disabled={loading}>
+            {loading ? "Cargando..." : modo==="login" ? "Iniciar sesión" : modo==="register" ? "Crear cuenta" : "Enviarme el enlace"}
+          </button>
+          {modo==="login" && (
+            <div style={{textAlign:"center",marginTop:10}}>
+              <button className="auth-link" onClick={()=>cambiarA("recuperar")}>¿Olvidaste tu contraseña?</button>
+            </div>
+          )}
           <div style={{textAlign:"center",marginTop:12}}>
-            <button className="auth-link" onClick={()=>{setModo(modo==="login"?"register":"login");setError("");setMsg("");}}>{modo==="login"?"¿No tenés cuenta? Registrate":"¿Ya tenés cuenta? Iniciá sesión"}</button>
+            <button className="auth-link" onClick={()=>cambiarA(modo==="login"?"register":"login")}>
+              {modo==="login" ? "¿No tenés cuenta? Registrate" : modo==="register" ? "¿Ya tenés cuenta? Iniciá sesión" : "Volver a iniciar sesión"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// NuevaPasswordModal — el segundo tiempo del recupero
+// ---------------------------------------------------------------------------
+// Se abre solo cuando el usuario vuelve del mail: Supabase lo manda a la app con
+// la sesión de recupero en el hash de la URL. No tiene botón de cerrar a
+// propósito —el token dura una hora y es de un solo uso, así que cerrarlo por
+// accidente significa pedir otro mail—, pero sí un "lo hago después" explícito.
+function NuevaPasswordModal({ tokens, onListo, onCancelar }) {
+  const [password, setPassword] = React.useState("");
+  const [error, setError]       = React.useState("");
+  const [loading, setLoading]   = React.useState(false);
+
+  async function guardar() {
+    if (password.length < 8) { setError("La contraseña necesita al menos 8 caracteres"); return; }
+    setError(""); setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/nueva-password`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ access_token: tokens.access_token, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "No pudimos cambiar la contraseña");
+      // La sesión del mail ya es una sesión válida: se entra derecho, sin
+      // pedirle que vuelva a escribir lo que acaba de elegir.
+      onListo(tokens.access_token, tokens.refresh_token, data.user || {});
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{maxWidth:400}} onClick={e=>e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">Elegí tu contraseña nueva</div>
+        </div>
+        <div className="modal-body">
+          {error && <div className="auth-alert error">{error}</div>}
+          <p style={{fontSize:13,lineHeight:1.55,color:"var(--text-secondary)",margin:"0 0 12px"}}>
+            Mínimo 8 caracteres. Cuando la guardes entrás directo.
+          </p>
+          <input className="auth-input" type="password" placeholder="Contraseña nueva" autoFocus
+                 value={password} onChange={e=>setPassword(e.target.value)}
+                 onKeyDown={e=>e.key==="Enter"&&guardar()}/>
+          <button className="auth-btn" onClick={guardar} disabled={loading}>
+            {loading ? "Guardando..." : "Guardar y entrar"}
+          </button>
+          <div style={{textAlign:"center",marginTop:12}}>
+            <button className="auth-link" onClick={onCancelar}>Lo hago después</button>
           </div>
         </div>
       </div>
@@ -5481,6 +5564,16 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
 
   const supersKey = supersVisibles.join(",");
 
+  // El conteo del selector y el avisador de cambios se leen por ref, no como
+  // dependencias: si `listas` entrara en las deps de `cargar`, la comparación
+  // entera se volvería a pedir cada vez que cambia el selector, y
+  // `onListasChange` es una arrow nueva en cada render del App —o sea que sería
+  // en CADA render.
+  const listasRef = React.useRef(listas);
+  listasRef.current = listas;
+  const avisarListasRef = React.useRef(onListasChange);
+  avisarListasRef.current = onListasChange;
+
   // El backend ya usa los medios de pago guardados sin que se los mandemos; esto
   // es sólo para el contador del botón y para saber si hay que invitar a cargarlos.
   React.useEffect(() => {
@@ -5491,8 +5584,19 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
       .catch(() => {});
   }, [token]);
 
+  // La comparación tarda segundos y el usuario cambia de lista mientras corre.
+  // Sin abortar la anterior, la respuesta VIEJA aterriza después y pisa a la
+  // nueva: se crea una lista y aparecen los productos de la que estaba abierta.
+  // Pasó el 2026-08-25 a las 13:44 —/listas/3/comparar tardó 5,7 s y llegó
+  // después de /listas/7/comparar, que tardó 1,7 s—. Mismo patrón que el
+  // AbortController de la grilla de productos.
+  const comparacionRef = React.useRef(null);
+
   const cargar = React.useCallback(() => {
+    if (comparacionRef.current) comparacionRef.current.abort();
     if (!token || !listaActivaId) { setData(null); setCargando(false); return; }
+    const controller = new AbortController();
+    comparacionRef.current = controller;
     const params = new URLSearchParams();
     if (regionId) params.append("region_id", regionId);
     // Las columnas son los supers que el usuario tiene tildados en el filtro.
@@ -5501,17 +5605,36 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
     if (elegidos.length && elegidos.length < SUPER_TODOS.length) {
       params.append("supermercados", supersKey);
     }
-    fetch(`${API}/listas/${listaActivaId}/comparar?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API}/listas/${listaActivaId}/comparar?${params}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(d => {
         setData(d); setError(null);
+        // Si el conteo del selector no coincide con lo que acaba de devolver la
+        // comparación, el /listas que lo trajo quedó viejo (falló y se descartó
+        // en silencio). Se espera un momento antes de pedirlo de nuevo porque el
+        // desajuste también aparece por una carrera normal: un alta o una baja
+        // dispara /comparar y /listas juntos y no siempre llegan en ese orden.
+        const nEsperado = (d.items || []).length;
+        const enSelector = (listasRef.current || []).find(l => l.id === listaActivaId);
+        if (enSelector && enSelector.total_items !== nEsperado) {
+          setTimeout(() => {
+            const ahora = (listasRef.current || []).find(l => l.id === listaActivaId);
+            if (ahora && ahora.total_items !== nEsperado) {
+              avisarListasRef.current && avisarListasRef.current();
+            }
+          }, 900);
+        }
         // El backend corre la comparación dos veces para el usuario gratuito y
         // devuelve la diferencia: lo que ESA lista deja de ahorrar. Es el único
         // número que convierte, así que se lo pasamos al modal.
         onAhorroBloqueado && onAhorroBloqueado(d.ahorro_extra_bloqueado || 0);
       })
-      .catch(() => setError("No pudimos cargar la comparación de la lista"))
-      .finally(() => setCargando(false));
+      // Abortar es una cancelación nuestra, no un fallo: pintar el error taparía
+      // la comparación nueva que ya está en camino. Y el spinner tiene que
+      // quedarse prendido hasta que responda ESA, no la que cancelamos.
+      .catch(e => { if (e && e.name !== "AbortError") setError("No pudimos cargar la comparación de la lista"); })
+      .finally(() => { if (!controller.signal.aborted) setCargando(false); });
   }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado]);
 
   React.useEffect(() => { setCargando(true); cargar(); }, [cargar]);
@@ -6873,6 +6996,11 @@ function App() {
     try { return !localStorage.getItem("convi_welcome_v1"); } catch { return false; }
   });
   const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
+  // Sesión de recupero que llegó por el hash de la URL, y el aviso para cuando
+  // ese enlace ya no sirve. Ver el efecto que lee window.location.hash.
+  const [recuperacion, setRecuperacion] = React.useState(null);
+  const [avisoAuth, setAvisoAuth] = React.useState(null);
+  const [modoAuth, setModoAuth] = React.useState("login");   // con qué pestaña abre AuthModal
   const [carritoItems, setCarritoItems] = React.useState([]);
   const [listas, setListas] = React.useState([]);
   const [listaActivaId, setListaActivaId] = React.useState(() => {
@@ -7013,6 +7141,38 @@ function App() {
     }).filter(Boolean);
   }, [productos, supersVisibles, masBaratoEn]);
 
+  // Vuelta del mail de recupero. Supabase manda al usuario a la app con la
+  // sesión en el HASH (#access_token=...&type=recovery), que es la parte de la
+  // URL que no viaja al servidor. Si nadie la lee, el usuario hace clic en el
+  // mail, aterriza en la home y no pasa absolutamente nada.
+  //
+  // Se limpia con replaceState apenas se lee: ese token entra a una cuenta, y
+  // no queremos que quede en la barra de direcciones ni en el historial para
+  // que alguien lo comparta de casualidad.
+  React.useEffect(() => {
+    const hash = window.location.hash || "";
+    if (!hash.includes("access_token") && !hash.includes("error")) return;
+    const p = new URLSearchParams(hash.replace(/^#/, ""));
+    const limpiar = () => {
+      try { window.history.replaceState(null, "", window.location.pathname + window.location.search); }
+      catch (e) { window.location.hash = ""; }
+    };
+    if (p.get("type") === "recovery" && p.get("access_token")) {
+      setRecuperacion({ access_token: p.get("access_token"), refresh_token: p.get("refresh_token") || "" });
+      limpiar();
+    } else if (p.get("error")) {
+      // Enlace vencido o ya usado: Supabase avisa por acá y no por el token. Su
+      // `error_description` viene en inglés, así que el caso común —el único que
+      // se ve en la práctica— se cuenta con nuestras palabras, y el texto suyo
+      // queda de reserva para los raros, donde algo es mejor que nada.
+      const vencido = p.get("error_code") === "otp_expired" || p.get("error") === "access_denied";
+      setAvisoAuth(vencido
+        ? "El enlace del mail venció o ya se había usado. Duran una hora y sirven una sola vez."
+        : (p.get("error_description") || "El enlace ya no sirve. Pedí uno nuevo."));
+      limpiar();
+    }
+  }, []);
+
   React.useEffect(() => {
     fetch(`${API}/regiones`).then(r => r.json())
       .then(data => { if (Array.isArray(data)) setRegiones(data); })
@@ -7115,17 +7275,52 @@ function App() {
     } catch(e) {}
   }, [token]);
 
-  async function refreshToken() {
-    const refresh = localStorage.getItem("convi_refresh");
-    if (!refresh) { handleLogout(); return; }
-    try {
-      const res = await fetch(`${API}/auth/refresh`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({refresh_token:refresh}) });
-      if (!res.ok) { handleLogout(); return; }
-      const data = await res.json();
-      setToken(data.access_token);
-      localStorage.setItem("convi_token", data.access_token);
-      if (data.refresh_token) localStorage.setItem("convi_refresh", data.refresh_token);
-    } catch(e) { handleLogout(); }
+  // Un refresco fallido NO siempre es una sesión vencida, y antes acá cualquier
+  // respuesta que no fuera 200 terminaba en handleLogout():
+  //
+  //   · Corte de red (503, o el fetch que ni sale): no llegamos a preguntar. Le
+  //     cerrábamos la sesión a alguien que la tenía perfectamente válida.
+  //   · "Invalid Refresh Token: Already Used": los refresh tokens de Supabase
+  //     son de un solo uso y rotan, así que dos refrescos simultáneos con el
+  //     mismo token hacen fallar al segundo aunque la sesión esté sana. Pasó
+  //     tres veces el 2026-08-25 (10:54, 11:36 y 13:43).
+  //
+  // De ahí las dos defensas: una sola llamada en vuelo, y ante un fallo releer
+  // localStorage antes de decidir —si el token guardado cambió, otro refresco
+  // ganó la carrera y la sesión está bien—.
+  const refrescandoRef = React.useRef(null);
+
+  function refreshToken() {
+    if (refrescandoRef.current) return refrescandoRef.current;
+    const promesa = (async () => {
+      const refresh = localStorage.getItem("convi_refresh");
+      if (!refresh) { handleLogout(); return; }
+      try {
+        const res = await fetch(`${API}/auth/refresh`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({refresh_token:refresh}) });
+        if (res.status === 503) { setTimeout(refreshToken, 30000); return; }
+        if (!res.ok) {
+          if (localStorage.getItem("convi_refresh") !== refresh) return;  // ganó otro
+          // Todavía puede haber otro refresco en vuelo que aún no escribió su
+          // token nuevo: si desalojamos ahora, echamos a alguien cuya sesión se
+          // está renovando en este mismo instante. Se le da un respiro y se
+          // vuelve a mirar; si sigue igual, la sesión sí se terminó.
+          await new Promise(r => setTimeout(r, 1500));
+          if (localStorage.getItem("convi_refresh") !== refresh) return;
+          handleLogout(); return;
+        }
+        const data = await res.json();
+        setToken(data.access_token);
+        localStorage.setItem("convi_token", data.access_token);
+        if (data.refresh_token) localStorage.setItem("convi_refresh", data.refresh_token);
+      } catch(e) {
+        // Ni salió el pedido (avión, túnel, subte). Tampoco es sesión vencida:
+        // se vuelve a probar sola en 30 s, sin echar al usuario.
+        setTimeout(refreshToken, 30000);
+      }
+    })();
+    refrescandoRef.current = promesa;
+    promesa.finally(() => { refrescandoRef.current = null; });
+    return promesa;
   }
 
   // Devuelve la promesa (nunca rechaza) para que quien necesite esperar al
@@ -7149,24 +7344,42 @@ function App() {
   }
 
   // --- Listas de compras ----------------------------------------------------
-  function cargarListas() {
+
+  // Un fallo acá no se ve como error en pantalla: el selector se queda con el
+  // conteo ANTERIOR y sigue diciendo "(0)" sobre una lista que ya tiene
+  // productos. Pasó el 2026-08-25: se cortó la conexión con PostgREST justo
+  // después de cargar un ticket y /listas volvió 500, así que la grilla mostraba
+  // los 6 productos y el selector marcaba (0) hasta recargar la página —nada más
+  // vuelve a pedir /listas, ni siquiera cambiar de lista.
+  // `reintento` marca la segunda y última pasada, para no encadenar reintentos
+  // si la API está caída de verdad.
+  function cargarListas(reintento = false) {
     if (!token) return;
     fetch(`${API}/listas`, { headers:{Authorization:`Bearer ${token}`} })
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
         if (!Array.isArray(data)) return;
         setListas(data);
         // Si la lista guardada ya no existe (o nunca hubo), caemos a la primera.
         setListaActivaId(prev => (prev && data.some(l => l.id === prev)) ? prev : (data[0]?.id ?? null));
       })
-      .catch(() => {});
+      .catch(() => { if (!reintento) setTimeout(() => cargarListas(true), 1200); });
   }
 
   // Items de la lista activa: solo se usan para pintar el estado "En lista" de
   // las tarjetas. La comparación con precios la pide ListaView por su cuenta.
+  // Mismo cuidado que con la comparación: si el usuario cambia de lista mientras
+  // esto viaja, la respuesta vieja llega después y deja las tarjetas marcadas
+  // "En lista" con los productos de la lista anterior.
+  const itemsRef = React.useRef(null);
+
   function cargarListaItems() {
+    if (itemsRef.current) itemsRef.current.abort();
     if (!token || !listaActivaId) { setListaItems([]); return; }
-    fetch(`${API}/listas/${listaActivaId}/items`, { headers:{Authorization:`Bearer ${token}`} })
+    const controller = new AbortController();
+    itemsRef.current = controller;
+    fetch(`${API}/listas/${listaActivaId}/items`,
+          { headers:{Authorization:`Bearer ${token}`}, signal: controller.signal })
       .then(r => r.ok ? r.json() : [])
       .then(data => setListaItems(Array.isArray(data) ? data : []))
       .catch(() => {});
@@ -7420,7 +7633,31 @@ function App() {
     <div>
       {showWelcome && <WelcomeModal onClose={cerrarWelcome}/>}
       {legalTab && <LegalModal initialTab={legalTab} onClose={()=>setLegalTab(null)}/>}
-      {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onLogin={handleLogin}/>}
+      {showAuth && <AuthModal onClose={()=>{setShowAuth(false); setModoAuth("login");}}
+                              onLogin={handleLogin} modoInicial={modoAuth}/>}
+      {recuperacion && (
+        <NuevaPasswordModal tokens={recuperacion}
+          onListo={(a, r, u) => { setRecuperacion(null); handleLogin(a, r, u); }}
+          onCancelar={() => setRecuperacion(null)}/>
+      )}
+      {avisoAuth && (
+        <div className="modal-overlay" onClick={()=>setAvisoAuth(null)}>
+          <div className="modal" style={{maxWidth:380}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Ese enlace ya no sirve</div>
+              <button className="modal-close" onClick={()=>setAvisoAuth(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{fontSize:13.5,lineHeight:1.6,color:"var(--text-secondary)",margin:"0 0 14px"}}>
+                {avisoAuth}
+              </p>
+              <button className="auth-btn" onClick={()=>{ setAvisoAuth(null); setModoAuth("recuperar"); setShowAuth(true); }}>
+                Pedir uno nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showPlan && token && (
         <PlanModal token={token} plan={plan} ahorroBloqueado={ahorroBloqueado}
           onClose={()=>setShowPlan(false)} onCambio={cargarPlan}/>
