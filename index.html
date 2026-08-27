@@ -1835,22 +1835,6 @@
     .confirm-item-btn:hover { background: var(--surface-2); border-color: #CBD2C2; color: var(--text-primary); }
     .confirm-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Marcador de La Anónima: el <a> que se arrastra a la barra de marcadores.
-       `grab` y no `pointer` porque acá el gesto es arrastrar, no hacer clic. */
-    .marcador-box {
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      padding: 18px 14px; margin: 4px 0 2px;
-      background: var(--surface-2); border: 1.5px dashed var(--border); border-radius: var(--radius);
-    }
-    .marcador-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 11px 18px; border-radius: var(--radius);
-      background: #034D8E; color: #fff; font-size: 14px; font-weight: 800;
-      text-decoration: none; cursor: grab; user-select: none;
-      box-shadow: 0 3px 10px rgba(3, 77, 142, 0.28);
-    }
-    .marcador-chip:active { cursor: grabbing; }
-
     /* Skeleton loading */
     @keyframes shimmer {
       0% { background-position: -200% 0; }
@@ -3113,140 +3097,35 @@ function cargarCarritoEnDino(items, { onProgreso, onFin }) {
   });
 }
 
-// --- La Anónima: carga por marcador (bookmarklet) ---------------------------
-// Agregar es `PUT /carrito/super/articulo/<cod-anonima>`, y desde OTRO origen
-// sigue sin haber vía (re-verificado el 2026-08-27): el preflight contesta
-// `Access-Control-Allow-Origin: *` pero NUNCA `Allow-Credentials`, así que el
-// navegador no adjunta la cookie `cart-token-super`; una navegación o un form
-// sólo emiten GET/POST y el sitio devuelve 405 a todo lo que no sea PUT
-// (incluido `_method=PUT`); y no se puede armar el carrito del lado servidor
-// porque el server siempre emite un token nuevo e ignora el que le pasemos.
+// --- La Anónima: sólo guía manual ------------------------------------------
+// Agregar es `PUT /carrito/super/articulo/<cod-anonima>` y NO hay forma de
+// dispararlo desde otro origen (re-verificado el 2026-08-27): el preflight
+// contesta `Access-Control-Allow-Origin: *` pero nunca `Allow-Credentials`, así
+// que el navegador no adjunta la cookie `cart-token-super`; una navegación o un
+// form sólo emiten GET/POST y el sitio devuelve 405 a todo lo que no sea PUT
+// (incluido `_method=PUT`); y tampoco se puede armar el carrito del lado
+// servidor, porque siempre emite un token nuevo e ignora el que le pasemos.
 //
-// Lo que SÍ se puede es correr el mismo PUT desde adentro del sitio, que es lo
-// que hace este marcador: el usuario lo guarda UNA vez y después lo toca estando
-// en laanonima.com.ar. Ahí el fetch es same-origin, la cookie viaja sola y el
-// carrito se llena entero. Medido el 2026-08-27 contra el sitio real:
+// SÍ funciona correr ese PUT desde adentro de su propio sitio, y se implementó
+// como un marcador (bookmarklet) que el usuario guardaba una vez. **Se quitó el
+// 2026-08-27 por pedido del usuario: no anda ni en el teléfono ni en la
+// computadora.** Safari de iOS directamente se niega a ejecutar bookmarklets
+// ("JavaScript is not allowed to be used this way") y en escritorio tampoco le
+// funcionó. El mecanismo era correcto —probado end-to-end contra el sitio real,
+// cargó 2 de 2 productos— pero la VÍA DE ENTREGA no sobrevive a los navegadores
+// de verdad, que es lo único que importa. Si alguna vez se retoma, lo primero a
+// resolver es cómo se le entrega el script al usuario, no si el PUT anda.
 //
-//   * `{"cantidad": N}` FIJA la cantidad en un solo request — no hace falta un
-//     PUT por unidad, y NO es incremental: repetir el mismo PUT deja N, no 2N
-//     (probado 2 → 2 → 5 sobre la misma línea). O sea que reintentar es seguro.
-//   * el PRIMER PUT de cada sesión suele dar 503 ("el servidor tardó demasiado")
-//     y el reintento sale 200. Es flakiness de su varnish, no un rechazo.
-//   * un 200 puede traer error adentro: hay que mirar `data.statusCode`.
-//   * el sitio no manda Content-Security-Policy, así que el marcador corre.
-//
-// La lista viaja en el FRAGMENTO de la URL (`#convi=cod:cant,...`), que el
-// navegador no manda al servidor: La Anónima nunca ve qué estamos comparando.
-// `producto.url` ya viene absoluta (el scraper hace urljoin), así que urlEnSuper
-// la abre directo para el camino manual, que queda como alternativa.
+// Queda entonces un solo camino, que anda en todos lados: abrir la ficha de cada
+// producto y agregar desde el sitio. `producto.url` ya viene absoluta (el
+// scraper hace urljoin), así que urlEnSuper la abre directo.
 const LAANONIMA_STORE_URL = `${BASE_URLS["La Anónima"]}/supermercado/`;
 const LAANONIMA_CART_URL  = `${BASE_URLS["La Anónima"]}/carrito`;
-// El código que toma su carrito es `data-cod-anonima`, DISTINTO del id del
-// artículo que va en la URL: el scraper lo guarda en `product_id` (el `sku_id`
-// es el otro). Los 8.667 productos activos de La Anónima lo tienen.
-function codLaAnonima(producto, codsExtra) {
-  const c = producto && (producto.product_id || (codsExtra && codsExtra[producto.id]));
-  return c && /^\d+$/.test(String(c)) ? String(c) : null;
-}
 
-function buildLaAnonimaPayload(items, codsExtra) {
-  return items
-    .map(i => {
-      const cod = codLaAnonima(i.producto, codsExtra);
-      if (!cod) return null;
-      const n = Number(i.cantidad);
-      return `${cod}:${Number.isFinite(n) && n > 0 ? Math.min(Math.round(n), 99) : 1}`;
-    })
-    .filter(Boolean)
-    .join(",");
-}
-
-function buildLaAnonimaLoaderUrl(items, codsExtra) {
-  const payload = buildLaAnonimaPayload(items, codsExtra);
-  return payload ? `${LAANONIMA_CART_URL}#convi=${payload}` : null;
-}
-
-// Fuente del marcador. Se guarda legible y se codifica al vuelo: React 18
-// sanitiza cualquier href `javascript:`, así que el <a> se arma por ref (ver
-// BotonMarcadorLaAnonima) y no por JSX.
-//
-// Las tres guardas del principio son las que evitan el modo de falla peor, que
-// es dejar al usuario mirando un carrito vacío sin saber por qué: dominio
-// equivocado, lista ausente (el fragmento se pierde si el sitio lo mandó a
-// loguearse en el medio) y sucursal sin elegir — sin `seleccionocp=1` el sitio
-// intercepta todo con el modal de código postal y el PUT no prende.
-const LAANONIMA_BOOKMARKLET_SRC = `javascript:(function(){
-if(!/(^|\\.)laanonima\\.com\\.ar$/.test(location.hostname)){alert('Primero abrí laanonima.com.ar y después tocá este marcador.');return;}
-var m=/[#&]convi=([^&]+)/.exec(location.hash);
-if(!m){alert('No encontré la lista. Volvé a Convi y tocá "Abrir La Anónima y cargar" para que la traiga.');return;}
-var items=decodeURIComponent(m[1]).split(',').map(function(s){var p=s.split(':');return{c:p[0],q:Math.max(1,parseInt(p[1],10)||1)};}).filter(function(i){return /^[0-9]+$/.test(i.c);});
-if(!items.length){alert('La lista vino vacía.');return;}
-if(!/(^|;\\s*)seleccionocp=1/.test(document.cookie)){alert('Antes elegí tu sucursal (te va a pedir el código postal) y volvé a tocar el marcador.');return;}
-var box=document.createElement('div');
-box.style.cssText='position:fixed;z-index:2147483647;left:50%;top:20px;transform:translateX(-50%);background:#034D8E;color:#fff;font:600 14px/1.45 system-ui,-apple-system,sans-serif;padding:14px 22px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);text-align:center;max-width:90vw';
-box.textContent='Cargando el carrito…';
-document.body.appendChild(box);
-var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-(async function(){
-var ok=0,fallaron=0;
-for(var i=0;i<items.length;i++){
-box.textContent='Cargando '+(i+1)+' de '+items.length+'…';
-var it=items[i],hecho=false;
-for(var t=0;t<3&&!hecho;t++){
-try{
-var r=await fetch('/carrito/super/articulo/'+it.c,{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({cantidad:it.q,disponibleYa:0}),credentials:'include'});
-if(r.ok){var j=await r.json();if(j&&j.data&&j.data.statusCode==200){hecho=true;ok++;}}
-}catch(e){}
-if(!hecho)await sleep(2500);
-}
-if(!hecho)fallaron++;
-await sleep(600);
-}
-box.textContent=ok+' de '+items.length+' productos cargados'+(fallaron?' ('+fallaron+' sin stock en tu sucursal)':'')+'. Abriendo el carrito…';
-await sleep(1600);
-location.href='/carrito';
-})();
-})();`;
-
-function laanonimaBookmarkletHref() {
-  // El `javascript:` va afuera del encode o el navegador no lo reconoce como esquema.
-  return "javascript:" + encodeURIComponent(LAANONIMA_BOOKMARKLET_SRC.replace(/^javascript:/, "").replace(/\n/g, ""));
-}
-
-// El <a> del marcador. React 18 reemplaza cualquier href `javascript:` por
-// `javascript:void(0)` al renderizar, así que el href real se pone con
-// setAttribute sobre el nodo ya montado. Arrastrable a la barra de marcadores en
-// escritorio; en el teléfono se copia y se pega en la URL de un marcador nuevo.
-function BotonMarcadorLaAnonima() {
-  const ref = React.useRef(null);
-  const [copiado, setCopiado] = React.useState(false);
-  React.useEffect(() => {
-    if (ref.current) ref.current.setAttribute("href", laanonimaBookmarkletHref());
-  }, []);
-  function copiar() {
-    const texto = laanonimaBookmarkletHref();
-    const ok = () => { setCopiado(true); setTimeout(() => setCopiado(false), 2200); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(texto).then(ok).catch(() => {});
-    } else {
-      // Safari viejo y contextos sin permiso de portapapeles.
-      const ta = document.createElement("textarea");
-      ta.value = texto; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); ok(); } catch (e) {}
-      document.body.removeChild(ta);
-    }
-  }
-  return (
-    <div className="marcador-box">
-      <a ref={ref} className="marcador-chip" draggable="true"
-         onClick={e => e.preventDefault()}>🛒 Cargar en La Anónima</a>
-      <button className="confirm-item-btn" onClick={copiar}>
-        {copiado ? "¡Copiado!" : "Copiar el marcador"}
-      </button>
-    </div>
-  );
-}
+// Ventana compartida para abrir fichas una por una: reusar el NOMBRE hace que
+// cada ficha reemplace a la anterior en vez de dejar una pestaña por producto.
+// En el teléfono eso es la diferencia entre 15 pestañas abiertas y una sola.
+const LAANONIMA_FICHA_WIN = "convi_laanonima_ficha";
 
 // true cuando la "promoción" es sólo el % de descuento (redundante con el pill de la card)
 function esPromoDescuento(promo) {
@@ -3549,41 +3428,11 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
   const cargaTimer = React.useRef(null);
   const vueltaTimer = React.useRef(null);
 
-  // --- La Anónima: marcador ---------------------------------------------
-  // Si ya lo guardó no le hacemos repetir la instalación. No hay forma de
-  // detectarlo desde acá (el marcador vive en SU navegador), así que la marca la
-  // pone él al decir "ya lo guardé"; siempre queda el botón para volver.
-  const LAANONIMA_MARCADOR_KEY = "convi_marcador_laanonima";
-  const [marcadorListo, setMarcadorListo] = React.useState(() => {
-    try { return localStorage.getItem(LAANONIMA_MARCADOR_KEY) === "1"; } catch (e) { return false; }
-  });
-  function marcarMarcadorListo() {
-    try { localStorage.setItem(LAANONIMA_MARCADOR_KEY, "1"); } catch (e) {}
-    setMarcadorListo(true);
-  }
-
-  // El listado de productos NO devuelve `product_id` (el cod-anonima que toma su
-  // carrito); `GET /carrito` sí. Un producto agregado en esta misma sesión entra
-  // al mapa con el objeto de la grilla, o sea sin ese código, así que acá se
-  // rellena con una lectura del carrito. Un request, y sólo en esta rama.
-  const [codsLA, setCodsLA] = React.useState({});
-  React.useEffect(() => {
-    if (superNombre !== "La Anónima" || !token) return;
-    if (items.every(i => i.producto && i.producto.product_id)) return;
-    let vivo = true;
-    fetch(`${API}/carrito`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(data => {
-        if (!vivo || !Array.isArray(data)) return;
-        const map = {};
-        data.forEach(i => {
-          if (i.producto && i.producto.product_id) map[i.producto.id] = i.producto.product_id;
-        });
-        setCodsLA(map);
-      })
-      .catch(() => {});
-    return () => { vivo = false; };
-  }, [superNombre, token]);
+  // Qué fichas ya abrió, para no perder el hilo cargando a mano en el teléfono.
+  // Es "abierto", NO "agregado": desde acá no hay forma de saber si tocó el botón
+  // del súper (leer su carrito es cross-origin), así que la tilde no promete más
+  // de lo que sabe y el botón queda como "Abrir de nuevo".
+  const [abiertos, setAbiertos] = React.useState([]);
 
   // Si el usuario cierra el modal a mitad de la carga, cortamos el encadenado.
   React.useEffect(() => () => {
@@ -3667,109 +3516,76 @@ function ConfirmCompraModal({ superNombre, loginUrl, cartUrl, sucursalCompra, it
     if (!cargaTimer.current) setCarga("bloqueado");
   }
 
-  // La Anónima: carga con el marcador. Su carrito no se puede llenar desde otro
-  // origen (ver constantes LAANONIMA_*), pero sí desde adentro de su propio
-  // sitio, y eso es lo que hace el marcador que el usuario guarda una vez. La
-  // guía manual ficha por ficha queda de alternativa para quien no lo quiera.
+  // La Anónima: su carrito no se puede llenar desde otro origen (ver constantes
+  // LAANONIMA_*). Así que el camino es uno solo y anda en todos lados: abrir la
+  // ficha de cada producto y agregar desde el sitio de La Anónima. El marcador
+  // que hacía esto de un toque se quitó el 2026-08-27 —no funcionaba ni en iOS ni
+  // en escritorio— y con él se fue la única parte que necesitaba el `product_id`.
   if (esLaAnonima) {
-    const loaderUrl = buildLaAnonimaLoaderUrl(items, codsLA);
-    const sinCod = items.filter(i => !codLaAnonima(i.producto, codsLA)).length;
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="confirm-modal" onClick={e => e.stopPropagation()}>
           {paso === "login" ? (
             <>
-              <div className="confirm-title">Comprar en La Anónima — Paso 1 de 3</div>
+              <div className="confirm-title">Comprar en La Anónima — Paso 1 de 2</div>
               <p className="confirm-desc">
                 Abrí el sitio, iniciá sesión y elegí tu sucursal (te va a pedir el código postal).
                 Sin sucursal elegida La Anónima no deja agregar nada al carrito.
               </p>
               <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_STORE_URL, "_blank", "noopener,noreferrer"); setPaso(marcadorListo ? "cargar" : "instalar"); }}>
+                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_STORE_URL, "_blank", "noopener,noreferrer"); setPaso("manual"); }}>
                   Abrir La Anónima para ingresar →
                 </button>
                 <button className="confirm-btn secondary" onClick={onClose}>Cancelar</button>
               </div>
             </>
-          ) : paso === "instalar" ? (
+          ) : paso === "manual" ? (
             <>
-              <div className="confirm-title">Guardá el marcador — una sola vez</div>
-              <p className="confirm-desc">
-                La Anónima no acepta que le carguemos el carrito desde afuera, pero sí desde su
-                propio sitio. Este marcador hace eso: lo guardás <strong>una vez</strong> y de ahí
-                en más te carga el carrito entero de un toque.
-              </p>
-              <BotonMarcadorLaAnonima />
-              <p className="confirm-desc" style={{marginTop: 14}}>
-                <strong>En la computadora:</strong> arrastrá el botón azul a la barra de marcadores.<br/>
-                <strong>En el teléfono:</strong> tocá “Copiar el marcador”, creá un marcador nuevo
-                (podés guardar cualquier página) y pegá eso en el campo de la dirección.
-              </p>
-              <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { marcarMarcadorListo(); setPaso("cargar"); }}>
-                  Ya lo guardé, seguir →
-                </button>
-                <button className="confirm-btn secondary" onClick={() => setPaso("cargar")}>
-                  Prefiero cargar a mano
-                </button>
+              <div className="confirm-title">
+                Comprar en La Anónima — Paso 2 de 2
               </div>
-            </>
-          ) : paso === "cargar" ? (
-            <>
-              <div className="confirm-title">Comprar en La Anónima — Último paso</div>
               <p className="confirm-desc">
-                Tocá el botón: se abre tu carrito de La Anónima con la lista lista para cargar.
-                Ahí <strong>tocá el marcador</strong> “🛒 Cargar en La Anónima” y esperá a que
-                termine solo.
+                Tocá <strong>Abrir</strong> en cada producto y, en la ficha de La Anónima, tocá
+                <strong> Agregar al Carrito</strong>. Volvé acá y seguí con el siguiente: las fichas
+                se abren siempre en la misma pestaña, así no se te llena el teléfono de pestañas.
               </p>
               <div className="confirm-warning">
                 ⚠️ El precio puede variar según la sucursal que elijas: los que ves acá son de una sucursal de referencia.
               </div>
-              {sinCod > 0 && (
-                <div className="confirm-warning">
-                  {sinCod === items.length
-                    ? "No tengo el código de carrito de estos productos, así que hay que agregarlos a mano desde su ficha."
-                    : `${sinCod} producto${sinCod > 1 ? "s" : ""} sin código de carrito: ${sinCod > 1 ? "esos van" : "ese va"} a mano desde su ficha.`}
-                </div>
+              {items.length > 1 && (
+                <p className="confirm-desc" style={{margin: "10px 0 0"}}>
+                  <strong>{abiertos.length} de {items.length}</strong> abiertos.
+                </p>
               )}
-              <div className="confirm-btns">
-                <button className="confirm-btn primary" disabled={!loaderUrl}
-                  onClick={() => { window.open(loaderUrl, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
-                  Abrir La Anónima y cargar →
-                </button>
-                <button className="confirm-btn secondary" onClick={() => setPaso("manual")}>
-                  Cargar producto por producto
-                </button>
-                <button className="confirm-btn secondary" onClick={() => setPaso("instalar")}>
-                  ¿No tenés el marcador? Guardalo acá
-                </button>
-              </div>
-            </>
-          ) : paso === "manual" ? (
-            <>
-              <div className="confirm-title">Cargar producto por producto</div>
-              <p className="confirm-desc">
-                Abrí cada producto y tocá <strong>Agregar al Carrito</strong> en la ficha de La Anónima.
-              </p>
               <div className="confirm-item-list">
                 {items.map((i, idx) => {
                   const url = urlEnSuper(i.producto);
+                  const yaAbierto = abiertos.includes(idx);
                   return (
                     <div key={idx} className="confirm-item-row">
-                      <span className="confirm-item-name">{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}</span>
+                      <span className="confirm-item-name" style={yaAbierto ? {opacity: 0.55} : undefined}>
+                        {yaAbierto ? "✓ " : ""}{i.producto.nombre}{i.cantidad > 1 ? ` (x${i.cantidad})` : ""}
+                      </span>
                       <button className="confirm-item-btn" disabled={!url}
-                        onClick={() => url && window.open(url, "_blank", "noopener,noreferrer")}>
-                        {url ? "Abrir ficha →" : "Sin ficha"}
+                        onClick={() => {
+                          if (!url) return;
+                          // Mismo nombre de ventana: la ficha nueva reemplaza a la anterior.
+                          // Sin `noopener` a propósito — con él el navegador ignora el nombre
+                          // y abre una pestaña nueva cada vez, que es justo lo que evitamos.
+                          window.open(url, LAANONIMA_FICHA_WIN);
+                          setAbiertos(prev => prev.includes(idx) ? prev : [...prev, idx]);
+                        }}>
+                        {!url ? "Sin ficha" : yaAbierto ? "Abrir de nuevo" : "Abrir →"}
                       </button>
                     </div>
                   );
                 })}
               </div>
               <div className="confirm-btns">
-                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_CART_URL, "_blank", "noopener,noreferrer"); setPaso("listo"); }}>
+                <button className="confirm-btn primary" onClick={() => { window.open(LAANONIMA_CART_URL, LAANONIMA_FICHA_WIN); setPaso("listo"); }}>
                   Ver el carrito en La Anónima →
                 </button>
-                <button className="confirm-btn secondary" onClick={() => setPaso("cargar")}>← Volver</button>
+                <button className="confirm-btn secondary" onClick={() => setPaso("login")}>← Volver al paso 1</button>
               </div>
             </>
           ) : (
@@ -6639,7 +6455,7 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
               La Anónima— mostraban `null`: la card salía sin NINGÚN botón de compra y
               sin decir por qué, que es peor que no poder comprar. Hoy las 12 tienen
               flujo: URL masiva de VTEX, navegación encadenada (Coto, La Gallega,
-              Átomo, Dino) o el marcador de La Anónima. Y aunque no lo tuvieran, este
+              Átomo, Dino) o guía ficha por ficha (La Anónima). Y aunque no lo tuvieran, este
               botón sólo agrega al carrito de Convi, que es agnóstico del súper —qué
               flujo se usa lo decide recién ConfirmCompraModal, con la misma condición
               `puedeComprar`.
