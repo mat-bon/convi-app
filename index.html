@@ -103,6 +103,61 @@
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- ===================== Pixel de Meta (Facebook/Instagram) ==============
+       Para medir en el Events Manager qué hace en la app la gente que llega de
+       un aviso o de un posteo. Convive con Vercel Analytics de arriba y no lo
+       reemplaza: Vercel mide tráfico agregado y anónimo, el pixel mide
+       conversión atribuida a Meta. Son dos preguntas distintas.
+
+       >>> FALTA EL ID. El pixel NO se carga hasta que se complete. <<<
+       Se saca de Events Manager (business.facebook.com/events_manager) → el
+       origen de datos → "ID del conjunto de datos": son ~15 dígitos.
+       HAY QUE PONERLO EN DOS LUGARES: la constante de acá abajo y la URL del
+       <noscript> que le sigue. Mismo problema que el host de la API, que está
+       duplicado en tres lados de este archivo.
+
+       Con el ID vacío no se pide fbevents.js y no sale ni un request: mejor
+       que cargar el script y mandarle `init` con undefined, que Meta acepta y
+       después aparece como un pixel fantasma sin eventos en el panel.
+
+       El stub de `fbq` se define IGUAL aunque no haya ID, por el mismo motivo
+       por el que arriba se define el de `window.va`: así un `fbq('track', …)`
+       en el código de la app encola en vez de romper con "fbq is not defined".
+
+       display:none en el <noscript>: sin JS esta app no renderiza NADA (React
+       entra por CDN y el JSX lo compila Babel en el navegador), así que ese
+       visitante nunca vio la app. Se deja igual porque es lo que Meta valida
+       al revisar la instalación, pero no esperes verlo en los números.
+
+       Y OJO CON EL BLOQUEO: los bloqueadores de publicidad cortan
+       connect.facebook.net por nombre de dominio. Una parte del tráfico real
+       no va a aparecer nunca en Events Manager, y eso NO es un bug del pixel:
+       si los números no cierran contra Vercel Analytics, es esto.
+       ==================================================================== -->
+  <script>
+    // El ID del pixel de Meta. Vacío = apagado.
+    var CONVI_META_PIXEL_ID = "";
+
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];if(!v)return;t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script',
+    CONVI_META_PIXEL_ID ? 'https://connect.facebook.net/en_US/fbevents.js' : null);
+
+    if (CONVI_META_PIXEL_ID) {
+      fbq('init', CONVI_META_PIXEL_ID);
+      // Un solo PageView, en la carga. Esta app es una sola pantalla con
+      // estado: no hay router ni cambios de URL, así que no hay más "páginas"
+      // que contar y no hace falta re-disparar PageView en cada vista.
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" alt=""
+    src="https://www.facebook.com/tr?id=CONVI_META_PIXEL_ID&ev=PageView&noscript=1"></noscript>
+  <!-- ======================= fin del pixel de Meta ====================== -->
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -6596,17 +6651,20 @@ function LegalModal({ initialTab = "terminos", onClose }) {
                 <li>Datos de cuenta: email y contraseña (gestionada de forma segura por nuestro proveedor de autenticación; no se almacena en texto plano).</li>
                 <li>Preferencias: región, supermercados elegidos, productos favoritos y carrito.</li>
                 <li>Datos técnicos básicos necesarios para el funcionamiento (por ejemplo, registros del servidor).</li>
+                <li>Datos de uso y medición: páginas vistas y acciones dentro del Servicio, recolectados mediante herramientas de analítica y de medición publicitaria (entre ellas el píxel de Meta), que pueden usar cookies o identificadores similares en tu dispositivo.</li>
               </ul>
               <h4>3. Finalidades</h4>
               <ul>
                 <li>Prestar y personalizar el Servicio.</li>
                 <li>Autenticarte y mantener tu sesión.</li>
                 <li>Enviarte alertas de baja de precio de tus favoritos por email, si tenés cuenta.</li>
+                <li>Medir el uso del Servicio y la efectividad de nuestras campañas de difusión.</li>
               </ul>
               <h4>4. Base del tratamiento</h4>
               <p>Tratamos tus datos con tu consentimiento y para la ejecución del Servicio que solicitás.</p>
               <h4>5. Con quién los compartimos</h4>
               <p>No vendemos tus datos personales. Podemos utilizar proveedores que actúan por nuestra cuenta (infraestructura, base de datos y envío de emails). No compartimos tus datos con los supermercados.</p>
+              <p>Usamos además herramientas de analítica y medición publicitaria de terceros —Vercel Analytics y el píxel de Meta (Meta Platforms, Inc.)—, que reciben datos de tu navegación por el Servicio y los tratan conforme a sus propias políticas. Esto implica una transferencia internacional de datos. Podés limitarlo desde la configuración de anuncios de tu cuenta de Meta, con la configuración de cookies de tu navegador o con un bloqueador de rastreadores.</p>
               <h4>6. Conservación</h4>
               <p>Conservamos tus datos mientras mantengas tu cuenta o sean necesarios para las finalidades descriptas. Podés solicitar su supresión.</p>
               <h4>7. Tus derechos</h4>
