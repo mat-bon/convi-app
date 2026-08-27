@@ -110,14 +110,16 @@
        reemplaza: Vercel mide tráfico agregado y anónimo, el pixel mide
        conversión atribuida a Meta. Son dos preguntas distintas.
 
-       >>> FALTA EL ID. El pixel NO se carga hasta que se complete. <<<
-       Se saca de Events Manager (business.facebook.com/events_manager) → el
-       origen de datos → "ID del conjunto de datos": son ~15 dígitos.
-       HAY QUE PONERLO EN DOS LUGARES: la constante de acá abajo y la URL del
-       <noscript> que le sigue. Mismo problema que el host de la API, que está
-       duplicado en tres lados de este archivo.
+       EL ID ESTÁ EN DOS LUGARES y hay que cambiarlo en los dos: la constante
+       de acá abajo y la URL del <noscript> que le sigue. En el <noscript> va
+       repetido a mano porque es un <img> de HTML, donde la variable de JS no
+       existe. Mismo problema que el host de la API, duplicado en tres lados de
+       este archivo. Sale de Events Manager (business.facebook.com/events_manager)
+       como "ID del conjunto de datos" — Meta ya no le dice "pixel".
 
-       Con el ID vacío no se pide fbevents.js y no sale ni un request: mejor
+       Para APAGARLO no hace falta borrar nada de esto: alcanza con dejar la
+       constante en "". Con el ID vacío no se pide fbevents.js y no sale ni un
+       request: mejor
        que cargar el script y mandarle `init` con undefined, que Meta acepta y
        después aparece como un pixel fantasma sin eventos en el panel.
 
@@ -137,7 +139,7 @@
        ==================================================================== -->
   <script>
     // El ID del pixel de Meta. Vacío = apagado.
-    var CONVI_META_PIXEL_ID = "";
+    var CONVI_META_PIXEL_ID = "1401577928173328";
 
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
     n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -155,7 +157,7 @@
     }
   </script>
   <noscript><img height="1" width="1" style="display:none" alt=""
-    src="https://www.facebook.com/tr?id=CONVI_META_PIXEL_ID&ev=PageView&noscript=1"></noscript>
+    src="https://www.facebook.com/tr?id=1401577928173328&ev=PageView&noscript=1"></noscript>
   <!-- ======================= fin del pixel de Meta ====================== -->
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
