@@ -1,0 +1,36 @@
+{
+  "id": "/",
+  "name": "Convi — Compará y ahorrá en tu supermercado",
+  "short_name": "Convi",
+  "description": "Cargá tu lista de compras y te decimos en qué supermercado te sale más barata. 12 cadenas de Argentina, los precios de tu región y los descuentos bancarios del día.",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
+  "display": "minimal-ui",
+  "orientation": "portrait-primary",
+  "background_color": "#F2EDE0",
+  "theme_color": "#C7CEBE",
+  "categories": ["shopping", "finance", "lifestyle"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "https://web-production-32c3f.up.railway.app/convi-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://web-production-32c3f.up.railway.app/convi-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://web-production-32c3f.up.railway.app/convi-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
