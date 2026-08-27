@@ -6535,7 +6535,6 @@ function ListaView({ token, regionId, regionCodigo, supersVisibles, listas, list
 // ---------------------------------------------------------------------------
 const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onFav, onCarrito, onLista, onOpen, supersVisibles, regionCodigo }) {
   const hasOffer = p.descuento_pct || p.promocion;
-  const esVtex = SUPER_VTEX.includes(p.supermercado);
   // Cadena que no vende en la región elegida: se ve el precio (el usuario la
   // tildó a propósito, sirve de referencia) pero no se ofrece agregar al
   // carrito, porque ese carrito no se puede cerrar desde acá.
@@ -6635,9 +6634,18 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
             title={enLista?"Quitar de mi lista":"Agregar a mi lista"}>
             📋<span className="btn-label">{enLista?"En lista":"Lista"}</span>
           </button>
-          {/* Átomo no es VTEX, pero su carrito se carga de un clic y encima sin pedir
-              cuenta (ver cargarCarritoEnAtomo), así que va del lado de los que tienen
-              botón de carrito y no del de Dino/La Gallega. */}
+          {/* El botón de carrito va para TODAS las cadenas. Antes había acá una lista
+              blanca (VTEX + Coto + Átomo) y las dos que quedaban afuera —La Gallega y
+              La Anónima— mostraban `null`: la card salía sin NINGÚN botón de compra y
+              sin decir por qué, que es peor que no poder comprar. Hoy las 12 tienen
+              flujo: URL masiva de VTEX, navegación encadenada (Coto, La Gallega,
+              Átomo, Dino) o el marcador de La Anónima. Y aunque no lo tuvieran, este
+              botón sólo agrega al carrito de Convi, que es agnóstico del súper —qué
+              flujo se usa lo decide recién ConfirmCompraModal, con la misma condición
+              `puedeComprar`.
+              Las dos ramas de abajo sí son excepciones de verdad: la cadena que no
+              vende en la región (el precio queda de referencia) y la card reproyectada
+              sin id propio, donde agregar usaría la fila del súper equivocado. */}
           {!llegaAcá ? (
             <a className="card-btn buy" href={p.url||undefined} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}}
@@ -6649,11 +6657,11 @@ const ProductCard = React.memo(function ProductCard({ p, enCarrito, enLista, onF
               onClick={e=>e.stopPropagation()} title={`Ver en ${p.supermercado}`} style={{textDecoration:"none"}}>
               Ver en {p.supermercado} →
             </a>
-          ) : (esVtex || p.supermercado === "Coto" || p.supermercado === "Atomo") ? (
+          ) : (
             <button className={`card-btn buy ${enCarrito?"accent":"primary"}`} onClick={e=>onCarrito(e,p)} title={enCarrito?"Quitar del carrito":"Agregar al carrito"}>
               🛒<span className="btn-label">{enCarrito?"En carrito":"Agregar"}</span>
             </button>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
