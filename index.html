@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-AR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Convi — Te conviene. Compará y ahorrá en tu supermercado</title>
+  <title>Comparar precios de supermercados en Argentina — Convi</title>
   <meta name="theme-color" content="#C7CEBE">
-  <meta name="description" content="Cargá tu lista de compras y te decimos en qué supermercado te sale más barata. Comparamos 12 cadenas de Argentina con los precios de tu región, más el cronograma de descuentos bancarios. Gratis.">
-  <link rel="canonical" href="https://convi.ar/">
+  <meta name="description" content="Cargá tu lista y te decimos en qué supermercado te sale más barata. 12 cadenas de Argentina, los precios de tu región y los descuentos bancarios del día. Gratis.">
+  <link rel="canonical" href="https://www.convi.ar/">
 
   <!-- Open Graph y Twitter Card. Esto NO es SEO: es lo que decide si el link
        llega con tarjeta o pelado cuando alguien comparte convi.ar por WhatsApp,
@@ -28,7 +28,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Convi">
   <meta property="og:locale" content="es_AR">
-  <meta property="og:url" content="https://convi.ar/">
+  <meta property="og:url" content="https://www.convi.ar/">
   <meta property="og:title" content="Convi — Compará tu lista en 12 supermercados">
   <meta property="og:description" content="Cargá tu lista de compras y te decimos dónde te sale más barata. Los precios de tu región y los descuentos bancarios del día. Gratis, sin descargar nada.">
   <meta property="og:image" content="https://web-production-32c3f.up.railway.app/convi-og.png">
@@ -40,6 +40,236 @@
   <meta name="twitter:title" content="Convi — Compará tu lista en 12 supermercados">
   <meta name="twitter:description" content="Cargá tu lista y te decimos dónde te sale más barata. 12 cadenas, los precios de tu región y los descuentos bancarios del día. Gratis.">
   <meta name="twitter:image" content="https://web-production-32c3f.up.railway.app/convi-og.png">
+
+  <!-- ===================== Datos estructurados (JSON-LD) ==================
+       Para qué sirve: le dice a Google, a Bing y a los buscadores con IA QUÉ es
+       esto, sin que tengan que deducirlo del HTML. Sin esto la página es, para
+       un buscador, un <div> vacío con un título (ver el bloque de contenido
+       estático del <body>: el resto lo dibuja React y no existe hasta que corre).
+
+       No es lo mismo que Open Graph de arriba. OG decide cómo se ve el link
+       COMPARTIDO por WhatsApp; esto decide cómo ENTIENDE la página el buscador.
+       Son dos consumidores distintos y ninguno lee las etiquetas del otro.
+
+       Va como application/ld+json, que el navegador NO ejecuta: Babel sólo toca
+       los <script type="text/babel"> y este no lo es, así que no se compila ni
+       pesa en el arranque.
+
+       OJO AL MANTENERLO: acá están duplicadas las 12 cadenas y las 7 regiones que
+       en el JS de abajo viven en SUPER_POR_REGION. Es la misma clase de duplicado
+       que el host de la API. Si se suma un súper o una región hay que tocar los
+       dos lados; si no, el buscador sigue anunciando la lista vieja y nadie se
+       entera, porque no falla nada.
+
+       El FAQPage ya no genera "resultado enriquecido" en Google (desde 2023 lo
+       reserva a sitios de gobierno y salud), así que NO esperes verlo desplegado
+       en la búsqueda. Se deja igual porque los asistentes con IA sí lo leen para
+       citar la respuesta, y ese es hoy un canal de descubrimiento real.
+       ==================================================================== -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.convi.ar/#organizacion",
+      "name": "Convi",
+      "legalName": "Convi S.A.S.",
+      "url": "https://www.convi.ar/",
+      "email": "convi.arg@gmail.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://web-production-32c3f.up.railway.app/convi-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Córdoba",
+        "addressRegion": "Córdoba",
+        "addressCountry": "AR"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Argentina"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.convi.ar/#sitio",
+      "url": "https://www.convi.ar/",
+      "name": "Convi",
+      "description": "Comparador gratuito de precios de supermercados de Argentina.",
+      "inLanguage": "es-AR",
+      "publisher": {
+        "@id": "https://www.convi.ar/#organizacion"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://www.convi.ar/#app",
+      "name": "Convi",
+      "url": "https://www.convi.ar/",
+      "applicationCategory": "ShoppingApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "browserRequirements": "Requiere JavaScript.",
+      "inLanguage": "es-AR",
+      "description": "Cargás tu lista de compras y Convi te dice en qué supermercado te sale más barata. Compara los precios de góndola de 12 cadenas de Argentina con los valores de tu región y muestra el cronograma semanal de descuentos bancarios de cada súper.",
+      "publisher": {
+        "@id": "https://www.convi.ar/#organizacion"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "ARS",
+        "description": "La comparación de precios, el buscador y el cronograma de promociones bancarias son gratuitos."
+      },
+      "featureList": [
+        "Comparación de una lista de compras entre 12 supermercados",
+        "Precios de góndola de la región del usuario",
+        "Cronograma semanal de descuentos y promociones bancarias",
+        "Buscador de productos por nombre o marca",
+        "Lectura del código de barras de un ticket para armar la lista"
+      ],
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "Carrefour"
+        },
+        {
+          "@type": "Thing",
+          "name": "Coto"
+        },
+        {
+          "@type": "Thing",
+          "name": "Dia"
+        },
+        {
+          "@type": "Thing",
+          "name": "Jumbo"
+        },
+        {
+          "@type": "Thing",
+          "name": "Disco"
+        },
+        {
+          "@type": "Thing",
+          "name": "VEA"
+        },
+        {
+          "@type": "Thing",
+          "name": "MasOnline"
+        },
+        {
+          "@type": "Thing",
+          "name": "La Anónima"
+        },
+        {
+          "@type": "Thing",
+          "name": "Dino"
+        },
+        {
+          "@type": "Thing",
+          "name": "Cordiez"
+        },
+        {
+          "@type": "Thing",
+          "name": "La Gallega"
+        },
+        {
+          "@type": "Thing",
+          "name": "Átomo"
+        }
+      ],
+      "areaServed": [
+        {
+          "@type": "Place",
+          "name": "Ciudad de Buenos Aires y GBA"
+        },
+        {
+          "@type": "Place",
+          "name": "La Plata"
+        },
+        {
+          "@type": "Place",
+          "name": "Santa Fe y Rosario"
+        },
+        {
+          "@type": "Place",
+          "name": "Córdoba"
+        },
+        {
+          "@type": "Place",
+          "name": "Mendoza"
+        },
+        {
+          "@type": "Place",
+          "name": "Tucumán"
+        },
+        {
+          "@type": "Place",
+          "name": "Salta"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.convi.ar/#faq",
+      "inLanguage": "es-AR",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Qué es Convi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Convi es un comparador gratuito de precios de supermercados de Argentina. Cargás tu lista de compras y te dice en qué cadena te sale más barata en total, con los precios de tu región."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué supermercados compara Convi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Convi compara 12 cadenas: Carrefour, Coto, Dia, Jumbo, Disco, VEA, MasOnline, La Anónima, Dino, Cordiez, La Gallega, Átomo. Qué cadenas aparecen depende de la región elegida, porque no todas operan en todo el país."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cuánto cuesta usar Convi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "La comparación de precios de góndola, el buscador y el cronograma de promociones bancarias son gratuitos y no requieren tarjeta."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿En qué zonas de Argentina funciona?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Hoy cubre Ciudad de Buenos Aires y GBA, La Plata, Santa Fe y Rosario, Córdoba, Mendoza, Tucumán, Salta. Los precios se muestran según la región elegida, porque una misma cadena no cobra lo mismo en todas sus sucursales."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿De dónde salen los precios?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "De los sitios públicos de cada cadena, que Convi consulta y ordena. El cronograma de descuentos bancarios se actualiza todas las mañanas con lo que publica cada supermercado. Pueden existir errores, demoras o faltantes: el precio que vale es el de la góndola."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué es el cronograma de descuentos bancarios?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Una grilla de la semana que muestra qué banco, tarjeta o billetera conviene cada día en cada supermercado, con el porcentaje de descuento y el tope de reintegro."
+          }
+        }
+      ]
+    }
+  ]
+}
+  </script>
 
   <!-- Manifest: es lo que habilita "instalar" en Android/Chrome. Va en el MISMO
        origen que esta página y con ruta relativa, no en la API: el `start_url`
@@ -82,9 +312,31 @@
        la barra de Safari, y los carritos de los súperes se mandan a pestañas nuevas
        que ahí quedan sin barra de direcciones ni botón de volver. -->
   <meta name="apple-mobile-web-app-title" content="Convi">
-  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
+  <!-- Los tres van con DEFER. Sin él son scripts bloqueantes: el navegador frena
+       el parseo del HTML en esta línea y no mira el <body> hasta haber bajado y
+       evaluado los tres, y Babel solo son ~500 KB comprimidos (2,8 MB sin
+       comprimir). O sea que el contenido estático del <body> —que es la pantalla
+       de carga y lo único que un buscador sin JS puede leer— no se pintaba hasta
+       después de todo eso.
+
+       Medido acá con carga fría: el parser llegaba al <body> a los 183 ms con los
+       scripts bloqueantes y a los 10 ms con defer, y eso con el CDN a 95 ms. En un
+       móvil argentino, donde bajar Babel tarda segundos, la diferencia es de
+       segundos: es la espera en blanco que veía el usuario.
+
+       Por qué es seguro y no rompe el arranque:
+       · `defer` CONSERVA EL ORDEN entre estos tres, así que React sigue estando
+         definido antes que Babel.
+       · El <script type="text/babel"> de abajo NO lo ejecuta el navegador (no
+         reconoce ese type), así que no hay carrera posible: queda inerte en el DOM
+         hasta que Babel lo busca y lo compila.
+       · Babel standalone compila los text/babel en DOMContentLoaded, que dispara
+         DESPUÉS de los defer. Verificado en el navegador: React monta igual.
+       Los inline de arriba y abajo (window.va, pixel de Meta) no se pueden diferir
+       ni hace falta: no dependen de React. -->
+  <script defer crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script defer crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
   <!-- Vercel Web Analytics. La doc oficial arranca con `npm i @vercel/analytics` y
        un <Analytics/> en el layout, pero acá no hay nada de eso: no hay bundler ni
        package.json, React entra por CDN y el JSX lo compila Babel en el navegador.
@@ -233,6 +485,21 @@
     ::-webkit-scrollbar-thumb:hover { background: #AAB39F; background-clip: padding-box; }
 
     /* Header */
+    /* Texto que leen los lectores de pantalla y los buscadores, pero que no se
+       dibuja. Se usa para el <h1> de la app: la identidad visual del encabezado
+       es el logotipo (una imagen), así que sin esto la página renderizada no
+       tiene NINGÚN encabezado de nivel 1 —ni para Google, que sí ejecuta el JS y
+       por lo tanto nunca ve el bloque estático del <body>, ni para alguien que
+       navega por encabezados con un lector de pantalla.
+       El clip + 1px es la receta estándar: `display:none` y `visibility:hidden`
+       también lo sacarían del árbol de accesibilidad, que es justo lo que NO
+       queremos. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+      border: 0;
+    }
+
     .header {
       border-bottom: 1px solid var(--border);
       padding: 0;
@@ -2105,6 +2372,111 @@
 </head>
 <body>
 <div id="root"></div>
+
+<!-- ==================== Contenido estático para buscadores =================
+     POR QUÉ EXISTE: hasta acá el <body> era exactamente `<div id="root"></div>`.
+     440 KB de HTML sin UNA palabra de texto, porque todo lo dibuja React después
+     de que Babel compila el JSX en el navegador. Un buscador que no ejecuta JS
+     —Bing, DuckDuckGo, y los rastreadores de los asistentes con IA— veía una
+     página en blanco y no tenía nada que indexar. Google sí renderiza, pero lo
+     hace en una segunda pasada diferida, así que hasta que le toca el turno la
+     página tampoco existe para él.
+
+     DOBLE FUNCIÓN, y por eso no es texto escondido: esto es TAMBIÉN la pantalla
+     de carga. Antes, mientras Babel compilaba, el usuario miraba un blanco. Ahora
+     mira esto. Es contenido real, visible y verdadero sobre el producto: lo mismo
+     que ve una persona con JS lento es lo que lee el buscador.
+
+     SE BORRA JUSTO ANTES DE MONTAR REACT (ver el final del <script> de abajo).
+     El borrado va ANTES del render y no después, a propósito: así no hay un
+     cuadro en el que el bloque y la app convivan y la app aparezca empujada
+     hacia abajo. Lo que se pierde es despreciable —el hueco entre borrar y
+     pintar es el mismo blanco que había antes— porque la espera larga es la
+     compilación de Babel, y durante TODA esa compilación este bloque está en
+     pantalla.
+
+     OJO AL MANTENERLO: las 12 cadenas y las 7 regiones están duplicadas acá, en
+     el JSON-LD del <head> y en SUPER_POR_REGION del JS. Son tres lugares. Si se
+     suma un súper o una región y no se tocan los tres, el buscador y la pantalla
+     de carga siguen anunciando la lista vieja sin que falle nada.
+     ====================================================================== -->
+<div id="convi-seo">
+  <style>
+    #convi-seo{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      color:#2C3A31;background:#EFF1EB;margin:0;padding:0;line-height:1.6;
+      -webkit-font-smoothing:antialiased}
+    #convi-seo .cs-wrap{max-width:760px;margin:0 auto;padding:0 24px 72px}
+    #convi-seo .cs-hero{min-height:82vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;text-align:center;gap:18px;padding:40px 0}
+    #convi-seo .cs-hero svg{border-radius:22px}
+    #convi-seo h1{font-size:clamp(28px,5.2vw,44px);line-height:1.15;font-weight:800;
+      margin:4px 0 0;letter-spacing:-.02em;max-width:15ch}
+    #convi-seo .cs-sub{font-size:clamp(16px,2.4vw,19px);color:#4F5C53;margin:0;max-width:44ch}
+    #convi-seo .cs-load{display:inline-flex;align-items:center;gap:10px;margin-top:8px;
+      font-size:14px;color:#626E67}
+    #convi-seo .cs-dot{width:9px;height:9px;border-radius:50%;background:#A94E33;
+      animation:cs-pulse 1.1s ease-in-out infinite}
+    @keyframes cs-pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+    @media (prefers-reduced-motion:reduce){#convi-seo .cs-dot{animation:none;opacity:.7}}
+    #convi-seo h2{font-size:22px;font-weight:700;margin:40px 0 10px;letter-spacing:-.01em}
+    #convi-seo h3{font-size:16px;font-weight:700;margin:20px 0 4px}
+    #convi-seo p{margin:0 0 12px;color:#4F5C53}
+    #convi-seo ul{margin:0 0 12px;padding-left:20px;color:#4F5C53}
+    #convi-seo li{margin:4px 0}
+    #convi-seo .cs-chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0}
+    #convi-seo .cs-chips li{background:#fff;border:1px solid #DEE3D8;border-radius:999px;
+      padding:6px 14px;font-size:14px;font-weight:600;color:#2C3A31;margin:0}
+    #convi-seo .cs-nota{font-size:13px;color:#626E67;border-top:1px solid #DEE3D8;
+      margin-top:40px;padding-top:16px}
+  </style>
+
+  <div class="cs-wrap">
+    <div class="cs-hero">
+      <svg viewBox='0 0 88 88' xmlns='http://www.w3.org/2000/svg' width='72' height='72' role='img' aria-label='Convi'><rect width='88' height='88' rx='22' fill='#C7CEBE'/><g transform='translate(44 44) scale(0.88) translate(-47 -40)' fill='#A94E33' stroke='#A94E33' stroke-width='4' stroke-linecap='round'><path d='M40 53 C34 63 32 69 28 77' fill='none'/><path d='M50 55 C48 65 48 71 47 79' fill='none'/><path d='M57 53 C63 61 67 67 71 73' fill='none'/><path d='M54 45 C52 37 51 31 50 25' fill='none'/><path d='M68 36 C74 29 78 25 85 20' fill='none'/><path d='M70 40 C76 36 81 34 87 31' fill='none'/><ellipse cx='26' cy='50' rx='18' ry='14' stroke='none' transform='rotate(-12 26 50)'/><ellipse cx='45' cy='48' rx='10' ry='8' stroke='none'/><circle cx='61' cy='43' r='11' stroke='none'/><rect x='38' y='3' width='28' height='20' rx='5' fill='#F2EDE0' transform='rotate(-8 52 13)'/></g></svg>
+      <h1>Comparar precios de supermercados en Argentina</h1>
+      <p class="cs-sub">Cargá tu lista de compras y Convi te dice en qué supermercado
+        te sale más barata, con los precios de tu región.</p>
+      <span class="cs-load"><span class="cs-dot"></span> Cargando Convi…</span>
+    </div>
+
+    <h2>Qué es Convi</h2>
+    <p>Convi es un comparador gratuito de precios de supermercados de Argentina. En vez de
+      comparar producto por producto, compara <strong>tu lista entera</strong>: sumás lo que
+      comprás siempre y te devuelve cuánto sale esa misma lista en cada cadena, ordenadas de
+      la más barata a la más cara.</p>
+    <p>Los precios son los de góndola de <strong>tu región</strong>, no un promedio nacional:
+      una misma cadena no cobra lo mismo en Córdoba que en Buenos Aires.</p>
+
+    <h2>Los 12 supermercados que compara</h2>
+    <ul class="cs-chips"><li>Carrefour</li><li>Coto</li><li>Dia</li><li>Jumbo</li><li>Disco</li><li>VEA</li><li>MasOnline</li><li>La Anónima</li><li>Dino</li><li>Cordiez</li><li>La Gallega</li><li>Átomo</li></ul>
+
+    <h2>Cómo funciona</h2>
+    <ol>
+      <li><strong>Elegís tu región</strong> para que los precios sean los que vas a pagar vos.</li>
+      <li><strong>Armás tu lista</strong> buscando por nombre o marca, o escaneando el código
+        de barras de un ticket viejo.</li>
+      <li><strong>Ves dónde conviene</strong>: el total de tu lista en cada supermercado y
+        cuánto ahorrás comprando en el más barato.</li>
+    </ol>
+
+    <h2>Descuentos y promociones bancarias</h2>
+    <p>Además del precio de góndola, Convi arma el <strong>cronograma semanal de descuentos
+      bancarios</strong>: qué banco, tarjeta o billetera conviene cada día en cada supermercado,
+      con el porcentaje y el tope de reintegro. Se actualiza todas las mañanas con lo que
+      publica cada cadena.</p>
+
+    <h2>Dónde funciona</h2>
+    <ul><li><strong>Ciudad de Buenos Aires y GBA</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Coto y Dia</li><li><strong>La Plata</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo y Coto</li><li><strong>Santa Fe y Rosario</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto, La Gallega y La Anónima</li><li><strong>Córdoba</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Dino, Cordiez y La Anónima</li><li><strong>Mendoza</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto y Átomo</li><li><strong>Tucumán</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li><li><strong>Salta</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li></ul>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="cs-faq"><h3>¿Qué es Convi?</h3><p>Convi es un comparador gratuito de precios de supermercados de Argentina. Cargás tu lista de compras y te dice en qué cadena te sale más barata en total, con los precios de tu región.</p></div><div class="cs-faq"><h3>¿Qué supermercados compara Convi?</h3><p>Doce cadenas: Carrefour, Coto, Dia, Jumbo, Disco, VEA, MasOnline, La Anónima, Dino, Cordiez, La Gallega, Átomo. Cuáles aparecen depende de la región elegida, porque no todas operan en todo el país.</p></div><div class="cs-faq"><h3>¿Cuánto cuesta usar Convi?</h3><p>La comparación de precios de góndola, el buscador y el cronograma de promociones bancarias son gratuitos y no piden tarjeta.</p></div><div class="cs-faq"><h3>¿En qué zonas de Argentina funciona?</h3><p>En Ciudad de Buenos Aires y GBA, La Plata, Santa Fe y Rosario, Córdoba, Mendoza, Tucumán, Salta. Los precios se muestran según la región elegida, porque una misma cadena no cobra lo mismo en todas sus sucursales.</p></div><div class="cs-faq"><h3>¿De dónde salen los precios?</h3><p>De los sitios públicos de cada cadena, que Convi consulta y ordena. El cronograma de descuentos bancarios se actualiza todas las mañanas con lo que publica cada supermercado. Pueden existir errores, demoras o faltantes: el precio que vale es el de la góndola.</p></div><div class="cs-faq"><h3>¿Qué es el cronograma de descuentos bancarios?</h3><p>Una grilla de la semana que muestra qué banco, tarjeta o billetera conviene cada día en cada supermercado, con el porcentaje de descuento y el tope de reintegro.</p></div>
+
+    <p class="cs-nota">Convi es un servicio independiente: no pertenece a ninguna de las cadenas
+      que compara ni está patrocinado por ellas. Las marcas mencionadas son de sus respectivos
+      titulares. Los precios se toman de fuentes públicas y se actualizan periódicamente; pueden
+      existir errores, demoras o faltantes. <strong>El precio que vale es el de la góndola.</strong></p>
+  </div>
+</div>
 <script type="text/babel" data-presets="react">
 
 const API = "https://web-production-32c3f.up.railway.app";
@@ -7780,6 +8152,14 @@ function App() {
           onClose={()=>setShowEscaner(false)} onProducto={setModalProducto}/>
       )}
 
+      {/* El h1 de la página. Va oculto a la vista (.sr-only) porque arriba ya
+          está el logotipo, que es la identidad visual y no un título de texto.
+          Tiene que existir igual: el bloque estático del <body> —el que trae el
+          h1 visible— se borra al montar React, así que sin este la app renderizada
+          se queda sin encabezado de nivel 1. Google renderiza el JS, o sea que
+          ESTE es el h1 que Google termina viendo. */}
+      <h1 className="sr-only">Convi — comparador de precios de supermercados de Argentina</h1>
+
       {/* Header */}
       <header className="header">
         <div className="header-inner">
@@ -8095,6 +8475,11 @@ function App() {
   );
 }
 
+// Saca la pantalla de carga / contenido para buscadores del <body> y monta la
+// app. Va en este orden —borrar y DESPUÉS renderizar— para que no haya un
+// cuadro con los dos bloques apilados. Ver el comentario largo del <body>.
+const __seo = document.getElementById("convi-seo");
+if (__seo) __seo.remove();
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>

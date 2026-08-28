@@ -1,0 +1,31 @@
+# robots.txt de convi.ar
+#
+# HASTA HOY ESTE ARCHIVO NO EXISTÍA: https://www.convi.ar/robots.txt daba 404.
+# Un 404 acá no bloquea nada —sin robots.txt los buscadores asumen que pueden
+# rastrear todo— así que no era la causa de que el sitio no apareciera. Lo que sí
+# se perdía es la línea Sitemap: de abajo, que es la vía por la que un buscador
+# descubre las URL de un dominio SIN backlinks que lo apunten. Para un sitio nuevo
+# es la única puerta de entrada que no depende de que alguien más nos linkee.
+#
+# Va en el repo de VERCEL (mat-bon/convi-app), no en el de Railway: tiene que
+# servirse desde el mismo origen que la página. Un robots.txt sólo vale para el
+# host que lo sirve; el de Railway no dice nada sobre convi.ar.
+
+User-agent: *
+Allow: /
+
+# Los rastreadores de los asistentes con IA quedan permitidos A PROPÓSITO (que es
+# lo que ya pasaba de hecho, porque no había robots.txt). Hoy una parte del
+# descubrimiento llega por ahí: alguien pregunta "cómo comparo precios de
+# supermercados en Argentina" y el asistente cita las fuentes que pudo leer.
+# Es justamente el canal donde el JSON-LD y el bloque estático del index.html
+# rinden, porque esos rastreadores no ejecutan JavaScript.
+# Si algún día se quiere cortar, se agrega el bloque de abajo descomentado:
+#   User-agent: GPTBot
+#   Disallow: /
+
+# Rutas internas de Vercel: no son contenido y no tiene sentido gastarles
+# presupuesto de rastreo.
+Disallow: /_vercel/
+
+Sitemap: https://www.convi.ar/sitemap.xml

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap de convi.ar. Antes daba 404.
+
+  UNA SOLA URL, y no es un descuido: la app es una sola pantalla con estado.
+  No hay router ni cambios de URL —el propio comentario del pixel de Meta en el
+  index.html lo dice—, así que no existe ninguna otra ruta que ofrecer. Un
+  sitemap con URL inventadas sería peor que este: cada una daría el mismo HTML y
+  Google las trataría como contenido duplicado.
+
+  La URL va CON www. El apex convi.ar hace 308 a www.convi.ar, y listar una URL
+  que redirige es una señal contradictoria: obliga a Google a resolver el salto y
+  compite con el <link rel="canonical">. Los dos apuntan ahora al mismo lugar.
+  (Hasta hoy no era así: el canonical del index.html decía https://convi.ar/,
+  o sea una URL que redirigía. Se corrigió junto con este archivo.)
+
+  convi.com.ar sirve el MISMO contenido con 200 y no está acá a propósito: es un
+  dominio espejo y quien lo consolida es el canonical del HTML, que apunta a
+  www.convi.ar desde cualquiera de los dos.
+
+  Va en el repo de VERCEL (mat-bon/convi-app), igual que el robots.txt que lo
+  referencia.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.convi.ar/</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
