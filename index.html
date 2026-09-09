@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-08-29T00:43:29.568Z
+  Generado: 2026-09-09T01:20:05.060Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -343,8 +343,26 @@
          DESPUÉS de los defer. Verificado en el navegador: React monta igual.
        Los inline de arriba y abajo (window.va, pixel de Meta) no se pueden diferir
        ni hace falta: no dependen de React. -->
-  <script defer crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-  <script defer crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- `integrity` (SRI) y versión FIJA. Van juntos y no se pueden separar:
+       el hash describe UN archivo, así que con `react@18` —que jsdelivr
+       resuelve a lo último de la rama— el primer 18.3.2 haría fallar el hash y
+       la app no montaría más. Verificado antes de fijarlo: `react@18` y
+       `react@18.3.1` devuelven hoy exactamente los mismos bytes (mismo sha384),
+       o sea que fijar la versión no cambia nada de lo que ya se sirve.
+
+       Para qué sirve: sin `integrity` el navegador ejecuta lo que sea que le
+       conteste el CDN. Esta es la página donde el usuario tipea su contraseña y
+       donde vive el JWT en localStorage, así que un jsdelivr comprometido —o un
+       DNS envenenado en la red del usuario— es toma de cuenta directa, sin
+       tocar nada nuestro. Con el hash, si el archivo no es EXACTAMENTE el que
+       esperamos, el navegador no lo corre.
+
+       Para actualizar React hay que cambiar las dos cosas, versión y hash:
+         curl -sL https://cdn.jsdelivr.net/npm/react@X.Y.Z/umd/react.production.min.js \
+           | openssl dgst -sha384 -binary | openssl base64 -A
+       Si se cambia la versión y no el hash, la app queda en blanco. -->
+  <script defer crossorigin integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script defer crossorigin integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
   <!-- Vercel Web Analytics. La doc oficial arranca con `npm i @vercel/analytics` y
        un <Analytics/> en el layout, pero acá no hay nada de eso: no hay bundler ni
        package.json, React entra por CDN y el JSX lo compila Babel en el navegador.
@@ -3050,6 +3068,50 @@ function fmtFecha(ts) {
     month: "2-digit"
   });
 }
+
+// ===========================================================================
+// Miniaturas de producto
+// ===========================================================================
+// Las `imagen_url` apuntan al CDN de cada cadena, tal cual las publica el súper,
+// y varias sirven el ORIGINAL a resolución completa para un cuadrito de 150 px.
+// Medido sobre los primeros 8 productos de la home (638 KB entre los ocho):
+//
+//   Carrefour  269 KB      Jumbo  121 / 100 / 68 / 64 KB
+//   Dino       2 y 5 KB    La Gallega  9 KB
+//
+// Dino demuestra el punto: mismo lugar en pantalla, 100x menos bytes, porque su
+// URL ya apunta a una miniatura. Con 30 productos por página eso son ~2,4 MB de
+// fotos contra 130 KB de app — en datos móviles, que es donde se usa esto, la
+// foto ES la página.
+//
+// Los CDN de VTEX aceptan el tamaño EN LA RUTA: /arquivos/ids/<id>-<ancho>-<alto>/
+// devuelve la imagen ya redimensionada por ellos. Verificado contra producción:
+//
+//   .../ids/636209/7793940054006_01.jpg      276.407 B
+//   .../ids/636209-300-300/7793940054006_01.jpg  16.039 B   (-94%)
+//
+// Y VTEX es la plataforma de SIETE de las doce cadenas —Carrefour, Jumbo, Disco,
+// VEA, MasOnline, Cordiez y Dia—, o sea 56.243 de los 101.369 productos activos.
+// Una sola transformación de URL cubre más de la mitad del catálogo.
+//
+// Las otras cinco quedan como están, a propósito:
+//   Coto (4,8 KB) y Dino ya sirven una miniatura; La Anónima anda en 11 KB.
+//   Átomo es PrestaShop y tiene variantes (cart_default pesa 5 KB contra los
+//   13 de home_default), pero no todas existen para todos los productos y el
+//   404 se ve peor que los 8 KB de más.
+//   La Gallega pesa 91 KB y NO tiene forma de pedir otro tamaño: es un IIS
+//   sirviendo el archivo. Ahí lo único que ayuda es el lazy-load de abajo.
+//
+// Se le pide el DOBLE del tamaño en CSS: en un teléfono con DPR 2 —o sea casi
+// todos— pedir 150 px para una caja de 150 px se ve blando.
+function imgProducto(url, anchoCSS) {
+  if (!url) return url;
+  if (!/\.vteximg\.com\.br\/|\.vtexassets\.com\//.test(url)) return url;
+  const lado = Math.round(anchoCSS * 2);
+  // El `(?:-\d+-\d+)?` es para no duplicar el sufijo si algún día la URL ya
+  // viene con tamaño: se reemplaza, no se encadena.
+  return url.replace(/\/arquivos\/ids\/(\d+)(?:-\d+-\d+)?\//, `/arquivos/ids/$1-${lado}-${lado}/`);
+}
 function useLogoSources(nombre) {
   const [srcIndex, setSrcIndex] = React.useState(0);
   const sources = React.useMemo(() => [SUPER_LOGOS[nombre], ...(SUPER_LOGOS_FALLBACK[nombre] || [])].filter(Boolean), [nombre]);
@@ -4042,8 +4104,9 @@ function Modal({
       borderRadius: 20
     }
   }, SUBCAT_LABELS[producto.subcategoria] || CAT_LABELS[producto.categoria] || producto.categoria)), producto.imagen_url && /*#__PURE__*/React.createElement("img", {
-    src: producto.imagen_url,
+    src: imgProducto(producto.imagen_url, 200),
     alt: producto.nombre,
+    decoding: "async",
     style: {
       width: "100%",
       height: "180px",
@@ -5110,8 +5173,12 @@ function CarritoView({
         key: item.producto_id,
         className: "cart-item"
       }, p.imagen_url ? /*#__PURE__*/React.createElement("img", {
-        src: p.imagen_url,
+        src: imgProducto(p.imagen_url, 54),
         alt: p.nombre,
+        loading: "lazy",
+        decoding: "async",
+        width: "54",
+        height: "54",
         className: "cart-item-img"
       }) : /*#__PURE__*/React.createElement("div", {
         className: "cart-item-img-placeholder"
@@ -5789,12 +5856,23 @@ function comprimirFoto(file, maxLado = 1600, calidad = 0.72) {
 // es una etiqueta para mostrar, no decide qué producto es. Y los códigos se
 // pueden validar (dígito verificador del EAN, o existir en el catálogo), así
 // que un OCR que se equivoca no mete un producto equivocado en silencio.
-const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+// Versión FIJA y con hash, igual que React en el <head>. Acá el riesgo es el
+// mismo aunque el script se baje tarde: una vez cargado corre con todos los
+// permisos de la página, incluido el token del usuario. `@5` resolvía a 5.1.1;
+// se escribe la versión exacta porque el hash describe UN archivo.
+// Para actualizar, versión y hash juntos:
+//   curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
+const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const TESSERACT_SRI = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
 function cargarTesseract() {
   if (window.Tesseract) return Promise.resolve(window.Tesseract);
   return new Promise((ok, mal) => {
     const s = document.createElement("script");
     s.src = TESSERACT_CDN;
+    // integrity + crossOrigin: el segundo NO es opcional. Sin CORS el navegador
+    // trata la respuesta como opaca, no la puede hashear, y descarta el script.
+    s.integrity = TESSERACT_SRI;
+    s.crossOrigin = "anonymous";
     s.onload = () => window.Tesseract ? ok(window.Tesseract) : mal(new Error("sin Tesseract"));
     s.onerror = () => mal(new Error("no se pudo bajar el lector"));
     document.head.appendChild(s);
@@ -6609,9 +6687,12 @@ function TicketModal({
     onClick: () => alternar(i.producto_id)
   }, elegidos.has(i.producto_id) ? "✓" : ""), i.imagen_url ? /*#__PURE__*/React.createElement("img", {
     className: "tk-img",
-    src: i.imagen_url,
+    src: imgProducto(i.imagen_url, 38),
     alt: "",
-    loading: "lazy"
+    loading: "lazy",
+    decoding: "async",
+    width: "38",
+    height: "38"
   }) : /*#__PURE__*/React.createElement("div", {
     className: "tk-img"
   }), /*#__PURE__*/React.createElement("div", {
@@ -6850,6 +6931,11 @@ function EscanerModal({
           if (window.ZXing) return ok();
           const s = document.createElement("script");
           s.src = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+          // Ver el comentario de TESSERACT_SRI: mismo motivo, misma pareja
+          // integrity + crossOrigin (sin el segundo el hash no se puede
+          // calcular y el script no corre).
+          s.integrity = "sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB";
+          s.crossOrigin = "anonymous";
           s.onload = ok;
           s.onerror = mal;
           document.head.appendChild(s);
@@ -7706,8 +7792,12 @@ function ListaView({
     tabIndex: -1,
     "aria-hidden": "true"
   }, fila.imagen_url ? /*#__PURE__*/React.createElement("img", {
-    src: fila.imagen_url,
+    src: imgProducto(fila.imagen_url, 40),
     alt: fila.nombre,
+    loading: "lazy",
+    decoding: "async",
+    width: "40",
+    height: "40",
     className: "lg-prod-img"
   }) : /*#__PURE__*/React.createElement("div", {
     className: "lg-prod-img",
@@ -7890,9 +7980,10 @@ const ProductCard = React.memo(function ProductCard({
   }), /*#__PURE__*/React.createElement("span", null, p.supermercado)), p.scrapeado_en && /*#__PURE__*/React.createElement("span", {
     className: "card-badge-time"
   }, relTime(p.scrapeado_en))), p.imagen_url && /*#__PURE__*/React.createElement("img", {
-    src: p.imagen_url,
+    src: imgProducto(p.imagen_url, 200),
     alt: p.nombre,
     loading: "lazy",
+    decoding: "async",
     className: "card-image"
   })), /*#__PURE__*/React.createElement("div", {
     className: "card-body"
