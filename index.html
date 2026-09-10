@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-09T01:20:05.060Z
+  Generado: 2026-09-10T19:20:09.453Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -7489,6 +7489,93 @@ function ListaView({
     setListaActivaId(null);
     onListasChange();
   }
+
+  // Renombrar la lista activa. El endpoint (PUT /listas/{id}) estaba desde el
+  // primer día y no lo llamaba nadie: una lista no se podía renombrar nunca
+  // después de crearla, así que el "Mi lista" que se crea al vuelo al cargar un
+  // ticket —o el "(copia)" que deja duplicar— quedaba puesto para siempre.
+  //
+  // A diferencia del resto de las acciones del toolbar, NO vuelve a pedir la
+  // comparación: el nombre sólo se muestra en el <select>, que se refresca con
+  // onListasChange, y /comparar es la llamada más lenta de la app (hay medidos
+  // 5,7 s). Cambiar una etiqueta no puede costar eso.
+  async function renombrarLista() {
+    const original = listas.find(l => l.id === listaActivaId);
+    if (!original) return;
+    const nombre = window.prompt("Nombre de la lista", original.nombre);
+    if (!nombre || !nombre.trim()) return;
+    const limpio = nombre.trim().slice(0, 60);
+    // Si no cambió nada, no se manda nada: el PUT toca updated_at y el selector
+    // ordena por uso reciente, así que un renombre "vacío" le reordenaría las
+    // listas al usuario sin que haya cambiado nada.
+    if (limpio === original.nombre) return;
+    setOcupado("renombrar");
+    try {
+      const res = await fetch(`${API}/listas/${listaActivaId}`, {
+        method: "PUT",
+        headers: authJson,
+        body: JSON.stringify({
+          nombre: limpio
+        })
+      });
+      // El éxito no lleva aviso: el nombre nuevo ya aparece en el selector, que
+      // es exactamente donde el usuario estaba mirando.
+      if (res.ok) onListasChange();else {
+        const d = await res.json().catch(() => ({}));
+        setAviso(d.detail || "No se pudo renombrar la lista");
+      }
+    } catch (e) {
+      setAviso("No se pudo renombrar la lista");
+    }
+    setOcupado(null);
+  }
+
+  // Duplicar = armar la próxima compra sobre la de la vez pasada, sin volver a
+  // buscar 30 productos. Copia productos y cantidades; la original no se toca.
+  //
+  // El nombre se pregunta con la sugerencia ya escrita —un Enter alcanza— y no
+  // se deja salir automático porque no existe ninguna pantalla para renombrar
+  // una lista: el "(copia)" que se ponga acá se queda ahí para siempre. La
+  // sugerencia recorta el NOMBRE y no el resultado, igual que el servidor: el
+  // tope de la base son 60 caracteres y cortar el final dejaría "(copi".
+  async function duplicarLista() {
+    const original = listas.find(l => l.id === listaActivaId);
+    if (!original) return;
+    // Cortesía, no seguridad: el tope de listas del plan gratis lo aplica el
+    // backend con un 402. Chequearlo antes evita hacerle escribir un nombre
+    // para nada, que es el mismo criterio de volcar().
+    if (sinAcceso) {
+      onPedirPlan && onPedirPlan();
+      return;
+    }
+    const sufijo = " (copia)";
+    const sugerido = original.nombre.slice(0, 60 - sufijo.length).trimEnd() + sufijo;
+    const nombre = window.prompt("Nombre de la copia", sugerido);
+    if (!nombre || !nombre.trim()) return;
+    setOcupado("duplicar");
+    try {
+      const res = await fetch(`${API}/listas/${listaActivaId}/duplicar`, {
+        method: "POST",
+        headers: authJson,
+        body: JSON.stringify({
+          nombre: nombre.trim().slice(0, 60)
+        })
+      });
+      const d = await res.json();
+      if (res.ok) {
+        onListasChange();
+        setListaActivaId(d.id);
+        setAviso(`Copiamos ${d.total_items} producto${d.total_items !== 1 ? "s" : ""} a "${d.nombre}"` + (d.sin_lugar ? ` (${d.sin_lugar} no entraron, la lista está llena)` : ""));
+        setTimeout(() => setAviso(null), 5000);
+      } else if (res.status === 402) {
+        onPlanCambio && onPlanCambio();
+        onPedirPlan && onPedirPlan();
+      } else setAviso(d.detail || "No se pudo duplicar la lista");
+    } catch (e) {
+      setAviso("No se pudo duplicar la lista");
+    }
+    setOcupado(null);
+  }
   const toolbar = /*#__PURE__*/React.createElement("div", {
     className: "lista-toolbar"
   }, listas.length > 0 && /*#__PURE__*/React.createElement("select", {
@@ -7508,6 +7595,18 @@ function ListaView({
   }, "\uD83E\uDDFE", /*#__PURE__*/React.createElement("span", {
     className: "btn-label"
   }, " Cargar ticket")), listaActivaId && /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn",
+    onClick: renombrarLista,
+    disabled: ocupado === "renombrar",
+    title: "Cambiarle el nombre a esta lista"
+  }, ocupado === "renombrar" ? "…" : /*#__PURE__*/React.createElement(React.Fragment, null, "\u270F\uFE0F", /*#__PURE__*/React.createElement("span", {
+    className: "btn-label"
+  }, " Renombrar"))), listaActivaId && /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn",
+    onClick: duplicarLista,
+    disabled: ocupado === "duplicar",
+    title: "Cre\xE1 otra lista con los mismos productos y cantidades"
+  }, ocupado === "duplicar" ? "…" : "📄 Duplicar"), listaActivaId && /*#__PURE__*/React.createElement("button", {
     className: "lista-btn danger",
     onClick: borrarLista
   }, "Borrar"), /*#__PURE__*/React.createElement("button", {
