@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-10T19:20:09.453Z
+  Generado: 2026-09-14T12:29:45.295Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -16,6 +16,25 @@
   <meta name="theme-color" content="#C7CEBE">
   <meta name="description" content="Cargá tu lista y te decimos en qué supermercado te sale más barata. 12 cadenas de Argentina, los precios de tu región y los descuentos bancarios del día. Gratis.">
   <link rel="canonical" href="https://www.convi.ar/">
+
+  <!-- Handshake con la API, arrancado en el parseo del <head>.
+       El problema que resuelve: la primera llamada a la API no puede salir hasta
+       que React monta, y recién AHÍ empieza el DNS + TCP + TLS contra Railway.
+       Medido desde Argentina el 2026-09-14: 160 ms de TCP + 190 ms de TLS que se
+       pagaban en serie DESPUÉS del arranque. Con el preconnect el navegador abre
+       la conexión a los ~10 ms, en paralelo con bajar React, y cuando la app pide
+       productos el túnel ya está listo.
+
+       `crossorigin` NO es opcional y es el error clásico de este tag: fetch()
+       cross-origin usa el pool de conexiones anónimo-CORS. Sin el atributo se
+       precalienta una conexión de otro pool, que fetch() no reutiliza — el tag
+       queda decorativo, no falla nada y no se entera nadie.
+
+       OJO: este es el CUARTO lugar que duplica el host de la constante API (los
+       otros tres son og:image, los apple-touch-icon y la constante del JS). Si la
+       API cambia de dominio hay que tocarlo también acá; el síntoma de olvidarlo
+       es una conexión de más a un host muerto y la app otra vez lenta, sin error. -->
+  <link rel="preconnect" href="https://web-production-32c3f.up.railway.app" crossorigin>
 
   <!-- Open Graph y Twitter Card. Esto NO es SEO: es lo que decide si el link
        llega con tarjeta o pelado cuando alguien comparte convi.ar por WhatsApp,
@@ -380,7 +399,17 @@
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
-  <script defer src="/_vercel/insights/script.js"></script>
+  <!-- ASYNC, no defer, y es a propósito. `defer` no sólo posterga el script:
+       RETRASA el propio DOMContentLoaded hasta que terminó. Y la app compilada
+       arranca justo en DOMContentLoaded (ver build.js), así que con `defer` el
+       arranque de Convi quedaba atado al de un script de métricas.
+       Medido en producción el 2026-09-14: React estaba listo a los 712 ms y la
+       app arrancó a los 1020, porque insights terminó a los 1018. Eran ~300 ms
+       de la app esperando a analytics.
+       Con `async` sale de la cola del defer y ya no bloquea nada. El orden no
+       importa acá: el stub de window.va de arriba encola en vaq lo que se dispare
+       antes de que el script cargue, que es exactamente para esto. -->
+  <script async src="/_vercel/insights/script.js"></script>
 
   <!-- ===================== Pixel de Meta (Facebook/Instagram) ==============
        Para medir en el Events Manager qué hace en la app la gente que llega de
@@ -4386,6 +4415,9 @@ function AuthModal({
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [msg, setMsg] = React.useState("");
+  // Se levanta cuando el login contesta 403: la contraseña estaba bien y lo que
+  // falta es confirmar el mail. Es lo que destraba el botón de reenvío.
+  const [faltaConfirmar, setFaltaConfirmar] = React.useState(false);
   const RUTA = {
     login: "login",
     register: "register",
@@ -4394,6 +4426,7 @@ function AuthModal({
   async function handleSubmit() {
     setError("");
     setMsg("");
+    setFaltaConfirmar(false);
     setLoading(true);
     try {
       // El recupero manda SÓLO el email: el endpoint contesta siempre lo mismo
@@ -4412,7 +4445,13 @@ function AuthModal({
         body: JSON.stringify(cuerpo)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error");
+      if (!res.ok) {
+        // 403 en el login es el "te falta confirmar" del backend. Se ofrece el
+        // reenvío acá mismo: el mail de hace tres días ya venció, así que decirle
+        // que lo busque y nada es lo mismo.
+        if (modo === "login" && res.status === 403) setFaltaConfirmar(true);
+        throw new Error(data.detail || "Error");
+      }
       if (modo === "login") {
         onLogin(data.access_token, data.refresh_token, data.user);
         onClose();
@@ -4427,10 +4466,36 @@ function AuthModal({
     }
     setLoading(false);
   }
+  async function reenviarConfirmacion() {
+    setError("");
+    setMsg("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/reenviar-confirmacion`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Error");
+      // El botón desaparece con el acuse: dejarlo puesto invita a apretarlo tres
+      // veces y comerse el 429, que se lee como que nunca llegó nada.
+      setMsg(data.message || "Si esa cuenta existe y le falta confirmar, ya te mandamos el mail de nuevo");
+      setFaltaConfirmar(false);
+    } catch (e) {
+      setError(e.message);
+    }
+    setLoading(false);
+  }
   function cambiarA(nuevo) {
     setModo(nuevo);
     setError("");
     setMsg("");
+    setFaltaConfirmar(false);
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
@@ -4479,7 +4544,16 @@ function AuthModal({
     className: "auth-btn",
     onClick: handleSubmit,
     disabled: loading
-  }, loading ? "Cargando..." : modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta" : "Enviarme el enlace"), modo === "login" && /*#__PURE__*/React.createElement("div", {
+  }, loading ? "Cargando..." : modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta" : "Enviarme el enlace"), faltaConfirmar && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "auth-link",
+    onClick: reenviarConfirmacion,
+    disabled: loading
+  }, "Reenviame el mail de confirmaci\xF3n")), modo === "login" && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginTop: 10
@@ -8928,6 +9002,34 @@ function App() {
         refresh_token: p.get("refresh_token") || ""
       });
       limpiar();
+    } else if (p.get("type") === "signup" && p.get("access_token")) {
+      // Vuelta del mail de confirmación de cuenta. Para cuando llegamos acá
+      // Supabase YA validó el token y dejó la cuenta confirmada: lo que viene
+      // en el hash es una sesión hecha y derecha, igual que la del recupero.
+      // Se entra derecho con ella —volver a pedirle la contraseña que acaba de
+      // elegir no aporta nada, y aterrizar deslogueado en la home es lo que
+      // hace que el que confirmó crea que el registro no funcionó—.
+      //
+      // El email y el id salen del propio JWT porque el hash no los trae; si
+      // el token viniera raro se entra igual, con el nombre vacío, antes que
+      // dejarlo afuera de una cuenta que está bien confirmada.
+      //
+      // El replace no es adorno: los JWT van en base64URL y atob() sólo come
+      // base64 a secas, así que un payload con un "-" o un "_" —que salen solos
+      // en cuanto el JSON es largo— reventaba el JSON.parse y nos dejaba sin el
+      // email justo cuando hay que mostrarlo en el header.
+      const at = p.get("access_token");
+      let datos = {};
+      try {
+        const crudo = at.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const claims = JSON.parse(atob(crudo));
+        datos = {
+          email: claims.email || "",
+          id: claims.sub || ""
+        };
+      } catch (e) {}
+      handleLogin(at, p.get("refresh_token") || "", datos);
+      limpiar();
     } else if (p.get("error")) {
       // Enlace vencido o ya usado: Supabase avisa por acá y no por el token. Su
       // `error_description` viene en inglés, así que el caso común —el único que
@@ -9546,6 +9648,20 @@ function App() {
     setMasBaratoEn(null);
     setBusqueda("");
     setSoloOfertas(false);
+    // La PÁGINA hay que resetearla a mano, y es el motivo por el que el logo
+    // parecía roto: `pagina` no está entre las dependencias del efecto que
+    // recarga la grilla, así que parado en la página 5 y sin ningún filtro
+    // puesto, todos los setState de arriba escribían el valor que ya tenían,
+    // el efecto no corría y lo único que pasaba era el scroll hacia arriba.
+    // Te dejaba en la misma página 5, mirando el encabezado.
+    // Va con la misma receta imperativa que cambiarPagina(), que es como se
+    // pagina en esta app. Si ADEMÁS cambió algún filtro, el efecto dispara su
+    // propia carga y aborta a ésta: queda la buena, la que lleva los filtros
+    // nuevos (cargar() lee el estado viejo, que todavía no se aplicó).
+    if (pagina !== 1) {
+      setPagina(1);
+      cargar(1);
+    }
     window.scrollTo({
       top: 0,
       behavior: "smooth"
