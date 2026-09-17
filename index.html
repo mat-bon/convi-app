@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-14T12:29:45.295Z
+  Generado: 2026-09-15T13:22:03.608Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1395,6 +1395,58 @@
     }
     .auth-alert.success { background: var(--success-light); color: #24603D; border: 1px solid rgba(47,125,79,0.2); }
     .auth-alert.error { background: var(--danger-light); color: #991b1b; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* Buzón de sugerencias.
+       El textarea es el PRIMERO de la app: hereda todo de .auth-input y sólo
+       agrega alto y resize, para que no se abra un segundo lenguaje de formularios. */
+    .auth-textarea {
+      min-height: 110px; resize: vertical; line-height: 1.5; margin-bottom: 6px;
+    }
+    .sug-chips { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    /* Chips y no un <select>: el único select de la app (.region-select) es
+       justo el control que pelea por ancho en móvil, y acá hay 3 opciones con
+       texto largo. Además se tocan mejor con el pulgar. */
+    .sug-chip {
+      display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+      padding: 11px 13px; border: 1.5px solid var(--border); border-radius: var(--radius);
+      background: var(--surface-2); cursor: pointer; font-family: inherit;
+      font-size: 13.5px; font-weight: 600; color: var(--text-secondary); transition: all 0.15s;
+    }
+    .sug-chip:hover { border-color: var(--accent); color: var(--text-primary); }
+    .sug-chip.on {
+      border-color: var(--accent); background: var(--surface);
+      color: var(--text-primary); font-weight: 700; box-shadow: var(--ring);
+    }
+    .sug-contexto {
+      display: flex; align-items: center; gap: 8px; justify-content: space-between;
+      padding: 9px 12px; margin-bottom: 12px; border-radius: var(--radius);
+      background: var(--surface-2); border: 1px solid var(--border-light);
+      font-size: 12px; color: var(--text-secondary); font-weight: 600;
+    }
+    .sug-contexto button {
+      background: none; border: none; cursor: pointer; font-family: inherit; padding: 0;
+      font-size: 11.5px; font-weight: 700; color: var(--text-muted);
+      text-decoration: underline; text-underline-offset: 2px; flex-shrink: 0;
+    }
+    .sug-contador { font-size: 11px; color: var(--text-muted); text-align: right; margin-bottom: 10px; }
+    .sug-contador.cerca { color: var(--danger); font-weight: 700; }
+
+    /* Tira de acciones que vive FUERA del ternario de tab, o sea en las 5
+       pantallas. El .footer grande sigue siendo de la home: su texto habla de
+       la grilla de productos y bajo el carrito sonaría fuera de lugar. */
+    .app-foot-mini {
+      margin-top: 28px; padding: 14px 16px 4px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--border-light);
+    }
+    .app-foot-mini span { color: var(--border); font-size: 11px; }
+    .app-foot-mini button {
+      background: none; border: none; cursor: pointer; font-family: inherit; padding: 0;
+      font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-decoration: underline;
+      text-underline-offset: 2px; transition: color 0.15s;
+    }
+    .app-foot-mini button:hover { color: var(--accent-dark); }
+    .app-foot-mini button.destacado { font-size: 12.5px; color: var(--text-secondary); }
 
     /* Mini chart */
     .chart-wrap { margin: 8px 0; }
@@ -4080,6 +4132,10 @@ function Modal({
   regionCodigo
 }) {
   const [historial, setHistorial] = React.useState([]);
+  // El buzón se maneja acá adentro y no por props: `Modal` se monta en tres
+  // lugares (App, CarritoView, ListaView) y pasarlo por los tres sería tocar
+  // código que no tiene nada que ver con reportar un producto.
+  const [reportando, setReportando] = React.useState(false);
   const [loadingH, setLoadingH] = React.useState(true);
   const hasOffer = producto.descuento_pct || producto.promocion;
   // La ficha es el único lugar con espacio para decirlo entero (en la card y en
@@ -4334,7 +4390,23 @@ function Modal({
     target: "_blank",
     rel: "noopener noreferrer",
     className: "modal-link"
-  }, "Ver en ", producto.supermercado, " \u2192"))));
+  }, "Ver en ", producto.supermercado, " \u2192"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "auth-link",
+    onClick: () => setReportando(true)
+  }, "\xBFAlgo mal en este producto? Avisanos")))), reportando && /*#__PURE__*/React.createElement(SugerenciasModal, {
+    tipoInicial: "problema",
+    pantalla: "ficha",
+    contexto: {
+      id: producto.id,
+      nombre: producto.nombre,
+      supermercado: producto.supermercado
+    },
+    onClose: () => setReportando(false)
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -8461,6 +8533,197 @@ function LegalModal({
 }
 
 // ---------------------------------------------------------------------------
+// SugerenciasModal — el buzón: una idea, un problema, o cualquier otra cosa
+// ---------------------------------------------------------------------------
+// Un solo modal para los dos casos. El `tipo` no es cosmético: en el servidor
+// decide si el mensaje interrumpe (mail al instante) o espera en la bandeja.
+// Ver migrations/035_sugerencias.sql.
+//
+// `contexto` llega sólo cuando se abre desde la ficha de un producto, y es lo
+// que convierte "la leche de Coto está mal" en una fila accionable.
+
+const SUG_TIPOS = [{
+  id: "sugerencia",
+  label: "💡 Una idea / me falta algo",
+  ph: "Contanos qué agregarías o qué te haría más fácil la compra…"
+}, {
+  id: "problema",
+  label: "⚠️ Algo está mal en un producto",
+  ph: "¿Qué viste mal? Un precio que no coincide, dos productos repetidos, una promo que ya no está…"
+}, {
+  id: "otro",
+  label: "💬 Otra cosa",
+  ph: "Escribinos lo que quieras…"
+}];
+const SUG_MIN = 10;
+const SUG_MAX = 1000;
+function SugerenciasModal({
+  token,
+  usuario,
+  contexto = null,
+  tipoInicial = "sugerencia",
+  pantalla,
+  onClose
+}) {
+  // La sesión se resuelve sola si no vino por props. Es lo que deja que la
+  // ficha de producto monte este modal sin enhebrar token y usuario por los
+  // tres lugares donde se monta `Modal` (App, CarritoView y ListaView).
+  const sesion = React.useMemo(() => {
+    if (token !== undefined) return {
+      token,
+      usuario
+    };
+    try {
+      return {
+        token: localStorage.getItem("convi_token") || null,
+        usuario: JSON.parse(localStorage.getItem("convi_user"))
+      };
+    } catch {
+      return {
+        token: null,
+        usuario: null
+      };
+    }
+  }, [token, usuario]);
+  const [tipo, setTipo] = React.useState(tipoInicial);
+  const [texto, setTexto] = React.useState("");
+  const [contacto, setContacto] = React.useState(sesion.usuario?.email || "");
+  const [hp, setHp] = React.useState(""); // honeypot
+  const [ctx, setCtx] = React.useState(contexto); // el usuario lo puede quitar
+  const [estado, setEstado] = React.useState("idle");
+  const [error, setError] = React.useState("");
+  const taRef = React.useRef(null);
+  React.useEffect(() => {
+    taRef.current && taRef.current.focus();
+  }, []);
+  const tipoActual = SUG_TIPOS.find(t => t.id === tipo) || SUG_TIPOS[0];
+  const listo = texto.trim().length >= SUG_MIN;
+  async function enviar() {
+    if (!listo || estado === "enviando") return;
+    setEstado("enviando");
+    setError("");
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (sesion.token) headers.Authorization = `Bearer ${sesion.token}`;
+      const res = await fetch(`${API}/sugerencias`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          tipo,
+          texto: texto.trim(),
+          hp,
+          contacto: contacto.trim() || null,
+          pantalla: ctx ? "ficha" : pantalla || null,
+          producto_id: ctx ? ctx.id : null,
+          supermercado: ctx ? ctx.supermercado : null
+        })
+      });
+      if (res.status === 429) {
+        // Un 429 crudo se lee como "no llegó". Decir que llegó de más es lo
+        // único que evita que la persona lo reintente cinco veces.
+        throw new Error("Recibimos varias sugerencias desde tu conexión. Probá de nuevo en un rato.");
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "No pudimos enviar tu mensaje");
+      setEstado("ok");
+      setTimeout(onClose, 1800);
+    } catch (e) {
+      setError(e.message);
+      setEstado("error");
+    }
+  }
+  return (
+    /*#__PURE__*/
+    // stopPropagation en el overlay: cuando este modal se abre DESDE la ficha
+    // de producto, queda anidado dentro de otro .modal-overlay que tiene
+    // onClick={onClose}. Sin esto, cualquier click acá adentro burbujea y
+    // cierra la ficha de atrás junto con este modal.
+    React.createElement("div", {
+      className: "modal-overlay",
+      onClick: e => {
+        e.stopPropagation();
+        onClose();
+      },
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "sug-titulo",
+      onKeyDown: e => e.key === "Escape" && onClose()
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal",
+      style: {
+        maxWidth: 440
+      },
+      onClick: e => e.stopPropagation()
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal-header"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal-title",
+      id: "sug-titulo"
+    }, "\u2709\uFE0F Sugerencias y reportes"), /*#__PURE__*/React.createElement("button", {
+      className: "modal-close",
+      onClick: onClose,
+      "aria-label": "Cerrar"
+    }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+      className: "modal-body"
+    }, estado === "ok" ? /*#__PURE__*/React.createElement("div", {
+      className: "auth-alert success",
+      style: {
+        marginBottom: 0
+      }
+    }, "\xA1Gracias! Lo leemos todo.") : /*#__PURE__*/React.createElement(React.Fragment, null, error && /*#__PURE__*/React.createElement("div", {
+      className: "auth-alert error"
+    }, error), /*#__PURE__*/React.createElement("div", {
+      className: "sug-chips"
+    }, SUG_TIPOS.map(t => /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      type: "button",
+      className: `sug-chip ${tipo === t.id ? "on" : ""}`,
+      "aria-pressed": tipo === t.id,
+      onClick: () => setTipo(t.id)
+    }, t.label))), ctx && /*#__PURE__*/React.createElement("div", {
+      className: "sug-contexto"
+    }, /*#__PURE__*/React.createElement("span", null, "Sobre: ", /*#__PURE__*/React.createElement("strong", null, ctx.nombre), ctx.supermercado ? ` · ${ctx.supermercado}` : ""), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => setCtx(null)
+    }, "quitar")), /*#__PURE__*/React.createElement("textarea", {
+      ref: taRef,
+      className: "auth-input auth-textarea",
+      maxLength: SUG_MAX,
+      value: texto,
+      placeholder: tipoActual.ph,
+      onChange: e => setTexto(e.target.value)
+    }), /*#__PURE__*/React.createElement("div", {
+      className: `sug-contador ${texto.length > 800 ? "cerca" : ""}`
+    }, texto.length > 800 ? `${texto.length}/${SUG_MAX}` : ""), /*#__PURE__*/React.createElement("input", {
+      className: "auth-input",
+      type: "email",
+      value: contacto,
+      placeholder: "Tu email (opcional, si quer\xE9s que te contestemos)",
+      onChange: e => setContacto(e.target.value)
+    }), /*#__PURE__*/React.createElement("input", {
+      tabIndex: -1,
+      autoComplete: "off",
+      "aria-hidden": "true",
+      value: hp,
+      onChange: e => setHp(e.target.value),
+      style: {
+        position: "absolute",
+        left: "-9999px",
+        width: 1,
+        height: 1,
+        opacity: 0
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "auth-btn",
+      onClick: enviar,
+      disabled: !listo || estado === "enviando"
+    }, estado === "enviando" ? "Enviando…" : "Enviar")))))
+  );
+}
+
+// ---------------------------------------------------------------------------
 // WelcomeModal — onboarding breve (primera visita)
 // ---------------------------------------------------------------------------
 // Cuántos logos entran en la tira antes de resumir en "+N". Diez es lo que
@@ -8814,6 +9077,9 @@ function App() {
     }
   });
   const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
+  // Buzón de sugerencias. Objeto y no booleano —igual criterio que showTicket—
+  // porque lleva el contexto de apertura: null = cerrado, {tipoInicial, contexto}.
+  const [sugerencia, setSugerencia] = React.useState(null);
   // Sesión de recupero que llegó por el hash de la URL, y el aviso para cuando
   // ese enlace ya no sirve. Ver el efecto que lee window.location.hash.
   const [recuperacion, setRecuperacion] = React.useState(null);
@@ -9672,6 +9938,13 @@ function App() {
   }), legalTab && /*#__PURE__*/React.createElement(LegalModal, {
     initialTab: legalTab,
     onClose: () => setLegalTab(null)
+  }), sugerencia && /*#__PURE__*/React.createElement(SugerenciasModal, {
+    token: token,
+    usuario: usuario,
+    pantalla: tab,
+    tipoInicial: sugerencia.tipoInicial,
+    contexto: sugerencia.contexto,
+    onClose: () => setSugerencia(null)
   }), showAuth && /*#__PURE__*/React.createElement(AuthModal, {
     onClose: () => {
       setShowAuth(false);
@@ -10104,15 +10377,21 @@ function App() {
   }, /*#__PURE__*/React.createElement("strong", null, "Actualizaci\xF3n autom\xE1tica:"), " todos los d\xEDas a las 06:00 y 18:00 hs.", /*#__PURE__*/React.createElement("br", null), "Agreg\xE1 productos a \u2764\uFE0F ", /*#__PURE__*/React.createElement("strong", null, "favoritos"), " para recibir alertas cuando bajen de precio.", /*#__PURE__*/React.createElement("br", null), "Us\xE1 \uD83D\uDED2 ", /*#__PURE__*/React.createElement("strong", null, "carrito"), " para armar tu compra y ejecutarla directo en el supermercado que elijas."), /*#__PURE__*/React.createElement("button", {
     className: "footer-link-btn",
     onClick: () => setShowWelcome(true)
-  }, "\uD83D\uDCA1 \xBFC\xF3mo funciona? Ver la gu\xEDa r\xE1pida"), /*#__PURE__*/React.createElement("div", {
-    className: "footer-legal"
+  }, "\uD83D\uDCA1 \xBFC\xF3mo funciona? Ver la gu\xEDa r\xE1pida"))), /*#__PURE__*/React.createElement("div", {
+    className: "app-foot-mini"
   }, /*#__PURE__*/React.createElement("button", {
+    className: "destacado",
+    onClick: () => setSugerencia({
+      tipoInicial: "sugerencia",
+      contexto: null
+    })
+  }, "\u2709\uFE0F Sugerencias y reportes"), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setLegalTab("terminos")
   }, "T\xE9rminos y Condiciones"), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setLegalTab("privacidad")
   }, "Pol\xEDtica de Privacidad"), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setLegalTab("descargos")
-  }, "Descargos y marcas")))))));
+  }, "Descargos y marcas")))));
 }
 
 // Saca la pantalla de carga / contenido para buscadores del <body> y monta la
