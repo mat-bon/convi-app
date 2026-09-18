@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-15T13:22:03.608Z
+  Generado: 2026-09-17T23:50:09.358Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -2791,6 +2791,12 @@ const SUPER_COLORS = {
   }
 };
 const SUPER_VTEX = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Disco", "Cordiez", "Jumbo"];
+// Tope de la lista sin cuenta. Es mucho más bajo que el de la lista real
+// (MAX_ITEMS_POR_LISTA = 200) por dos motivos: los producto_id viajan en la
+// query string de /comparar-sin-cuenta, que está topeada en 2000 caracteres, y
+// nadie arma una compra de 100 productos antes de registrarse. Al que llegue
+// acá le conviene la cuenta, que es justo lo que le vamos a pedir.
+const MAX_LISTA_INVITADO = 100;
 const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo", "Atomo"];
 
 // Qué cadenas venden REALMENTE en cada región. Sin esto la app mostraba las 12
@@ -7289,6 +7295,9 @@ function EscanerModal({
 // productos les faltan, y recién ahí por precio.
 function ListaView({
   token,
+  listaInvitado,
+  setListaInvitado,
+  onPedirCuenta,
   regionId,
   regionCodigo,
   supersVisibles,
@@ -7395,7 +7404,12 @@ function ListaView({
   const comparacionRef = React.useRef(null);
   const cargar = React.useCallback(() => {
     if (comparacionRef.current) comparacionRef.current.abort();
-    if (!token || !listaActivaId) {
+    if (token && !listaActivaId) {
+      setData(null);
+      setCargando(false);
+      return;
+    }
+    if (!token && !listaInvitado.length) {
       setData(null);
       setCargando(false);
       return;
@@ -7409,6 +7423,25 @@ function ListaView({
     const elegidos = supersKey ? supersKey.split(",") : [];
     if (elegidos.length && elegidos.length < SUPER_TODOS.length) {
       params.append("supermercados", supersKey);
+    }
+    // Sin cuenta: los producto_id viajan en la query y el backend arma la MISMA
+    // grilla —comparar_sin_cuenta delega en el mismo _comparar_grilla que la
+    // lista real, así que las dos no se pueden desincronizar—. No manda
+    // Authorization ni espera ahorro bloqueado: el abono no se le ofrece a
+    // quien todavía no tiene cuenta.
+    if (!token) {
+      params.append("productos", listaInvitado.map(i => i.cantidad > 1 ? `${i.producto_id}*${i.cantidad}` : i.producto_id).join(","));
+      fetch(`${API}/comparar-sin-cuenta?${params}`, {
+        signal: controller.signal
+      }).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
+        setData(d);
+        setError(null);
+      }).catch(e => {
+        if (e && e.name !== "AbortError") setError("No pudimos cargar la comparación de la lista");
+      }).finally(() => {
+        if (!controller.signal.aborted) setCargando(false);
+      });
+      return;
     }
     fetch(`${API}/listas/${listaActivaId}/comparar?${params}`, {
       headers: {
@@ -7446,7 +7479,7 @@ function ListaView({
     }).finally(() => {
       if (!controller.signal.aborted) setCargando(false);
     });
-  }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado]);
+  }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado, listaInvitado]);
   React.useEffect(() => {
     setCargando(true);
     cargar();
@@ -7466,6 +7499,15 @@ function ListaView({
         cantidad
       } : i)
     });
+    // Sin cuenta no hay qué guardar en la base: cambia el localStorage y el
+    // efecto de cargar() —que depende de listaInvitado— recalcula la grilla.
+    if (!token) {
+      setListaInvitado(prev => prev.map(i => i.producto_id === item.producto_id ? {
+        ...i,
+        cantidad
+      } : i));
+      return;
+    }
     try {
       await fetch(`${API}/listas/${listaActivaId}/items/${item.id}`, {
         method: "PUT",
@@ -7482,6 +7524,10 @@ function ListaView({
       ...d,
       items: d.items.filter(i => i.id !== item.id)
     });
+    if (!token) {
+      setListaInvitado(prev => prev.filter(i => i.producto_id !== item.producto_id));
+      return;
+    }
     try {
       await fetch(`${API}/listas/${listaActivaId}/items/${item.id}`, {
         method: "DELETE",
@@ -7722,7 +7768,7 @@ function ListaView({
     }
     setOcupado(null);
   }
-  const toolbar = /*#__PURE__*/React.createElement("div", {
+  const toolbar = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "lista-toolbar"
   }, listas.length > 0 && /*#__PURE__*/React.createElement("select", {
     className: "lista-select",
@@ -7731,10 +7777,10 @@ function ListaView({
   }, listas.map(l => /*#__PURE__*/React.createElement("option", {
     key: l.id,
     value: l.id
-  }, l.nombre, " (", l.total_items, ")"))), /*#__PURE__*/React.createElement("button", {
+  }, l.nombre, " (", l.total_items, ")"))), token && /*#__PURE__*/React.createElement("button", {
     className: "lista-btn",
     onClick: nuevaLista
-  }, "+ Nueva lista"), /*#__PURE__*/React.createElement("button", {
+  }, "+ Nueva lista"), token && /*#__PURE__*/React.createElement("button", {
     className: "lista-btn",
     onClick: abrirTicket,
     title: "Sacale una foto al ticket y te cargamos los productos"
@@ -7755,7 +7801,7 @@ function ListaView({
   }, ocupado === "duplicar" ? "…" : "📄 Duplicar"), listaActivaId && /*#__PURE__*/React.createElement("button", {
     className: "lista-btn danger",
     onClick: borrarLista
-  }, "Borrar"), /*#__PURE__*/React.createElement("button", {
+  }, "Borrar"), token && /*#__PURE__*/React.createElement("button", {
     className: "lista-btn",
     onClick: () => setShowPagos(true),
     style: misPagos.length ? {
@@ -7797,8 +7843,73 @@ function ListaView({
     onClose: () => setFicha(null),
     supersFiltro: supersVisibles,
     regionCodigo: regionCodigo
-  }));
-  if (listas.length === 0 && !cargando) {
+  })), !token && /*#__PURE__*/React.createElement("div", {
+    style: {
+      margin: "10px 0 4px",
+      padding: "12px 14px",
+      borderRadius: 12,
+      border: "1px solid rgba(193,102,74,0.28)",
+      background: "rgba(193,102,74,0.07)",
+      display: "flex",
+      gap: 12,
+      alignItems: "center",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: "1 1 260px",
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13.5,
+      fontWeight: 800,
+      color: "var(--text-primary)"
+    }
+  }, "Tu lista se guarda s\xF3lo en este navegador"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      marginTop: 3,
+      lineHeight: 1.55,
+      color: "var(--text-secondary)"
+    }
+  }, "Para guardarla hace falta entrar a tu cuenta. Si cerr\xE1s el navegador, borr\xE1s los datos o entr\xE1s desde otro tel\xE9fono, la lista no va a estar.", listaInvitado.length > 0 && " Creá una cuenta gratis y la pasamos tal como está.")), /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn",
+    onClick: onPedirCuenta,
+    style: {
+      fontWeight: 800,
+      whiteSpace: "nowrap"
+    }
+  }, "Crear cuenta y guardarla")));
+
+  // El invitado no tiene listas en la base, así que el vacío de más abajo
+  // ("todavía no tenés listas") no describe su situación: lo suyo es no haber
+  // agregado nada todavía.
+  if (!token && !listaInvitado.length) {
+    return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
+      className: "cart-empty"
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 56
+      }
+    }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 17,
+        marginTop: 14,
+        fontWeight: 800,
+        color: "var(--text-primary)"
+      }
+    }, "Arm\xE1 tu lista y compar\xE1"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 13.5,
+        marginTop: 6,
+        color: "var(--text-secondary)",
+        maxWidth: 360,
+        lineHeight: 1.6
+      }
+    }, "Agreg\xE1 productos con el bot\xF3n \uD83D\uDCCB desde Productos y te decimos cu\xE1nto te sale la compra completa en cada supermercado. No hace falta cuenta para probarlo.")));
+  }
+  if (token && listas.length === 0 && !cargando) {
     return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
       className: "cart-empty"
     }, /*#__PURE__*/React.createElement("div", {
@@ -9092,6 +9203,31 @@ function App() {
     return saved ? Number(saved) : null;
   });
   const [listaItems, setListaItems] = React.useState([]);
+  // LA LISTA DEL INVITADO
+  //
+  // Vive sólo en este navegador. Existe porque hasta ahora había que crear
+  // cuenta ANTES de ver una sola comparación —que es lo único que muestra para
+  // qué sirve la app— y el embudo lo mostraba: 280 visitantes, 9 cuentas.
+  //
+  // No se sincroniza con nada: si el usuario limpia el navegador, se pierde.
+  // Por eso la pestaña Lista avisa, con la lista ya armada, que hay que crear
+  // cuenta para guardarla; y por eso handleLogin la sube apenas hay sesión.
+  //
+  // Misma forma que los items que devuelve /listas/{id}/items, para que
+  // listaEans/listaPids y el badge del header no tengan que distinguir.
+  const [listaInvitado, setListaInvitado] = React.useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("convi_lista_invitado"));
+      return Array.isArray(s) ? s : [];
+    } catch {
+      return [];
+    }
+  });
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("convi_lista_invitado", JSON.stringify(listaInvitado));
+    } catch {}
+  }, [listaInvitado]);
   const [productosMap, setProductosMap] = React.useState({});
   const [regiones, setRegiones] = React.useState([]);
   const [regionId, setRegionId] = React.useState(() => {
@@ -9407,6 +9543,66 @@ function App() {
     localStorage.setItem("convi_token", access_token);
     localStorage.setItem("convi_refresh", refresh_token || "");
     localStorage.setItem("convi_user", JSON.stringify(user));
+    migrarListaInvitado(access_token);
+  }
+
+  // Sube al servidor la lista que el invitado venía armando en el navegador.
+  //
+  // Sin esto el usuario hace exactamente lo que le pedimos —crear la cuenta
+  // para no perder la lista— y la pierde igual: entra con sesión, la app lee
+  // /listas y la lista local queda huérfana en el localStorage.
+  //
+  // Usa /items-batch y no el toggle en loop porque el toggle BORRA lo que ya
+  // está: alguien que ya tenía lista y vuelve a entrar desde otro navegador
+  // perdería lo que tuviera en común. items-batch respeta lo existente y sólo
+  // sube la cantidad si la del invitado es mayor.
+  async function migrarListaInvitado(access_token) {
+    const pendientes = listaInvitado;
+    if (!pendientes.length) return;
+    const auth = {
+      Authorization: `Bearer ${access_token}`,
+      "Content-Type": "application/json"
+    };
+    try {
+      // Se reusa la lista que ya tenga; sólo se crea una si no tiene ninguna.
+      let destino = null;
+      const res = await fetch(`${API}/listas`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`
+        }
+      });
+      if (res.ok) {
+        const ls = await res.json();
+        if (Array.isArray(ls) && ls.length) destino = ls[0].id;
+      }
+      if (!destino) {
+        const cr = await fetch(`${API}/listas`, {
+          method: "POST",
+          headers: auth,
+          body: JSON.stringify({
+            nombre: "Mi lista"
+          })
+        });
+        if (!cr.ok) return;
+        destino = (await cr.json()).id;
+      }
+      const r = await fetch(`${API}/listas/${destino}/items-batch`, {
+        method: "POST",
+        headers: auth,
+        body: JSON.stringify({
+          items: pendientes.map(i => ({
+            producto_id: i.producto_id,
+            cantidad: i.cantidad || 1
+          }))
+        })
+      });
+      if (!r.ok) return; // se conserva el localStorage: mejor duplicar que perder
+      setListaInvitado([]);
+      setListaActivaId(destino);
+      cargarListas();
+    } catch (e) {
+      // Igual que arriba: si falló, la lista local se queda donde estaba.
+    }
   }
   function handleLogout() {
     setToken(null);
@@ -9556,7 +9752,12 @@ function App() {
   const itemsRef = React.useRef(null);
   function cargarListaItems() {
     if (itemsRef.current) itemsRef.current.abort();
-    if (!token || !listaActivaId) {
+    // Sin cuenta la lista no está en la base: la fuente es el localStorage.
+    if (!token) {
+      setListaItems(listaInvitado);
+      return;
+    }
+    if (!listaActivaId) {
       setListaItems([]);
       return;
     }
@@ -9572,7 +9773,7 @@ function App() {
   React.useEffect(() => {
     if (listaActivaId) localStorage.setItem("convi_lista", listaActivaId);else localStorage.removeItem("convi_lista");
     cargarListaItems();
-  }, [listaActivaId, token]);
+  }, [listaActivaId, token, listaInvitado]);
 
   // La identidad del item es el EAN cuando lo hay, el producto_id cuando no
   // (mismo criterio que database._buscar_item).
@@ -9581,8 +9782,28 @@ function App() {
   const carritoIds = React.useMemo(() => new Set(carritoItems.map(i => i.producto_id)), [carritoItems]);
   const toggleLista = React.useCallback(async (e, producto) => {
     e.stopPropagation();
+
+    // Sin cuenta: la lista se arma en el navegador y NO se abre el registro
+    // acá. Pedir la cuenta antes de que haya visto una sola comparación es
+    // exactamente lo que estaba cortando el embudo; el pedido va después, en
+    // la pestaña Lista, cuando ya tiene algo que perder.
+    //
+    // La identidad del item es el EAN cuando lo hay y el producto_id cuando no,
+    // igual que en el backend (database._buscar_item). `id` es el producto_id
+    // porque comparar_sin_cuenta devuelve las filas con esa misma clave.
     if (!token) {
-      setShowAuth(true);
+      const ean = producto.ean;
+      setListaInvitado(prev => {
+        const esta = prev.some(i => ean ? i.ean === ean : i.producto_id === producto.id);
+        if (esta) return prev.filter(i => !(ean ? i.ean === ean : i.producto_id === producto.id));
+        if (prev.length >= MAX_LISTA_INVITADO) return prev;
+        return [...prev, {
+          id: producto.id,
+          ean: ean || null,
+          producto_id: producto.id,
+          cantidad: 1
+        }];
+      });
       return;
     }
 
@@ -9630,12 +9851,15 @@ function App() {
     } catch (err) {
       cargarListaItems(); // revertimos releyendo el estado real
     }
-  }, [token, listaActivaId, listaEans, listaPids]);
+  }, [token, listaActivaId, listaEans, listaPids, listaInvitado]);
   React.useEffect(() => {
+    // Sin token se limpia lo que vive en la base, pero NO la lista del
+    // invitado: es justo lo que tiene que sobrevivir al logout y al primer
+    // ingreso de alguien que todavía no se registró.
     if (!token) {
       setCarritoItems([]);
       setListas([]);
-      setListaItems([]);
+      setListaItems(listaInvitado);
       return;
     }
     cargarCarrito();
@@ -10075,13 +10299,7 @@ function App() {
     className: "header-btn-badge pink"
   }, fmtNum(stats.favoritos))), /*#__PURE__*/React.createElement("button", {
     className: `header-btn ${tab === "lista" ? "active" : ""}`,
-    onClick: () => {
-      if (!token) {
-        setShowAuth(true);
-        return;
-      }
-      setTab("lista");
-    }
+    onClick: () => setTab("lista")
   }, "\uD83D\uDCCB", /*#__PURE__*/React.createElement("span", {
     className: "btn-label"
   }, "Mi lista"), listaItems.length > 0 && /*#__PURE__*/React.createElement("span", {
@@ -10207,6 +10425,12 @@ function App() {
     regionCodigo: regionCodigo
   }) : tab === "lista" ? /*#__PURE__*/React.createElement(ListaView, {
     token: token,
+    listaInvitado: listaInvitado,
+    setListaInvitado: setListaInvitado,
+    onPedirCuenta: () => {
+      setModoAuth("register");
+      setShowAuth(true);
+    },
     regionId: regionId,
     regionCodigo: regionCodigo,
     supersVisibles: supersVisibles,
