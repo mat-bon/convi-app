@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-19T03:27:53.836Z
+  Generado: 2026-09-23T23:41:30.547Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1069,9 +1069,10 @@
     }
     .card-compare-savings.cheaper { color: #8A5A12; background: #FBF3E3; }
 
-    /* Card actions */
+    /* Card actions: arriba las secundarias (aviso de baja, carrito), abajo a lo
+       ancho la principal (la lista). Envuelve siempre: la lista pide su renglón. */
     .card-actions {
-      display: flex; gap: 8px; margin-top: auto; padding-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 10px;
     }
     .card-btn {
       flex: 1; padding: 10px; border-radius: var(--radius); border: 1.5px solid var(--border);
@@ -1106,19 +1107,36 @@
          gap, se los lleva el nombre de la región. */
       .header-actions { gap: 6px; }
       .header-btn { padding: 9px 11px; }
+      /* Sin sesión "Mi lista" conserva el nombre: es el único botón del header
+         que sirve sin cuenta, y un 📋 suelto no se lee como "tu lista". Entra
+         porque sin sesión no está el 🛒. */
+      .header-btn.con-label .btn-label { display: inline; }
+      /* Un 💳 suelto en el toolbar de la lista no dice nada: "Medios de pago"
+         cambia el resultado (promos bancarias), así que se nombra. */
+      .lista-btn.con-label .btn-label { display: inline; }
 
-      /* Las TARJETAS son la excepción: acá las etiquetas se quedan. Un 🛒 pelado
-         se lee como "ir al carrito", no como "agregar", y agregar es la acción
-         principal de la tarjeta. Como a 2 tarjetas por fila (~146px útiles) no
-         entran tres botones con texto, dejamos que la fila envuelva: favorito y
-         lista arriba, agregar al carrito a lo ancho abajo. */
-      .card-actions { flex-wrap: wrap; }
-      .card-btn.buy { flex: 1 1 100%; }
+      /* Las TARJETAS son la excepción: acá las etiquetas se quedan. A 2
+         tarjetas por fila (~146px útiles) la fila de secundarias entra justa
+         con texto chico. */
       .card-btn .btn-label { display: inline; }
+      .card-btn.fav.ancho, .card-btn.sec { font-size: 11.5px; padding: 9px 6px; }
+      .card-btn.lista .txt-largo { display: none; }
+      .card-btn.lista .txt-corto { display: inline; }
     }
+    .txt-corto { display: none; }
     .card-btn.fav { flex: 0 0 42px; padding: 10px 0; font-size: 14px; }
     .card-btn.fav:hover { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
     .card-btn.fav.active { background: var(--danger-light); border-color: rgba(239,68,68,0.25); }
+    /* Sin cuenta el corazón dice para qué es y ocupa el renglón. */
+    .card-btn.fav.ancho { flex: 1 1 auto; padding: 9px 8px; font-size: 12px; }
+    .card-btn.sec { flex: 1 1 auto; min-width: 0; text-decoration: none; }
+    .card-btn-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    /* La principal: a lo ancho, en tinta, y verde cuando ya está en la lista. */
+    .card-btn.lista { flex: 1 1 100%; padding: 11px 10px; font-size: 13px; }
+    .card-btn.lista.en-lista {
+      background: var(--success-light); color: var(--success); border-color: rgba(47,125,79,0.35);
+    }
+    .card-btn.lista.en-lista:hover { background: #E1F0E6; color: var(--success); }
 
     /* Aviso de búsqueda relajada */
     .search-notice {
@@ -1395,6 +1413,30 @@
     }
     .auth-alert.success { background: var(--success-light); color: #24603D; border: 1px solid rgba(47,125,79,0.2); }
     .auth-alert.error { background: var(--danger-light); color: #991b1b; border: 1px solid rgba(239,68,68,0.2); }
+    /* Para qué se pide la cuenta (MOTIVOS_CUENTA) y el "revisá tu mail". */
+    .auth-motivo {
+      background: var(--accent-soft); border: 1px solid rgba(169,78,51,0.22);
+      border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px;
+    }
+    .auth-motivo-t { font-size: 14px; font-weight: 900; color: var(--accent-dark); }
+    .auth-motivo-d { font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-top: 3px; font-weight: 600; }
+    .auth-link.suave { font-size: 12.5px; text-decoration: none; color: var(--text-muted); margin-top: 4px; }
+    .auth-link.suave:hover { text-decoration: underline; color: var(--text-secondary); }
+    .auth-listo { text-align: center; margin-bottom: 16px; }
+    .auth-listo-ico { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+    .auth-listo p { font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+    .auth-listo .auth-listo-nota { font-size: 12.5px; color: var(--text-secondary); margin-top: 10px; }
+
+    /* "Agregar a mi lista" en la ficha del producto. */
+    .modal-lista-btn {
+      display: block; width: 100%; margin-top: 18px; padding: 13px; border-radius: var(--radius);
+      border: 1.5px solid var(--ink); background: var(--ink); color: #fff;
+      font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer; transition: all 0.15s;
+    }
+    .modal-lista-btn:hover { background: #1E2922; }
+    .modal-lista-btn.en-lista {
+      background: var(--success-light); color: var(--success); border-color: rgba(47,125,79,0.35);
+    }
 
     /* Buzón de sugerencias.
        El textarea es el PRIMERO de la app: hereda todo de .auth-input y sólo
@@ -1564,6 +1606,104 @@
     }
     .lista-btn:hover { background: var(--surface-2); color: var(--text-primary); }
     .lista-btn.danger:hover { background: var(--danger-light); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+    .lista-btn.fuerte { background: var(--accent); border-color: var(--accent); color: var(--on-accent); white-space: nowrap; }
+    .lista-btn.fuerte:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--on-accent); }
+
+    /* Invitación a crear cuenta, debajo del resumen. */
+    .lista-guardar {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
+      border: 1px solid rgba(169,78,51,0.28); background: rgba(169,78,51,0.07);
+    }
+    .lista-guardar-txt { flex: 1 1 260px; min-width: 0; }
+    .lista-guardar-t { font-size: 13.5px; font-weight: 800; color: var(--text-primary); }
+    .lista-guardar-d { font-size: 12.5px; margin-top: 3px; line-height: 1.55; color: var(--text-secondary); }
+
+    /* La lista de ejemplo. */
+    .lista-ejemplo {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between;
+      padding: 10px 12px; margin-bottom: 12px; border-radius: 12px;
+      background: var(--info-light); border: 1px solid rgba(61,122,140,0.25);
+      font-size: 13px; color: var(--text-primary); font-weight: 600; line-height: 1.45;
+    }
+    .lista-ejemplo > span { flex: 1 1 240px; }
+    .lista-ejemplo-acc { display: flex; gap: 6px; align-items: center; }
+    .lista-ejemplo-cerrar {
+      border: none; background: none; color: var(--text-muted); cursor: pointer;
+      font-size: 14px; width: 28px; height: 28px; border-radius: 50%;
+    }
+    .lista-ejemplo-cerrar:hover { background: rgba(61,122,140,0.12); }
+    .lista-vacia { padding-top: 22px; }
+
+    /* El buscador de la pestaña Lista. */
+    .buscador-lista { margin-bottom: 12px; }
+    .buscador-lista-input { position: relative; }
+    .buscador-lista-input > span {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 15px; pointer-events: none;
+    }
+    .buscador-lista-input input {
+      width: 100%; padding: 13px 42px; font-size: 14.5px; font-family: inherit; font-weight: 500;
+      border: 1.5px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
+      color: var(--text-primary); outline: none; box-shadow: var(--shadow-sm);
+      -webkit-appearance: none; appearance: none;
+    }
+    .buscador-lista-input input:focus { border-color: var(--accent); box-shadow: var(--ring); }
+    .buscador-lista-input input::-webkit-search-cancel-button { display: none; }
+    .buscador-lista.compacto .buscador-lista-input input { padding-top: 10px; padding-bottom: 10px; font-size: 13.5px; }
+    .buscador-lista-limpiar {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; border-radius: 50%; border: none;
+      background: var(--surface-2); color: var(--text-muted); cursor: pointer; font-size: 12px;
+    }
+    .buscador-lista-res {
+      margin-top: 6px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden;
+    }
+    .buscador-lista-nota { padding: 12px 14px; font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+    .buscador-lista-fila {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px;
+      border-top: 1px solid var(--border-light);
+    }
+    .buscador-lista-fila:first-child { border-top: none; }
+    .buscador-lista-fila img, .buscador-lista-sinimg {
+      width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; border-radius: 8px;
+      background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+    }
+    .buscador-lista-txt { flex: 1; min-width: 0; }
+    .buscador-lista-nombre {
+      font-size: 13px; font-weight: 700; color: var(--text-primary); line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .buscador-lista-precio { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .buscador-lista-precio strong { color: var(--success); }
+    .buscador-lista-btn {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--ink);
+      background: var(--ink); color: #fff; font-size: 22px; font-weight: 700; line-height: 1;
+      cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s;
+    }
+    .buscador-lista-btn:hover { transform: scale(1.06); }
+    .buscador-lista-btn.esta {
+      background: var(--success-light); color: var(--success); border-color: rgba(47,125,79,0.35); font-size: 17px;
+    }
+    .buscador-lista-btn:disabled { opacity: 0.6; }
+
+    /* El aviso de instalación. */
+    .aviso-instalar {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 12px;
+      background: var(--surface); border: 1px dashed rgba(169,78,51,0.45); border-radius: var(--radius-lg);
+    }
+    .aviso-instalar-ico { font-size: 24px; }
+    .aviso-instalar-txt {
+      flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
+      display: flex; flex-direction: column;
+    }
+    .aviso-instalar-txt strong { color: var(--text-primary); font-size: 13px; }
+    .aviso-instalar-cerrar {
+      border: none; background: none; color: var(--text-muted); cursor: pointer;
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    }
 
     /* Ticket y escáner ---------------------------------------------------- */
     .tk-supers { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0 4px; }
@@ -1680,6 +1820,31 @@
     }
     .lista-resumen-linea { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
     .lista-resumen-linea strong { color: var(--text-primary); font-weight: 900; }
+    /* El titular: cuánto ahorra ESTE usuario (o la brecha, si no dijo dónde compra). */
+    .lista-titular { padding: 2px 0 4px; }
+    .lista-titular-monto {
+      font-size: 21px; font-weight: 900; color: var(--success); letter-spacing: -0.3px; line-height: 1.25;
+    }
+    .lista-titular-monto span { font-size: 15px; font-weight: 800; color: var(--text-secondary); }
+    .lista-titular.bien .lista-titular-monto { color: var(--text-primary); }
+    .lista-titular-d { font-size: 13.5px; color: var(--text-secondary); font-weight: 600; line-height: 1.5; margin-top: 3px; }
+    .lista-titular-d strong { color: var(--text-primary); font-weight: 900; }
+    .lista-habitual-fila { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .lista-habitual {
+      padding: 6px 10px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 13px; font-weight: 700; font-family: inherit;
+      color: var(--text-primary); cursor: pointer; max-width: 100%;
+    }
+    .lista-habitual:focus { border-color: var(--accent); box-shadow: var(--ring); outline: none; }
+    .lista-habitual-nota { font-size: 12px; color: var(--text-muted); }
+    .lista-actualizando {
+      font-size: 11px; font-weight: 800; color: var(--info); text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .lista-link {
+      background: none; border: none; padding: 0; font: inherit; font-weight: 700;
+      color: var(--text-secondary); text-decoration: underline; cursor: pointer;
+    }
+    .lista-resumen-linea.lista-semanal { color: var(--info); }
     .lista-resumen-linea.mixta { color: var(--success, #2F7D4F); }
     .lista-resumen-linea.pago { color: #6B4E7D; }
     /* La aclaración del tope no es decorativa: sin ella prometemos un ahorro que
@@ -1891,6 +2056,14 @@
        pero no le corresponde a cualquiera, y pintarlo igual que uno sin
        requisito es prometer un ahorro que la mayoría no tiene. */
     .cr-banco.con-requisito .cr-pct { color: var(--text-secondary); }
+    /* Subido con `top` y no como <sup>, que agranda la caja del renglón. */
+    .cr-ast { position: relative; top: -0.3em; margin-left: 1px; font-size: .8em; cursor: help; }
+    /* "10%*" mide 40px y el `min-width` del % es 34: sin esto el nombre de ese
+       banco arranca 5px más a la derecha que los de arriba. Se ensanchan todos
+       los % de la celda y no sólo el del asterisco, para que la columna de
+       nombres siga derecha. Fuera del flujo no entra: "10%" ya ocupa 33 de los
+       34px y el asterisco quedaba abajo del logo. */
+    .cr-celda.con-ast .cr-pct { min-width: calc(40px * var(--cr-k)); }
     /* El `max-width` es lo que fija el ancho de la columna, no el `min-width`
        del th: con table-layout auto la celda se estira hasta el nombre más
        largo, y "Billetera Santa Fe / Plus Pagos" llevaba la columna a 201px —
@@ -1950,7 +2123,7 @@
          alto, pero en un teléfono scrollear para abajo es gratis y para el
          costado no. */
       .cr-banco { display: block; text-align: center; padding: 3px 0; line-height: 1.15; }
-      .cr-pct { font-size: calc(14px * var(--cr-k)); min-width: 0; display: inline; }
+      .cr-pct, .cr-celda.con-ast .cr-pct { font-size: calc(14px * var(--cr-k)); min-width: 0; display: inline; }
       .cr-iconos { display: inline-flex; margin-left: 3px; vertical-align: middle; }
       /* El logo va ANTES del %, en el mismo renglón. `PagoLogo` lo emite con
          `display:block` —y como estilo INLINE, que le gana a la hoja— así que
@@ -2042,6 +2215,18 @@
     .mp-item-nombre { font-size: 13px; font-weight: 800; color: var(--text-primary); }
     .mp-item-supers { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
     .mp-lista { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+    /* Plegado es el último renglón de la lista; desplegado, el título de las
+       entidades que sólo tienen promo en súper destildados. Punteado para que
+       no se lea como una entidad más. flex-shrink por lo mismo que .mp-item. */
+    .mp-otras {
+      flex-shrink: 0; width: 100%; padding: 8px 10px; text-align: left;
+      border: 1.5px dashed var(--border); border-radius: var(--radius);
+      background: none; font-family: inherit; font-size: 12px; font-weight: 700;
+      line-height: 1.45; color: var(--text-secondary); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mp-otras:hover { border-color: #CBD2C2; background: var(--surface-2); }
+    .mp-otras strong { color: #6B4E7D; }
     .mp-save {
       margin-top: 14px; width: 100%; padding: 11px; border-radius: var(--radius);
       border: none; background: #6B4E7D; color: #fff; font-size: 13.5px;
@@ -2279,25 +2464,87 @@
     @media (prefers-reduced-motion: reduce) { .logos-track { animation: none; } }
 
     /* Stats bar */
-    .stats-bar {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;
+    /* La puerta de entrada de la home (reemplazó a la barra de contadores). */
+    .hero-lista {
+      position: relative; margin-bottom: 16px; padding: 20px 20px 16px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #F6F1E7 100%);
+      border: 1px solid var(--border); border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
     }
-    .stat-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      border: 1px solid var(--border); padding: 18px 16px;
-      box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.18s;
-      text-align: center; position: relative; overflow: hidden;
+    .hero-t {
+      font-size: 22px; font-weight: 900; line-height: 1.2; letter-spacing: -0.4px;
+      color: var(--text-primary); padding-right: 30px;
     }
-    .stat-card::after {
-      content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%;
-      background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.25s;
+    .hero-t em { font-style: normal; color: var(--accent); }
+    .hero-d {
+      font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 8px;
+      font-weight: 500; max-width: 640px;
     }
-    .stat-card:hover { border-color: #CBD2C2; box-shadow: var(--shadow); transform: translateY(-2px); }
-    .stat-card:hover::after { transform: scaleX(1); }
-    .stat-value { font-size: 26px; font-weight: 900; color: var(--text-primary); line-height: 1; letter-spacing: -0.5px; }
-    .stat-value.accent { color: var(--accent-dark); }
-    .stat-value.success { color: var(--success); }
-    .stat-label { font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-top: 7px; }
+    .hero-d strong { color: var(--text-primary); }
+    .hero-acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .hero-btn {
+      padding: 12px 18px; border-radius: var(--radius); border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text-primary); font-size: 14px; font-weight: 800;
+      font-family: inherit; cursor: pointer; transition: all 0.15s;
+    }
+    .hero-btn:hover { border-color: #CBD2C2; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .hero-btn.primario {
+      background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+      box-shadow: 0 6px 14px -6px rgba(139,63,41,0.55);
+    }
+    .hero-btn.primario:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .hero-btn:disabled { opacity: 0.75; cursor: progress; transform: none; }
+    .hero-pie { font-size: 12px; color: var(--text-muted); margin-top: 12px; font-weight: 600; line-height: 1.5; }
+    .hero-link {
+      background: none; border: none; padding: 0; font: inherit; color: var(--text-secondary);
+      text-decoration: underline; cursor: pointer;
+    }
+    .hero-cerrar {
+      position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%;
+      border: none; background: transparent; color: var(--text-muted); font-size: 14px; cursor: pointer;
+    }
+    .hero-cerrar:hover { background: var(--surface-2); color: var(--text-primary); }
+    @media (max-width: 640px) {
+      .hero-lista { padding: 16px 14px 14px; border-radius: var(--radius-lg); margin-bottom: 12px; }
+      .hero-t { font-size: 19px; }
+      .hero-d { font-size: 13.5px; }
+      .hero-acciones .hero-btn { flex: 1 1 auto; padding: 12px 10px; font-size: 13.5px; }
+    }
+
+    /* La barra de la lista: fija abajo, sobre todo lo que no sea un modal. */
+    .con-barra-lista { padding-bottom: 88px; }
+    .barra-lista {
+      position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%); z-index: 60; width: min(560px, calc(100vw - 24px));
+      display: flex; align-items: center; gap: 10px; padding: 9px 9px 9px 10px;
+      background: var(--ink); color: #fff; border: none; border-radius: 999px;
+      box-shadow: 0 12px 28px -8px rgba(20,28,23,0.55); cursor: pointer;
+      font-family: inherit; text-align: left; animation: barraEntra 0.25s ease;
+    }
+    @keyframes barraEntra {
+      from { transform: translate(-50%, 16px); opacity: 0; }
+      to   { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .barra-lista-n {
+      min-width: 32px; height: 32px; padding: 0 8px; border-radius: 16px; flex-shrink: 0;
+      background: var(--brand-crema); color: var(--ink); font-weight: 900; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .barra-lista-t {
+      flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #E8ECE4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .barra-lista-cta {
+      font-size: 13px; font-weight: 900; white-space: nowrap; color: var(--on-accent);
+      background: var(--accent); padding: 8px 13px; border-radius: 999px;
+    }
+    .barra-lista:hover .barra-lista-cta { background: var(--accent-dark); }
+    /* A 320px al texto le quedaban 40px ("en tu…"): el número y el botón ya lo dicen. */
+    @media (max-width: 340px) {
+      .barra-lista-t { display: none; }
+      .barra-lista-cta { flex: 1; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { .barra-lista { animation: none; } }
 
     /* Super colors */
     .super-VEA { --s-bg: #FFD600; --s-text: #000; }
@@ -2832,6 +3079,135 @@ function guardarPagosInvitado(entidades, membresias) {
     }));
   } catch {}
 }
+
+// Lectura y escritura de localStorage que no revientan: en una ventana privada
+// de Safari, o con los datos del sitio bloqueados, el acceso tira excepción.
+function leerLocal(clave, porDefecto = null) {
+  try {
+    const v = localStorage.getItem(clave);
+    return v === null ? porDefecto : v;
+  } catch {
+    return porDefecto;
+  }
+}
+function guardarLocal(clave, valor) {
+  try {
+    if (valor === null || valor === undefined || valor === "") localStorage.removeItem(clave);else localStorage.setItem(clave, String(valor));
+  } catch {}
+}
+
+// LA CANASTA DE EJEMPLO
+//
+// El 23/09 se midió que el 65% de los visitantes no pasa de la home y que sólo
+// el 6% llega a ver una comparación, que es lo único que muestra para qué sirve
+// la app. Armar una lista desde cero son diez búsquedas antes de ver un solo
+// resultado; con esto se ve en un toque.
+//
+// Son EAN de la Canasta Convi (contenido/canasta_semanal.sql), elegidos por
+// estar en los 12 súper con precio fresco y por ser marcas que se reconocen de
+// góndola. Se resuelven por EAN y no se guardan producto_id: los id son por
+// fila de súper y cambian con las desactivaciones, el EAN no. El que no se
+// encuentre se saltea, y la comparación ya sabe estimar lo que le falta a cada
+// súper.
+const CANASTA_EJEMPLO = ["7790070433114",
+// Arroz Gallo Oro 500 g
+"7790070336385",
+// Fideos Lucchetti spaghetti 500 g
+"7790580146115",
+// Puré de tomate Arcor 520 g
+"7794000007109",
+// Mayonesa Hellmann's liviana 475 g
+"7790742321701",
+// Queso Finlandia La Serenísima 180 g
+"7790040143234",
+// Galletitas Chocolinas 250 g
+"7790387800135",
+// Té Taragüí 25 saquitos
+"7799155000197",
+// Agua Villavicencio sin gas 2 L
+"7793253003784",
+// Lavandina Ayudín 2 L
+"7790990003787",
+// Detergente Magistral limón 450 ml
+"7790250016182",
+// Papel higiénico Higienol 4 u
+"7509546702605" // Crema dental Colgate Total 90 g
+];
+
+// Para qué se pide la cuenta, dicho en el momento en que se pide. Antes el
+// botón más visible de cada tarjeta ("🛒 Agregar") le abría al visitante un
+// "Iniciar sesión" pelado, sin una palabra de para qué: se medía como la
+// pantalla donde se cortaba la visita.
+const MOTIVOS_CUENTA = {
+  favorito: {
+    t: "Te avisamos cuando baje",
+    d: "Creá tu cuenta gratis y te mandamos un mail cuando este producto baje de precio en el súper que elijas."
+  },
+  favoritos: {
+    t: "Tus favoritos",
+    d: "Creá tu cuenta gratis para guardar productos y recibir un mail cuando bajen de precio."
+  },
+  carrito: {
+    t: "Llevá la lista al carrito del súper",
+    d: "Con una cuenta gratis pasás tu lista al carrito del supermercado que elijas y terminás la compra en su sitio."
+  },
+  lista: {
+    t: "Guardá tu lista",
+    d: "Creá tu cuenta gratis y tenela en el celu y en la compu, sin volver a armarla."
+  },
+  resumen: {
+    t: "Tu lista, cada jueves",
+    d: "Creá tu cuenta gratis y cada jueves te mandamos por mail cuánto sale tu lista esa semana y en qué súper conviene."
+  }
+};
+
+// Los 422 de FastAPI traen `detail` como una LISTA de objetos, y el modal hacía
+// `new Error(data.detail)`: el usuario leía "[object Object]". Pasó con cada
+// contraseña de menos de 8 caracteres (3 veces en la semana del 16/09).
+function mensajeDeError(data, status) {
+  const d = data && data.detail;
+  if (Array.isArray(d)) {
+    const campos = d.map(x => x && x.loc ? x.loc[x.loc.length - 1] : null);
+    if (campos.includes("password")) return "La contraseña tiene que tener entre 8 y 128 caracteres.";
+    if (campos.includes("email")) return "Revisá el email: no parece válido.";
+    return "Revisá los datos y probá de nuevo.";
+  }
+  if (typeof d === "string" && d) return d;
+  if (status === 429) return "Demasiados intentos seguidos. Esperá un minuto y probá de nuevo.";
+  return "No pudimos completar el pedido. Probá de nuevo en un rato.";
+}
+
+// EL AVISO DE INSTALACIÓN
+//
+// Chrome dispara `beforeinstallprompt` cuando la app se puede instalar. Se
+// guarda para ofrecerlo recién DESPUÉS de la primera comparación —cuando el
+// usuario ya vio para qué sirve— en vez de dejar que el navegador lo tire al
+// entrar. Se registra a nivel módulo y no en un efecto: el evento puede llegar
+// antes de que React termine de montar.
+let __eventoInstalar = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  __eventoInstalar = e;
+  window.dispatchEvent(new Event("convi-instalable"));
+});
+window.addEventListener("appinstalled", () => {
+  __eventoInstalar = null;
+  guardarLocal("convi_instalar_cerrado", "1");
+});
+function yaInstalada() {
+  try {
+    return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: minimal-ui)").matches || window.navigator.standalone === true;
+  } catch {
+    return false;
+  }
+}
+// Safari de iPhone no tiene evento: la única vía es Compartir → "Agregar a
+// inicio". Los navegadores embebidos (Instagram, Facebook, WhatsApp) y los
+// otros de iOS no ofrecen esa opción, así que ahí no se muestra nada.
+function esSafariIOS() {
+  const ua = navigator.userAgent || "";
+  return /iPhone|iPad|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|FBAN|FBAV|Instagram|Line\/|WhatsApp|GSA\//.test(ua);
+}
 const SUPER_TODOS = ["VEA", "Carrefour", "MasOnline", "Dino", "Dia", "Coto", "Disco", "Cordiez", "La Gallega", "La Anónima", "Jumbo", "Atomo"];
 
 // Qué cadenas venden REALMENTE en cada región. Sin esto la app mostraba las 12
@@ -3173,18 +3549,31 @@ function fmt(n) {
 function fmtNum(n) {
   return (n != null ? n : 0).toLocaleString("es-AR");
 }
+
+// `scrapeado_en` viaja SIN zona horaria ("2026-09-16T06:26:47.565664") y es
+// UTC. `new Date()` sin zona lo toma como hora local, así que en Argentina el
+// "hace Xh" de las tarjetas marcaba 3 h de menos, y en las 3 h que siguen al
+// scrape daba negativo. Si el texto ya trae zona (Z o ±hh:mm) se respeta.
+// Una fecha sola ("2026-10-18") no se toca: ya se leía así antes. Los decimales
+// se cortan a 3 porque Postgres manda microsegundos y no todos los motores los
+// aceptan junto con la "Z".
+function aFecha(ts) {
+  const s = String(ts).replace(" ", "T").replace(/(\.\d{3})\d+/, "$1");
+  const sinZona = /T\d\d:\d\d/.test(s) && !/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(s);
+  return new Date(sinZona ? s + "Z" : s);
+}
 function relTime(ts) {
   if (!ts) return null;
-  const d = new Date(ts.replace(" ", "T")),
+  const d = aFecha(ts),
     now = new Date();
-  const mins = Math.round((now - d) / 60000);
+  const mins = Math.max(0, Math.round((now - d) / 60000));
   if (mins < 60) return `hace ${mins}m`;
   if (mins < 1440) return `hace ${Math.round(mins / 60)}h`;
   return `hace ${Math.round(mins / 1440)}d`;
 }
 function fmtFecha(ts) {
   if (!ts) return "";
-  const d = new Date(ts.replace(" ", "T"));
+  const d = aFecha(ts);
   return d.toLocaleDateString("es-AR", {
     day: "2-digit",
     month: "2-digit"
@@ -4170,7 +4559,9 @@ function Modal({
   onClose,
   onCambiarSuper,
   supersFiltro,
-  regionCodigo
+  regionCodigo,
+  enLista = false,
+  onLista = null
 }) {
   const [historial, setHistorial] = React.useState([]);
   // El buzón se maneja acá adentro y no por props: `Modal` se monta en tres
@@ -4426,7 +4817,10 @@ function Modal({
     style: {
       color: "var(--danger)"
     }
-  }, fmt(maxP))))), /*#__PURE__*/React.createElement("a", {
+  }, fmt(maxP))))), onLista && /*#__PURE__*/React.createElement("button", {
+    className: `modal-lista-btn ${enLista ? "en-lista" : ""}`,
+    onClick: () => onLista(producto)
+  }, enLista ? "✓ Está en tu lista · quitar" : "📋 Agregar a mi lista"), /*#__PURE__*/React.createElement("a", {
     href: urlEnSuper(producto),
     target: "_blank",
     rel: "noopener noreferrer",
@@ -4519,10 +4913,14 @@ function Paginacion({
 function AuthModal({
   onClose,
   onLogin,
-  modoInicial = "login"
+  modoInicial = "login",
+  motivo = null
 }) {
   // login | register | recuperar
-  const [modo, setModo] = React.useState(modoInicial);
+  // Si se abrió desde una función (favorito, carrito, guardar la lista) arranca
+  // en "Crear cuenta": quien tocó "Avisame si baja" casi nunca tiene cuenta, y
+  // mostrarle primero un login es decirle que llegó tarde.
+  const [modo, setModo] = React.useState(motivo && modoInicial === "login" ? "register" : modoInicial);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
@@ -4531,6 +4929,11 @@ function AuthModal({
   // Se levanta cuando el login contesta 403: la contraseña estaba bien y lo que
   // falta es confirmar el mail. Es lo que destraba el botón de reenvío.
   const [faltaConfirmar, setFaltaConfirmar] = React.useState(false);
+  // El alta terminó bien y falta confirmar el mail. Antes el modal saltaba al
+  // login con un cartel verde, y el que intentaba entrar ahí mismo se comía un
+  // "te falta confirmar": parecía que el registro no había funcionado.
+  const [registrado, setRegistrado] = React.useState(false);
+  const razon = motivo && MOTIVOS_CUENTA[motivo];
   const RUTA = {
     login: "login",
     register: "register",
@@ -4540,14 +4943,28 @@ function AuthModal({
     setError("");
     setMsg("");
     setFaltaConfirmar(false);
+    // Lo que el servidor rechazaría igual, dicho antes y en castellano.
+    const mail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+      setError("Revisá el email: no parece válido.");
+      return;
+    }
+    if (modo === "register" && password.length < 8) {
+      setError("La contraseña tiene que tener al menos 8 caracteres.");
+      return;
+    }
+    if (modo === "login" && !password) {
+      setError("Poné tu contraseña.");
+      return;
+    }
     setLoading(true);
     try {
       // El recupero manda SÓLO el email: el endpoint contesta siempre lo mismo
       // exista o no la cuenta, para no delatar quién está registrado.
       const cuerpo = modo === "recuperar" ? {
-        email
+        email: mail
       } : {
-        email,
+        email: mail,
         password
       };
       const res = await fetch(`${API}/auth/${RUTA[modo]}`, {
@@ -4557,13 +4974,13 @@ function AuthModal({
         },
         body: JSON.stringify(cuerpo)
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         // 403 en el login es el "te falta confirmar" del backend. Se ofrece el
         // reenvío acá mismo: el mail de hace tres días ya venció, así que decirle
         // que lo busque y nada es lo mismo.
         if (modo === "login" && res.status === 403) setFaltaConfirmar(true);
-        throw new Error(data.detail || "Error");
+        throw new Error(mensajeDeError(data, res.status));
       }
       if (modo === "login") {
         onLogin(data.access_token, data.refresh_token, data.user);
@@ -4571,11 +4988,11 @@ function AuthModal({
       } else if (modo === "recuperar") {
         setMsg(data.message || "Si el email está registrado, vas a recibir un correo en breve");
       } else {
-        setMsg("¡Registro exitoso! Revisá tu email para confirmar tu cuenta.");
-        setModo("login");
+        setRegistrado(true);
       }
     } catch (e) {
-      setError(e.message);
+      // Un fetch que ni sale (sin señal) llega acá con el TypeError del navegador.
+      setError(e instanceof TypeError ? "No hay conexión. Revisá tu internet y probá de nuevo." : e.message);
     }
     setLoading(false);
   }
@@ -4590,11 +5007,11 @@ function AuthModal({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email
+          email: email.trim()
         })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(mensajeDeError(data, res.status));
       // El botón desaparece con el acuse: dejarlo puesto invita a apretarlo tres
       // veces y comerse el 429, que se lee como que nunca llegó nada.
       setMsg(data.message || "Si esa cuenta existe y le falta confirmar, ya te mandamos el mail de nuevo");
@@ -4609,6 +5026,46 @@ function AuthModal({
     setError("");
     setMsg("");
     setFaltaConfirmar(false);
+    setRegistrado(false);
+  }
+  if (registrado) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "modal-overlay",
+      onClick: onClose
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal",
+      style: {
+        maxWidth: 400
+      },
+      onClick: e => e.stopPropagation()
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal-header"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "modal-title"
+    }, "Revis\xE1 tu mail"), /*#__PURE__*/React.createElement("button", {
+      className: "modal-close",
+      onClick: onClose,
+      "aria-label": "Cerrar"
+    }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+      className: "modal-body"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "auth-listo"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "auth-listo-ico"
+    }, "\uD83D\uDCEC"), /*#__PURE__*/React.createElement("p", null, "Te mandamos un enlace a ", /*#__PURE__*/React.createElement("strong", null, email.trim()), " para confirmar la cuenta. Tocalo y volv\xE9s ac\xE1 con la sesi\xF3n iniciada."), /*#__PURE__*/React.createElement("p", {
+      className: "auth-listo-nota"
+    }, "Mientras tanto pod\xE9s seguir usando Convi: tu lista queda guardada en este navegador y la pasamos a tu cuenta apenas entres. Si no lo ves, fijate en correo no deseado.")), /*#__PURE__*/React.createElement("button", {
+      className: "auth-btn",
+      onClick: onClose
+    }, "Seguir usando Convi"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "auth-link",
+      onClick: () => cambiarA("login")
+    }, "Ya lo confirm\xE9: iniciar sesi\xF3n")))));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
@@ -4623,12 +5080,19 @@ function AuthModal({
     className: "modal-header"
   }, /*#__PURE__*/React.createElement("div", {
     className: "modal-title"
-  }, modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta" : "Recuperar contraseña"), /*#__PURE__*/React.createElement("button", {
+  }, modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta gratis" : "Recuperar contraseña"), /*#__PURE__*/React.createElement("button", {
     className: "modal-close",
-    onClick: onClose
+    onClick: onClose,
+    "aria-label": "Cerrar"
   }, "\u2715")), /*#__PURE__*/React.createElement("div", {
     className: "modal-body"
-  }, msg && /*#__PURE__*/React.createElement("div", {
+  }, razon && modo !== "recuperar" && /*#__PURE__*/React.createElement("div", {
+    className: "auth-motivo"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-motivo-t"
+  }, razon.t), /*#__PURE__*/React.createElement("div", {
+    className: "auth-motivo-d"
+  }, razon.d)), msg && /*#__PURE__*/React.createElement("div", {
     className: "auth-alert success"
   }, msg), error && /*#__PURE__*/React.createElement("div", {
     className: "auth-alert error"
@@ -4645,11 +5109,14 @@ function AuthModal({
     placeholder: "Email",
     value: email,
     onChange: e => setEmail(e.target.value),
+    autoComplete: "email",
+    inputMode: "email",
     onKeyDown: e => e.key === "Enter" && modo === "recuperar" && handleSubmit()
   }), modo !== "recuperar" && /*#__PURE__*/React.createElement("input", {
     className: "auth-input",
     type: "password",
-    placeholder: "Contrase\xF1a",
+    placeholder: modo === "register" ? "Contraseña (mínimo 8 caracteres)" : "Contraseña",
+    autoComplete: modo === "register" ? "new-password" : "current-password",
     value: password,
     onChange: e => setPassword(e.target.value),
     onKeyDown: e => e.key === "Enter" && handleSubmit()
@@ -4657,7 +5124,7 @@ function AuthModal({
     className: "auth-btn",
     onClick: handleSubmit,
     disabled: loading
-  }, loading ? "Cargando..." : modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta" : "Enviarme el enlace"), faltaConfirmar && /*#__PURE__*/React.createElement("div", {
+  }, loading ? "Cargando..." : modo === "login" ? "Iniciar sesión" : modo === "register" ? "Crear cuenta gratis" : "Enviarme el enlace"), faltaConfirmar && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginTop: 10
@@ -4682,7 +5149,15 @@ function AuthModal({
   }, /*#__PURE__*/React.createElement("button", {
     className: "auth-link",
     onClick: () => cambiarA(modo === "login" ? "register" : "login")
-  }, modo === "login" ? "¿No tenés cuenta? Registrate" : modo === "register" ? "¿Ya tenés cuenta? Iniciá sesión" : "Volver a iniciar sesión")))));
+  }, modo === "login" ? "¿No tenés cuenta? Registrate" : modo === "register" ? "¿Ya tenés cuenta? Iniciá sesión" : "Volver a iniciar sesión")), razon && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "auth-link suave",
+    onClick: onClose
+  }, "Ahora no, seguir sin cuenta")))));
 }
 
 // ---------------------------------------------------------------------------
@@ -5603,12 +6078,13 @@ function CronogramaCelda({
   }
   const visibles = porBanco.slice(0, CR_BANCOS_POR_CELDA);
   const extra = porBanco.length - visibles.length;
+  const conAsterisco = visibles.some(p => p.rubros && p.rubros.length > 0);
 
   // El título junta todo lo que no entra en la celda. La condición va primero
   // porque cambia si el número le corresponde o no al que mira.
-  const detalle = celda.promos.map(q => `${q.entidad} ${q.pct}%` + (q.membresia ? ` — sólo con ${q.membresia}` : "") + (q.tipo === "reintegro" ? " — reintegro, no descuento en caja" : "") + (q.canal === "sucursal" ? " — sólo en sucursal" : "") + (q.tope ? ` — tope ${fmt(q.tope)} ${q.tope_periodo || ""}` : "") + (q.compra_minima ? ` — compra mínima ${fmt(q.compra_minima)}` : "")).join("\n");
+  const detalle = celda.promos.map(q => `${q.entidad} ${q.pct}%` + (q.membresia ? ` — sólo con ${q.membresia}` : "") + (q.rubros && q.rubros.length ? " — sólo en algunos productos" : "") + (q.tipo === "reintegro" ? " — reintegro, no descuento en caja" : "") + (q.canal === "sucursal" ? " — sólo en sucursal" : "") + (q.tope ? ` — tope ${fmt(q.tope)} ${q.tope_periodo || ""}` : "") + (q.compra_minima ? ` — compra mínima ${fmt(q.compra_minima)}` : "")).join("\n");
   return /*#__PURE__*/React.createElement("td", {
-    className: "cr-celda",
+    className: `cr-celda ${conAsterisco ? "con-ast" : ""}`,
     title: detalle,
     onClick: () => onVer(celda)
   }, visibles.map((p, i) => /*#__PURE__*/React.createElement("div", {
@@ -5619,7 +6095,10 @@ function CronogramaCelda({
     size: Math.round(13 * escala)
   }), /*#__PURE__*/React.createElement("span", {
     className: "cr-pct"
-  }, p.pct, "%"), /*#__PURE__*/React.createElement("span", {
+  }, p.pct, "%", p.rubros && p.rubros.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "cr-ast",
+    title: "Vale s\xF3lo en algunos productos: toc\xE1 la celda para ver cu\xE1les"
+  }, "*")), /*#__PURE__*/React.createElement("span", {
     className: "cr-iconos"
   }, p.tipo === "reintegro" && /*#__PURE__*/React.createElement("i", {
     title: "Reintegro: lo pag\xE1s entero y te lo devuelven despu\xE9s"
@@ -5820,10 +6299,10 @@ function CronogramaView({
     className: "cr-estado"
   }, "Todav\xEDa no tenemos promos cargadas para tu regi\xF3n."), /*#__PURE__*/React.createElement("p", {
     className: "cr-nota"
-  }, "Los porcentajes son los que publica cada cadena. El tope, las exclusiones y si es descuento o reintegro est\xE1n en el detalle de cada celda \u2014 tocala para verlo.", !token && /*#__PURE__*/React.createElement(React.Fragment, null, " Si ", /*#__PURE__*/React.createElement("button", {
+  }, "Los porcentajes son los que publica cada cadena. El tope, las exclusiones y si es descuento o reintegro est\xE1n en el detalle de cada celda \u2014 tocala para verlo.", " ", "Si ", /*#__PURE__*/React.createElement("button", {
     className: "cr-link",
     onClick: onPedirCuenta
-  }, "cre\xE1s una cuenta"), " y carg\xE1s tus tarjetas, calculamos cu\xE1nto ahorr\xE1s sobre tu lista real.")), detalle && /*#__PURE__*/React.createElement("div", {
+  }, "arm\xE1s tu lista"), " y marc\xE1s tus tarjetas, calculamos cu\xE1nto ahorr\xE1s sobre tu compra real."), detalle && /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
     onClick: () => setDetalle(null)
   }, /*#__PURE__*/React.createElement("div", {
@@ -5861,8 +6340,16 @@ function CronogramaView({
 // El catálogo sale de las promos activas y no de una tabla fija: si una entidad
 // no tiene promo en ningún súper, tildarla no cambiaría ningún total y sólo
 // haría más larga la lista.
+//
+// Por lo mismo, a la vista quedan sólo las que tienen promo en alguno de
+// `supers` —los tildados en el filtro, que son las columnas de la comparación—:
+// una tarjeta que sólo sirve en La Gallega no mueve ningún total en CABA. Las
+// otras NO se destildan: siguen en `elegidas`, viajan en el PUT tal cual y
+// quedan atrás de un botón. Al que cambia de región o vuelve a tildar el súper
+// le reaparecen como las dejó.
 function MediosPagoModal({
   token,
+  supers,
   onClose,
   onGuardado
 }) {
@@ -5870,6 +6357,7 @@ function MediosPagoModal({
   const [elegidas, setElegidas] = React.useState(null); // null = todavía cargando
   const [tramos, setTramos] = React.useState({}); // {entidad: [categoría]}
   const [guardando, setGuardando] = React.useState(false);
+  const [verOtras, setVerOtras] = React.useState(false);
   // Lo que manda el PUT es exactamente lo que está tildado acá, así que una
   // carga fallida NO puede verse como una lista vacía: antes se veía así, el
   // usuario guardaba y se le borraban las tarjetas y las categorías. Con error
@@ -5891,6 +6379,37 @@ function MediosPagoModal({
       setTramos(mias.membresias || {});
     }).catch(() => setErrorCarga(true));
   }, [token]);
+
+  // `donde` es lo que se escribe abajo del nombre: de las propias, sólo tus
+  // súper; de las otras, todos, porque ninguno es tuyo y es lo que explica por
+  // qué quedaron aparte. Sin ningún súper tildado la comparación usa todos (ver
+  // cargar() de ListaView), así que acá tampoco se esconde nada.
+  const supersKey = (supers || []).join(",");
+  const {
+    propias,
+    otras
+  } = React.useMemo(() => {
+    const mios = new Set(supersKey ? supersKey.split(",") : []);
+    const propias = [],
+      otras = [];
+    for (const e of entidades) {
+      const donde = mios.size ? e.supers.filter(s => mios.has(s)) : e.supers;
+      if (donde.length) propias.push({
+        e,
+        donde
+      });else otras.push({
+        e,
+        donde: e.supers
+      });
+    }
+    // El back las ordena por en cuántos súper sirven; acá cuenta en cuántos de
+    // los TUYOS. El sort es estable: el empate conserva el orden del back.
+    propias.sort((a, b) => b.donde.length - a.donde.length);
+    return {
+      propias,
+      otras
+    };
+  }, [entidades, supersKey]);
   function toggle(ent) {
     const estaba = elegidas.has(ent);
     setElegidas(prev => {
@@ -5951,6 +6470,60 @@ function MediosPagoModal({
       setGuardando(false);
     }
   }
+
+  // Un renglón del selector. Es función y no un .map dentro del JSX porque se
+  // dibuja en dos grupos, con el botón de las otras en el medio.
+  const renglon = ({
+    e,
+    donde
+  }) => {
+    // `sin_requisito` no es una opción sino un hecho: la promo
+    // aplica pagues como pagues, así que va tildada y no se puede
+    // destildar — destildarla solo serviría para esconderse un
+    // descuento propio. El motor la aplica igual (no depende de lo
+    // que se guarde acá), pero si la pantalla la mostrara en blanco
+    // parecería que falta tildar algo para tenerla.
+    const fija = !!e.sin_requisito;
+    const on = fija || elegidas.has(e.entidad);
+    const mias = tramos[e.entidad] || [];
+    // Varios bancos dan distinto descuento según la categoría del
+    // cliente. Los chips aparecen sólo con el banco tildado: si no,
+    // la lista entera se llena de opciones que no vienen al caso.
+    const hayCat = on && e.membresias.length > 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: e.entidad,
+      className: `mp-item ${on ? "on" : ""} ${fija ? "fija" : ""}`
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "mp-item-head",
+      disabled: fija,
+      title: fija ? "Aplica con cualquier medio de pago: no hay nada que tildar" : undefined,
+      onClick: () => {
+        if (!fija) toggle(e.entidad);
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mp-item-check"
+    }, on ? "✓" : ""), /*#__PURE__*/React.createElement(PagoLogo, {
+      nombre: e.entidad
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mp-item-nombre"
+    }, e.entidad), /*#__PURE__*/React.createElement("div", {
+      className: "mp-item-supers"
+    }, donde.join(" · "), fija ? /*#__PURE__*/React.createElement(React.Fragment, null, " \u2014 ", /*#__PURE__*/React.createElement("strong", null, "siempre aplicado"), ", pagues como pagues") : !on && e.membresias.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " \u2014 con categor\xEDas")))), hayCat && /*#__PURE__*/React.createElement("div", {
+      className: "mp-tramos"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `mp-tramos-tit ${e.solo_con_membresia && mias.length === 0 ? "obligatoria" : ""}`
+    }, e.solo_con_membresia ? "Acá todos los descuentos dependen de la categoría — sin elegirla no podemos calcularlos." : "¿Tenés alguna de estas? Suelen tener más descuento."), /*#__PURE__*/React.createElement("div", {
+      className: "mp-tramos-chips"
+    }, e.membresias.map(cat => /*#__PURE__*/React.createElement("button", {
+      key: cat,
+      className: `mp-tramo ${mias.includes(cat) ? "on" : ""}`,
+      onClick: () => toggleTramo(e.entidad, cat)
+    }, mias.includes(cat) ? "✓ " : "", cat)))));
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
     onClick: onClose
@@ -5987,54 +6560,22 @@ function MediosPagoModal({
     }
   }, "No hay promociones cargadas por ahora.") : /*#__PURE__*/React.createElement("div", {
     className: "mp-lista"
-  }, entidades.map(e => {
-    // `sin_requisito` no es una opción sino un hecho: la promo
-    // aplica pagues como pagues, así que va tildada y no se puede
-    // destildar — destildarla solo serviría para esconderse un
-    // descuento propio. El motor la aplica igual (no depende de lo
-    // que se guarde acá), pero si la pantalla la mostrara en blanco
-    // parecería que falta tildar algo para tenerla.
-    const fija = !!e.sin_requisito;
-    const on = fija || elegidas.has(e.entidad);
-    const mias = tramos[e.entidad] || [];
-    // Varios bancos dan distinto descuento según la categoría del
-    // cliente. Los chips aparecen sólo con el banco tildado: si no,
-    // la lista entera se llena de opciones que no vienen al caso.
-    const hayCat = on && e.membresias.length > 0;
-    return /*#__PURE__*/React.createElement("div", {
-      key: e.entidad,
-      className: `mp-item ${on ? "on" : ""} ${fija ? "fija" : ""}`
-    }, /*#__PURE__*/React.createElement("button", {
-      className: "mp-item-head",
-      disabled: fija,
-      title: fija ? "Aplica con cualquier medio de pago: no hay nada que tildar" : undefined,
-      onClick: () => {
-        if (!fija) toggle(e.entidad);
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "mp-item-check"
-    }, on ? "✓" : ""), /*#__PURE__*/React.createElement(PagoLogo, {
-      nombre: e.entidad
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        minWidth: 0
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "mp-item-nombre"
-    }, e.entidad), /*#__PURE__*/React.createElement("div", {
-      className: "mp-item-supers"
-    }, e.supers.join(" · "), fija ? /*#__PURE__*/React.createElement(React.Fragment, null, " \u2014 ", /*#__PURE__*/React.createElement("strong", null, "siempre aplicado"), ", pagues como pagues") : !on && e.membresias.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " \u2014 con categor\xEDas")))), hayCat && /*#__PURE__*/React.createElement("div", {
-      className: "mp-tramos"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: `mp-tramos-tit ${e.solo_con_membresia && mias.length === 0 ? "obligatoria" : ""}`
-    }, e.solo_con_membresia ? "Acá todos los descuentos dependen de la categoría — sin elegirla no podemos calcularlos." : "¿Tenés alguna de estas? Suelen tener más descuento."), /*#__PURE__*/React.createElement("div", {
-      className: "mp-tramos-chips"
-    }, e.membresias.map(cat => /*#__PURE__*/React.createElement("button", {
-      key: cat,
-      className: `mp-tramo ${mias.includes(cat) ? "on" : ""}`,
-      onClick: () => toggleTramo(e.entidad, cat)
-    }, mias.includes(cat) ? "✓ " : "", cat)))));
-  })), errorGuardar && /*#__PURE__*/React.createElement("div", {
+  }, propias.length === 0 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "var(--text-muted)"
+    }
+  }, "Ninguno de los s\xFAper que elegiste tiene promos bancarias por ahora."), propias.map(renglon), otras.length > 0 && (() => {
+    // Las fijas no cuentan: ésas no las tildó nadie.
+    const tildadas = otras.filter(({
+      e
+    }) => !e.sin_requisito && elegidas.has(e.entidad)).length;
+    return /*#__PURE__*/React.createElement("button", {
+      className: "mp-otras",
+      "aria-expanded": verOtras,
+      onClick: () => setVerOtras(v => !v)
+    }, verOtras ? "▴ Ocultar los de otros súper" : /*#__PURE__*/React.createElement(React.Fragment, null, "\u25BE Ver ", otras.length, " m\xE1s, con promo s\xF3lo en s\xFAper que no elegiste", tildadas > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", /*#__PURE__*/React.createElement("strong", null, tildadas, " tildado", tildadas !== 1 ? "s" : ""))));
+  })(), verOtras && otras.map(renglon)), errorGuardar && /*#__PURE__*/React.createElement("div", {
     className: "auth-alert error"
   }, errorGuardar), /*#__PURE__*/React.createElement("button", {
     className: "mp-save",
@@ -7365,6 +7906,195 @@ function EscanerModal({
 // Una fila por producto, una columna por súper. Las columnas vienen ordenadas
 // del backend: primero los que tienen la lista completa, después por cuántos
 // productos les faltan, y recién ahí por precio.
+// ---------------------------------------------------------------------------
+// BuscadorLista — sumar productos sin salir de la lista
+// ---------------------------------------------------------------------------
+// Antes la lista vacía decía "agregá productos con el botón 📋 desde
+// Productos": había que irse, buscar y volver, y diez productos eran veinte
+// idas y vueltas antes de ver una sola comparación. Acá se busca en el lugar
+// y la comparación se rehace con cada producto que entra.
+let __ultimoFocoBuscador = 0;
+function BuscadorLista({
+  regionId,
+  supersVisibles,
+  estaEnLista,
+  onAgregar,
+  foco = 0,
+  compacto = false
+}) {
+  const [q, setQ] = React.useState("");
+  const [res, setRes] = React.useState([]);
+  const [cargando, setCargando] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [pendiente, setPendiente] = React.useState(null); // id que se está agregando
+  const ctrlRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  // `foco` lo sube App cuando el usuario tocó "Armar mi lista": ahí sí se
+  // abre el teclado. Al entrar a la pestaña por cualquier otro camino, no. El
+  // último valor atendido vive fuera del componente porque la pestaña se
+  // desmonta al salir: con un ref, volver a la lista reabría el teclado.
+  React.useEffect(() => {
+    if (foco > __ultimoFocoBuscador && inputRef.current) {
+      __ultimoFocoBuscador = foco;
+      inputRef.current.focus({
+        preventScroll: false
+      });
+    }
+  }, [foco]);
+  React.useEffect(() => {
+    const texto = q.trim();
+    if (ctrlRef.current) ctrlRef.current.abort();
+    if (texto.length < 2) {
+      setRes([]);
+      setCargando(false);
+      setError(null);
+      return;
+    }
+    setCargando(true);
+    const t = setTimeout(() => {
+      const c = new AbortController();
+      ctrlRef.current = c;
+      const p = new URLSearchParams({
+        busqueda: texto,
+        pagina: "1",
+        por_pagina: "8",
+        orden: "popular"
+      });
+      if (regionId) p.append("region_id", regionId);
+      fetch(`${API}/productos?${p}`, {
+        signal: c.signal
+      }).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
+        setRes(Array.isArray(d.productos) ? d.productos : []);
+        setError(null);
+      }).catch(e => {
+        if (e && e.name !== "AbortError") setError("No pudimos buscar. Probá de nuevo.");
+      }).finally(() => {
+        if (!c.signal.aborted) setCargando(false);
+      });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [q, regionId]);
+
+  // El precio que se muestra es el más barato entre los súper tildados, igual
+  // que el encabezado de la tarjeta de la grilla.
+  const visibles = new Set(supersVisibles);
+  const mejorDe = p => [p, ...(p.otros_supers || [])].filter(o => o && o.precio != null && visibles.has(o.supermercado)).reduce((a, o) => !a || o.precio < a.precio ? o : a, null);
+  async function agregar(p) {
+    setPendiente(p.id);
+    try {
+      await onAgregar(p);
+    } finally {
+      setPendiente(null);
+    }
+  }
+  const texto = q.trim();
+  return /*#__PURE__*/React.createElement("div", {
+    className: `buscador-lista ${compacto ? "compacto" : ""}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "buscador-lista-input"
+  }, /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "\uD83D\uDD0E"), /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    value: q,
+    onChange: e => setQ(e.target.value),
+    type: "search",
+    placeholder: compacto ? "Sumá más productos…" : "Buscá lo que comprás (leche, yerba, arroz…)",
+    "aria-label": "Buscar productos para agregar a la lista"
+  }), q && /*#__PURE__*/React.createElement("button", {
+    className: "buscador-lista-limpiar",
+    "aria-label": "Borrar b\xFAsqueda",
+    onClick: () => {
+      setQ("");
+      inputRef.current && inputRef.current.focus();
+    }
+  }, "\u2715")), texto.length >= 2 && /*#__PURE__*/React.createElement("div", {
+    className: "buscador-lista-res"
+  }, cargando && !res.length && /*#__PURE__*/React.createElement("div", {
+    className: "buscador-lista-nota"
+  }, "Buscando\u2026"), error && /*#__PURE__*/React.createElement("div", {
+    className: "buscador-lista-nota"
+  }, error), !cargando && !error && !res.length && /*#__PURE__*/React.createElement("div", {
+    className: "buscador-lista-nota"
+  }, "No encontramos \u201C", texto, "\u201D. Prob\xE1 con menos palabras."), res.map(p => {
+    const m = mejorDe(p);
+    const esta = estaEnLista(p);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "buscador-lista-fila",
+      key: p.id
+    }, p.imagen_url ? /*#__PURE__*/React.createElement("img", {
+      src: imgProducto(p.imagen_url, 40),
+      alt: "",
+      width: "36",
+      height: "36",
+      loading: "lazy",
+      decoding: "async"
+    }) : /*#__PURE__*/React.createElement("span", {
+      className: "buscador-lista-sinimg",
+      "aria-hidden": "true"
+    }, "\uD83D\uDECD\uFE0F"), /*#__PURE__*/React.createElement("div", {
+      className: "buscador-lista-txt"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "buscador-lista-nombre"
+    }, p.nombre), m && /*#__PURE__*/React.createElement("div", {
+      className: "buscador-lista-precio"
+    }, "desde ", /*#__PURE__*/React.createElement("strong", null, fmt(m.precio)), " en ", m.supermercado)), /*#__PURE__*/React.createElement("button", {
+      className: `buscador-lista-btn ${esta ? "esta" : ""}`,
+      disabled: pendiente === p.id,
+      onClick: () => agregar(p),
+      "aria-label": esta ? `Quitar ${p.nombre} de la lista` : `Agregar ${p.nombre} a la lista`
+    }, pendiente === p.id ? "…" : esta ? "✓" : "+"));
+  })));
+}
+
+// EL AVISO DE INSTALACIÓN — se muestra una sola vez, después de una
+// comparación con al menos 3 productos, en el teléfono y fuera de la app ya
+// instalada. En Android usa el evento guardado; en Safari de iPhone explica los
+// dos toques, porque ahí no hay evento.
+function AvisoInstalar() {
+  const [cerrado, setCerrado] = React.useState(() => leerLocal("convi_instalar_cerrado") === "1");
+  const [evento, setEvento] = React.useState(() => __eventoInstalar);
+  React.useEffect(() => {
+    const f = () => setEvento(__eventoInstalar);
+    window.addEventListener("convi-instalable", f);
+    return () => window.removeEventListener("convi-instalable", f);
+  }, []);
+  const movil = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+  const ios = esSafariIOS();
+  if (cerrado || yaInstalada() || !movil || !evento && !ios) return null;
+  const cerrar = () => {
+    guardarLocal("convi_instalar_cerrado", "1");
+    setCerrado(true);
+  };
+  const instalar = async () => {
+    if (!evento) return;
+    try {
+      evento.prompt();
+      await evento.userChoice;
+    } catch {}
+    __eventoInstalar = null;
+    setEvento(null);
+    cerrar();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "aviso-instalar"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "aviso-instalar-ico",
+    "aria-hidden": "true"
+  }, "\uD83D\uDCF2"), /*#__PURE__*/React.createElement("div", {
+    className: "aviso-instalar-txt"
+  }, /*#__PURE__*/React.createElement("strong", null, "Ten\xE9 Convi a mano cuando vas al s\xFAper"), ios ? /*#__PURE__*/React.createElement("span", null, "Toc\xE1 ", /*#__PURE__*/React.createElement("b", null, "Compartir"), " ", /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "\u2B06\uFE0F"), " y despu\xE9s ", /*#__PURE__*/React.createElement("b", null, "\u201CAgregar a inicio\u201D"), ".") : /*#__PURE__*/React.createElement("span", null, "Instalala en tu celu y la abr\xEDs de un toque, como cualquier app.")), !ios && /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn fuerte",
+    onClick: instalar
+  }, "Instalar"), /*#__PURE__*/React.createElement("button", {
+    className: "aviso-instalar-cerrar",
+    onClick: cerrar,
+    "aria-label": "No mostrar m\xE1s"
+  }, "\u2715"));
+}
 function ListaView({
   token,
   listaInvitado,
@@ -7383,7 +8113,18 @@ function ListaView({
   plan,
   onPedirPlan,
   onAhorroBloqueado,
-  onPlanCambio
+  onPlanCambio,
+  onAgregarProducto,
+  estaEnLista,
+  onVerEjemplo,
+  cargandoEjemplo,
+  ejemploActivo,
+  onSalirEjemplo,
+  habitual,
+  setHabitual,
+  resumenActivo,
+  focoBuscador,
+  versionLista
 }) {
   // ¿Hay que hablar del abono en esta pantalla? Con el paywall apagado, no
   // existe. `sinAcceso` es el que ya se quedó afuera; el de prueba tiene todo.
@@ -7574,16 +8315,138 @@ function ListaView({
     });
     // pagosVersion no se lee adentro pero va en las dependencias: cuando App sube
     // a la cuenta nueva los medios tildados sin cuenta, la comparación que ya
-    // corrió sin ellos se tiene que rehacer.
-  }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado, listaInvitado, pagosVersion]);
+    // corrió sin ellos se tiene que rehacer. versionLista, por lo mismo, cuando
+    // App le agrega productos a la lista por su cuenta (el ejemplo).
+  }, [token, listaActivaId, regionId, supersKey, onAhorroBloqueado, listaInvitado, pagosVersion, versionLista]);
   React.useEffect(() => {
     setCargando(true);
     cargar();
   }, [cargar]);
+  // Como ahora la grilla vieja se sigue viendo mientras se recalcula (ver los
+  // return de abajo), cambiar de lista o de sesión la tiene que vaciar: si no,
+  // por un instante se vería la comparación de la lista anterior como propia.
+  React.useEffect(() => {
+    setData(null);
+  }, [listaActivaId, token]);
   const authJson = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json"
   };
+
+  // Agregar desde el buscador de esta pestaña. Sin cuenta alcanza con tocar el
+  // localStorage (cargar depende de listaInvitado y se rehace solo); con cuenta
+  // la comparación NO depende de los items, así que hay que pedirla de nuevo
+  // cuando el alta ya está guardada.
+  async function agregarDesdeBuscador(p) {
+    await onAgregarProducto(p);
+    if (token) cargar();
+  }
+
+  // Vaciar sirve sobre todo para la lista de ejemplo: quien la probó y quiere
+  // armar la suya no tiene por qué borrar doce productos a mano.
+  async function vaciarLista() {
+    if (!token) {
+      setListaInvitado([]);
+      return;
+    }
+    const ids = (data && data.items || []).map(i => i.id);
+    setData(d => d && {
+      ...d,
+      items: []
+    });
+    await Promise.all(ids.map(id => fetch(`${API}/listas/${listaActivaId}/items/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }).catch(() => {})));
+    cargar();
+    onListasChange();
+  }
+
+  // EL RESUMEN SEMANAL POR MAIL. Sólo con cuenta y sólo si el backend lo tiene
+  // (lo anuncia /stats): si el endpoint no está, el renglón no aparece.
+  const [avisos, setAvisos] = React.useState(null);
+  React.useEffect(() => {
+    if (!token || !resumenActivo) {
+      setAvisos(null);
+      return;
+    }
+    let vigente = true;
+    fetch(`${API}/avisos-mail`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
+      if (vigente) setAvisos(d);
+    }).catch(() => {
+      if (vigente) setAvisos(null);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, resumenActivo]);
+  async function cambiarResumen(valor) {
+    setAvisos(a => a && {
+      ...a,
+      semanal: valor
+    });
+    try {
+      const r = await fetch(`${API}/avisos-mail`, {
+        method: "PUT",
+        headers: authJson,
+        body: JSON.stringify({
+          semanal: valor
+        })
+      });
+      if (!r.ok) throw new Error();
+    } catch (e) {
+      setAvisos(a => a && {
+        ...a,
+        semanal: !valor
+      });
+    }
+  }
+  const buscador = compacto => /*#__PURE__*/React.createElement(BuscadorLista, {
+    regionId: regionId,
+    supersVisibles: supersVisibles,
+    estaEnLista: estaEnLista,
+    onAgregar: agregarDesdeBuscador,
+    foco: focoBuscador,
+    compacto: compacto
+  });
+
+  // Lo que se muestra cuando todavía no hay nada que comparar: el buscador
+  // arriba y, abajo, la salida rápida de ver un ejemplo armado.
+  const vacio = (titulo, texto) => /*#__PURE__*/React.createElement("div", {
+    className: "cart-empty lista-vacia"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 48
+    }
+  }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 17,
+      marginTop: 12,
+      fontWeight: 800,
+      color: "var(--text-primary)"
+    }
+  }, titulo), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13.5,
+      marginTop: 6,
+      color: "var(--text-secondary)",
+      maxWidth: 380,
+      lineHeight: 1.6
+    }
+  }, texto), onVerEjemplo && /*#__PURE__*/React.createElement("button", {
+    className: "hero-btn primario",
+    style: {
+      marginTop: 16
+    },
+    onClick: onVerEjemplo,
+    disabled: cargandoEjemplo
+  }, cargandoEjemplo ? "Armando el ejemplo…" : `▶ Ver un ejemplo con ${CANASTA_EJEMPLO.length} productos`));
   async function cambiarCantidad(item, cantidad) {
     if (cantidad < 1 || cantidad > 99) return;
     // Optimista sobre el número; los totales los recalcula el backend al releer
@@ -7648,6 +8511,13 @@ function ListaView({
   // antes de que ese estado se refresque, un segundo clic rápido leería el valor
   // viejo y volvería a agregar lo que se acababa de sacar.
   async function toggleCelda(fila, celda, enCarrito) {
+    // Sin cuenta el carrito no existe: antes esto mandaba el POST con
+    // "Bearer null", volvía 401 y la celda no hacía nada. Ahora se dice para
+    // qué hace falta la cuenta, en el momento en que se quiere usar.
+    if (!token) {
+      onPedirCuenta("carrito");
+      return;
+    }
     setOcupado(`c${fila.id}`);
     try {
       if (enCarrito) {
@@ -7671,6 +8541,12 @@ function ListaView({
     setOcupado(null);
   }
   async function volcar(supermercado) {
+    // Mismo caso que toggleCelda: sin cuenta esto era un POST a
+    // /listas/null/al-carrito que terminaba en "No se pudo cargar el carrito".
+    if (!token) {
+      onPedirCuenta("carrito");
+      return;
+    }
     // Si ya sabemos que no tiene acceso, no lo mandamos a chocar contra un 402:
     // se le muestra qué es lo que está del otro lado. El permiso igual lo aplica
     // el backend — esto es cortesía, no seguridad.
@@ -7898,7 +8774,7 @@ function ListaView({
     className: "lista-btn danger",
     onClick: borrarLista
   }, "Borrar"), /*#__PURE__*/React.createElement("button", {
-    className: "lista-btn",
+    className: "lista-btn con-label",
     onClick: () => setShowPagos(true),
     style: misPagos.length ? {
       borderColor: "rgba(107,78,125,0.35)",
@@ -7915,6 +8791,7 @@ function ListaView({
     }
   }, aviso), showPagos && /*#__PURE__*/React.createElement(MediosPagoModal, {
     token: token,
+    supers: supersVisibles,
     onClose: () => setShowPagos(false),
     onGuardado: ents => {
       setMisPagos(ents);
@@ -7939,128 +8816,77 @@ function ListaView({
     onClose: () => setFicha(null),
     supersFiltro: supersVisibles,
     regionCodigo: regionCodigo
-  }), !token && /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: "1 1 100%",
-      padding: "12px 14px",
-      borderRadius: 12,
-      border: "1px solid rgba(193,102,74,0.28)",
-      background: "rgba(193,102,74,0.07)",
-      display: "flex",
-      gap: 12,
-      alignItems: "center",
-      flexWrap: "wrap"
-    }
+  }));
+
+  // LA INVITACIÓN A CREAR CUENTA (2026-09-23)
+  // Antes vivía arriba de todo y decía que la lista se perdía "si cerrás el
+  // navegador": no es cierto (el localStorage sobrevive al cierre), le decía al
+  // que llegaba que no valía la pena volver, y en el celular empujaba el
+  // resultado fuera de la pantalla. Ahora va DEBAJO del resumen —se pide la
+  // cuenta después de mostrar para qué sirve—, sólo con una lista propia (la de
+  // ejemplo no es suya) y ofreciendo lo que la cuenta suma de verdad: la lista
+  // en cualquier dispositivo y, si el backend lo tiene, el resumen de los jueves.
+  const invitacionCuenta = !token && listaInvitado.length > 0 && !ejemploActivo && /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar"
   }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: "1 1 260px",
-      minWidth: 0
-    }
+    className: "lista-guardar-txt"
   }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13.5,
-      fontWeight: 800,
-      color: "var(--text-primary)"
-    }
-  }, "Tu lista se guarda s\xF3lo en este navegador"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12.5,
-      marginTop: 3,
-      lineHeight: 1.55,
-      color: "var(--text-secondary)"
-    }
-  }, "Para guardarla hace falta entrar a tu cuenta. Si cerr\xE1s el navegador, borr\xE1s los datos o entr\xE1s desde otro tel\xE9fono, la lista no va a estar.", listaInvitado.length > 0 && " Creá una cuenta gratis y la pasamos tal como está.")), /*#__PURE__*/React.createElement("button", {
+    className: "lista-guardar-t"
+  }, "Tu lista qued\xF3 guardada en este navegador"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, resumenActivo ? "Con una cuenta gratis la tenés en el celu y en la compu, y cada jueves te mandamos por mail cuánto sale esa semana y dónde conviene." : "Con una cuenta gratis la tenés en el celu y en la compu, y no se pierde si borrás los datos del navegador.")), /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn fuerte",
+    onClick: () => onPedirCuenta(resumenActivo ? "resumen" : "lista")
+  }, "Crear cuenta gratis"));
+
+  // TODOS LOS RETURN EMPIEZAN IGUAL: toolbar y buscador, en ese orden y en
+  // esas posiciones. No es prolijidad: React conserva el estado
+  // de <BuscadorLista> sólo si lo encuentra en el mismo lugar del árbol, y
+  // cada alta cambia de estado la pestaña (vacía → calculando → grilla). Si el
+  // buscador cambiara de lugar, se borraría lo que el usuario está escribiendo
+  // justo después de agregar el primer producto.
+  const hayItems = token ? !!(data && data.items && data.items.length) : listaInvitado.length > 0;
+  const avisoEjemplo = ejemploActivo && hayItems && /*#__PURE__*/React.createElement("div", {
+    className: "lista-ejemplo"
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83E\uDDEA ", /*#__PURE__*/React.createElement("strong", null, "Lista de ejemplo"), " con productos de todos los d\xEDas. Sac\xE1 lo que no uses y sum\xE1 lo tuyo con el buscador."), /*#__PURE__*/React.createElement("div", {
+    className: "lista-ejemplo-acc"
+  }, /*#__PURE__*/React.createElement("button", {
     className: "lista-btn",
-    onClick: onPedirCuenta,
-    style: {
-      fontWeight: 800,
-      whiteSpace: "nowrap"
+    onClick: async () => {
+      await vaciarLista();
+      onSalirEjemplo();
     }
-  }, "Crear cuenta y guardarla")));
+  }, "Vaciar y armar la m\xEDa"), /*#__PURE__*/React.createElement("button", {
+    className: "lista-ejemplo-cerrar",
+    onClick: () => onSalirEjemplo(),
+    "aria-label": "Ocultar este aviso"
+  }, "\u2715")));
+  const buscadorEl = buscador(hayItems);
 
   // El invitado no tiene listas en la base, así que el vacío de más abajo
   // ("todavía no tenés listas") no describe su situación: lo suyo es no haber
   // agregado nada todavía.
   if (!token && !listaInvitado.length) {
-    return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
-      className: "cart-empty"
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 56
-      }
-    }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 17,
-        marginTop: 14,
-        fontWeight: 800,
-        color: "var(--text-primary)"
-      }
-    }, "Arm\xE1 tu lista y compar\xE1"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 13.5,
-        marginTop: 6,
-        color: "var(--text-secondary)",
-        maxWidth: 360,
-        lineHeight: 1.6
-      }
-    }, "Agreg\xE1 productos con el bot\xF3n \uD83D\uDCCB desde Productos y te decimos cu\xE1nto te sale la compra completa en cada supermercado. No hace falta cuenta para probarlo.")));
+    return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, vacio("Armá tu lista y compará", "Buscá arriba lo que comprás siempre y te decimos cuánto sale la compra completa en cada supermercado. No hace falta cuenta."));
   }
   if (token && listas.length === 0 && !cargando) {
-    return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
-      className: "cart-empty"
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 56
-      }
-    }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 17,
-        marginTop: 14,
-        fontWeight: 800,
-        color: "var(--text-primary)"
-      }
-    }, "Todav\xEDa no ten\xE9s listas"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 13.5,
-        marginTop: 6,
-        color: "var(--text-secondary)",
-        maxWidth: 340,
-        lineHeight: 1.6
-      }
-    }, "Cre\xE1 una lista, agregale productos con el bot\xF3n \uD83D\uDCCB y te decimos cu\xE1nto te sale la compra completa en cada supermercado.")));
+    return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, vacio("Armá tu primera lista", "Buscá arriba lo que comprás siempre y te decimos cuánto sale la compra completa en cada supermercado."));
   }
-  if (cargando) return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
+
+  // Con una comparación ya en pantalla, recalcular NO la tapa: se sigue viendo
+  // la anterior con un "actualizando" hasta que llega la nueva. Antes cada alta
+  // desde el buscador hacía parpadear la grilla entera.
+  if (cargando && !data) return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, /*#__PURE__*/React.createElement("div", {
     className: "cart-empty"
   }, /*#__PURE__*/React.createElement("p", null, "Calculando precios\u2026")));
-  if (error) return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
+  if (error && !data) return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, /*#__PURE__*/React.createElement("div", {
     className: "cart-empty"
   }, /*#__PURE__*/React.createElement("p", null, error)));
-  if (!data) return /*#__PURE__*/React.createElement("div", null, toolbar);
+  if (!data) return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl);
   const items = data.items || [];
   const supers = data.supers || [];
   if (items.length === 0) {
-    return /*#__PURE__*/React.createElement("div", null, toolbar, /*#__PURE__*/React.createElement("div", {
-      className: "cart-empty"
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 56
-      }
-    }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 17,
-        marginTop: 14,
-        fontWeight: 800,
-        color: "var(--text-primary)"
-      }
-    }, "Esta lista est\xE1 vac\xEDa"), /*#__PURE__*/React.createElement("p", {
-      style: {
-        fontSize: 13.5,
-        marginTop: 6,
-        color: "var(--text-secondary)",
-        maxWidth: 340,
-        lineHeight: 1.6
-      }
-    }, "Agreg\xE1 productos con el bot\xF3n \uD83D\uDCCB de cada tarjeta en la pesta\xF1a de productos.")));
+    return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, vacio("Esta lista está vacía", "Buscá arriba lo que comprás siempre y te decimos cuánto sale la compra completa en cada supermercado."));
   }
 
   // Resumen: como las columnas se ordenan por cobertura, el más barato puede
@@ -8140,7 +8966,37 @@ function ListaView({
   // un ahorro propio es la mejor forma de que se vaya.
   const prueba = paywall && plan.plan === "prueba" && plan.prueba.iniciada ? plan.prueba : null;
   const apremia = prueba && (prueba.dias_restantes <= 5 || prueba.compras_totales > 0 && prueba.compras_restantes <= 2);
-  return /*#__PURE__*/React.createElement("div", null, toolbar, sinAcceso && /*#__PURE__*/React.createElement("div", {
+
+  // ---- El titular del resumen: "¿cuánto ahorro YO?" -----------------------
+  // La pregunta que trae la gente no es cuánto se ahorra repartiendo la compra
+  // entre varios súper, sino cuánto ahorra contra donde compra hoy. Antes el
+  // número destacado era el de la compra mixta contra el mejor súper único —el
+  // más chico de todos: "$392" en una prueba de 6 productos—, mientras las
+  // tarjetas prometían miles. Ahora se le pregunta una vez dónde compra
+  // (queda en el navegador) y el titular es la diferencia contra ESE súper.
+  // Sin respuesta, el titular es la brecha entre el más barato y el más caro,
+  // el mismo número que se comparte por WhatsApp.
+  const ganador = mejorComp || compBarato;
+  const opcionesHab = supers.map(s => s.supermercado).filter(n => superLlegaA(n, regionCodigo));
+  const hab = habitual ? supers.find(s => s.supermercado === habitual && superLlegaA(habitual, regionCodigo)) : null;
+  const pctDe = (parte, total) => total > 0 ? Math.round(100 * parte / total) : 0;
+  const ahorroHab = hab && ganador ? hab.total_estimado - ganador.total_estimado : 0;
+  const brecha = puedeCompartir ? compCaro.total_estimado - compBarato.total_estimado : 0;
+  // La proyección al mes se ofrece sólo sobre una lista propia y de cierto
+  // tamaño, y dicha como supuesto ("si es tu compra de todas las semanas").
+  const proyectar = !ejemploActivo && items.length >= 5 && ahorroHab > 0;
+  const selectorHab = /*#__PURE__*/React.createElement("select", {
+    className: "lista-habitual",
+    value: hab ? habitual : "",
+    onChange: e => setHabitual(e.target.value || null),
+    "aria-label": "\xBFD\xF3nde compr\xE1s hoy?"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, hab ? "— ninguno —" : "Elegí tu súper…"), opcionesHab.map(n => /*#__PURE__*/React.createElement("option", {
+    key: n,
+    value: n
+  }, n)));
+  return /*#__PURE__*/React.createElement("div", null, toolbar, buscadorEl, sinAcceso && /*#__PURE__*/React.createElement("div", {
     className: "plan-aviso calido"
   }, /*#__PURE__*/React.createElement("span", {
     className: "plan-aviso-ico"
@@ -8174,9 +9030,33 @@ function ListaView({
     onClick: onPedirPlan
   }, "Ver el abono")), /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen"
-  }, mejorComp ? /*#__PURE__*/React.createElement("div", {
+  }, cargando && /*#__PURE__*/React.createElement("div", {
+    className: "lista-actualizando"
+  }, "Actualizando precios\u2026"), !cargando && error && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
-  }, "\u2705 Compra completa m\xE1s barata: ", /*#__PURE__*/React.createElement("strong", null, mejorComp.supermercado, " ", fmt(mejorComp.total_estimado))) : /*#__PURE__*/React.createElement("div", {
+  }, "\u26A0\uFE0F ", error, ". Lo que ves es la \xFAltima comparaci\xF3n."), hab && ganador ? ahorroHab > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-monto"
+  }, "Ahorr\xE1s ", fmt(ahorroHab), " ", /*#__PURE__*/React.createElement("span", null, "(", pctDe(ahorroHab, hab.total_estimado), "%)")), /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-d"
+  }, "comprando esta lista en ", /*#__PURE__*/React.createElement("strong", null, ganador.supermercado), " (", fmt(ganador.total_estimado), ") en vez de en ", /*#__PURE__*/React.createElement("strong", null, habitual), " (", fmt(hab.total_estimado), ").", proyectar && /*#__PURE__*/React.createElement(React.Fragment, null, " Si es tu compra de todas las semanas, son unos ", /*#__PURE__*/React.createElement("strong", null, fmt(ahorroHab * 4), " por mes"), "."), hab.faltantes > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " A ", habitual, " le falta", hab.faltantes > 1 ? "n" : "", " ", hab.faltantes, " producto", hab.faltantes > 1 ? "s" : "", ": su total incluye un estimado."))) : /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular bien"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-monto"
+  }, habitual, " ya es tu mejor opci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-d"
+  }, "Esta lista sale ", /*#__PURE__*/React.createElement("strong", null, fmt(hab.total_estimado)), " ah\xED", brecha > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, ", ", fmt(brecha), " menos que en el s\xFAper m\xE1s caro"), ".")) : ganador ? /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-monto"
+  }, "M\xE1s barato: ", ganador.supermercado, " ", /*#__PURE__*/React.createElement("span", null, fmt(ganador.total_estimado))), brecha > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "lista-titular-d"
+  }, "Entre el s\xFAper m\xE1s barato y el m\xE1s caro hay ", /*#__PURE__*/React.createElement("strong", null, fmt(brecha)), " de diferencia (", pctDe(brecha, compCaro.total_estimado), "%) por esta misma lista.")) : null, opcionesHab.length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "lista-resumen-linea lista-habitual-fila"
+  }, /*#__PURE__*/React.createElement("span", null, hab ? "¿Dónde comprás hoy?" : "📍 ¿Dónde comprás hoy?"), " ", selectorHab, !hab && /*#__PURE__*/React.createElement("span", {
+    className: "lista-habitual-nota"
+  }, "y te decimos cu\xE1nto ahorr\xE1s vos")), !mejorComp && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
   }, "\u26A0\uFE0F Ning\xFAn supermercado tiene la lista completa \u2014 los totales incluyen una estimaci\xF3n de lo que falta."), masBarato && mejorComp && masBarato.supermercado !== mejorComp.supermercado && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
@@ -8194,9 +9074,9 @@ function ListaView({
       fontSize: 12
     },
     onClick: () => setShowPagos(true)
-  }, "Carg\xE1 tus medios de pago"), " ", "y te decimos cu\xE1nto te sale con tus descuentos bancarios."), mixta && /*#__PURE__*/React.createElement("div", {
+  }, "Carg\xE1 tus medios de pago"), " ", "y te decimos cu\xE1nto te sale con tus descuentos bancarios."), mixta && ahorroMixta > 0 && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea mixta"
-  }, "\uD83D\uDC9A Comprando cada cosa donde est\xE1 m\xE1s barata: ", /*#__PURE__*/React.createElement("strong", null, fmt(mixta.total)), ahorroMixta > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " \u2014 ahorr\xE1s ", fmt(ahorroMixta), " contra el mejor s\xFAper \xFAnico")), hayReferencia && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83E\uDDFA Si repart\xEDs la compra entre varios s\xFAper: ", /*#__PURE__*/React.createElement("strong", null, fmt(mixta.total)), " ", "(", fmt(ahorroMixta), " menos que todo en ", mejorComp.supermercado, ")"), hayReferencia && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
   }, "\uD83D\uDC40 ", referencias.join(", "), " ", referencias.length > 1 ? "no venden" : "no vende", " en tu regi\xF3n: ", referencias.length > 1 ? "esas columnas van" : "esa columna va", " como referencia de precio y no ", referencias.length > 1 ? "entran" : "entra", " en la compra."), data.sin_precio > 0 && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
@@ -8209,7 +9089,15 @@ function ListaView({
     onClick: compartirResultado
   }, compartido === "copiado" ? "✅ Copiado" : "🔗 Compartir este resultado"), /*#__PURE__*/React.createElement("span", {
     className: "lista-compartir-nota"
-  }, compartido === "copiado" ? "Pegalo donde quieras." : compartido === "error" ? "No se pudo compartir. Probá de nuevo." : "Mandáselo a quien hace las compras con vos."))), /*#__PURE__*/React.createElement("div", {
+  }, compartido === "copiado" ? "Pegalo donde quieras." : compartido === "error" ? "No se pudo compartir. Probá de nuevo." : "Mandáselo a quien hace las compras con vos.")), token && avisos && /*#__PURE__*/React.createElement("div", {
+    className: "lista-resumen-linea lista-semanal"
+  }, avisos.semanal ? /*#__PURE__*/React.createElement(React.Fragment, null, "\uD83D\uDCEC Cada jueves te mandamos por mail cu\xE1nto sale tu lista esa semana.", " ", /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: () => cambiarResumen(false)
+  }, "No mandar m\xE1s")) : /*#__PURE__*/React.createElement(React.Fragment, null, "\uD83D\uDCED El resumen de los jueves est\xE1 apagado.", " ", /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: () => cambiarResumen(true)
+  }, "Activarlo")))), avisoEjemplo, invitacionCuenta, items.length >= 3 && /*#__PURE__*/React.createElement(AvisoInstalar, null), /*#__PURE__*/React.createElement("div", {
     className: "lista-grid-wrap"
   }, /*#__PURE__*/React.createElement("table", {
     className: "lista-grid"
@@ -8386,7 +9274,9 @@ const ProductCard = React.memo(function ProductCard({
   onLista,
   onOpen,
   supersVisibles,
-  regionCodigo
+  regionCodigo,
+  conCuenta,
+  habitual
 }) {
   const hasOffer = p.descuento_pct || p.promocion;
   // Cadena que no vende en la región elegida: se ve el precio (el usuario la
@@ -8409,13 +9299,20 @@ const ProductCard = React.memo(function ProductCard({
     esActual: false
   }))].sort((a, b) => a.precio - b.precio);
   const actualEsMejor = hayComparacion && listaPrecios[0].esActual;
-  const precioMax = hayComparacion ? Math.max(...otros.map(o => o.precio)) : 0;
-  const ahorro = actualEsMejor ? precioMax - p.precio : 0;
   // Si el súper de esta card NO es el más barato, cuánto y en qué súper conviene comprarlo
   const masBarato = hayComparacion && !actualEsMejor ? listaPrecios[0] : null;
   const diffMasBarato = masBarato ? p.precio - masBarato.precio : 0;
   const AHORRO_MINIMO = 100; // solo mostramos el cartel si el monto supera este valor
-
+  // EL AHORRO SE DICE CONTRA UN SÚPER CON NOMBRE
+  // Antes decía "Ahorrá $6.880 comprando acá" contra el más caro de todos, sin
+  // decir cuál: un número grande que nadie podía verificar y que después la
+  // lista contradecía. Ahora es contra el súper donde el usuario dice que
+  // compra (si lo eligió en la lista y vende este producto) y, si no, contra el
+  // más caro, pero nombrándolo.
+  const refHabitual = actualEsMejor && habitual && habitual !== p.supermercado ? otros.find(o => o.supermercado === habitual && o.precio > p.precio) : null;
+  const refCaro = actualEsMejor ? otros.reduce((a, o) => !a || o.precio > a.precio ? o : a, null) : null;
+  const refAhorro = refHabitual || refCaro;
+  const ahorro = refAhorro ? refAhorro.precio - p.precio : 0;
   return /*#__PURE__*/React.createElement("div", {
     className: `product-card ${hasOffer ? "offer" : ""}`,
     onClick: () => onOpen(p)
@@ -8485,22 +9382,26 @@ const ProductCard = React.memo(function ProductCard({
     className: "card-compare-more"
   }, "+", otrosOrdenados.length - 3, " supermercado", otrosOrdenados.length - 3 > 1 ? "s" : "", " m\xE1s"), ahorro > AHORRO_MINIMO && /*#__PURE__*/React.createElement("div", {
     className: "card-compare-savings"
-  }, "\uD83D\uDC9A Ahorr\xE1 ", fmt(ahorro), " comprando ac\xE1"), diffMasBarato > AHORRO_MINIMO && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC9A ", fmt(ahorro), " menos que en ", refAhorro.supermercado), diffMasBarato > AHORRO_MINIMO && /*#__PURE__*/React.createElement("div", {
     className: "card-compare-savings cheaper"
   }, "\uD83D\uDD3B ", fmt(diffMasBarato), " m\xE1s barato en ", masBarato.supermercado)), /*#__PURE__*/React.createElement("div", {
     className: "card-actions"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, conCuenta ? /*#__PURE__*/React.createElement("button", {
     className: `card-btn fav ${p.favorito ? "active" : ""}`,
     onClick: e => onFav(e, p.id),
-    title: p.favorito ? "Quitar de favoritos" : "Agregar a favoritos"
-  }, p.favorito ? "❤️" : "🤍"), /*#__PURE__*/React.createElement("button", {
-    className: `card-btn ${enLista ? "accent" : ""}`,
-    onClick: e => onLista(e, p),
-    title: enLista ? "Quitar de mi lista" : "Agregar a mi lista"
-  }, "\uD83D\uDCCB", /*#__PURE__*/React.createElement("span", {
-    className: "btn-label"
-  }, enLista ? "En lista" : "Lista")), !llegaAcá ? /*#__PURE__*/React.createElement("a", {
-    className: "card-btn buy",
+    title: p.favorito ? "Quitar de favoritos" : "Avisame cuando baje"
+  }, p.favorito ? "❤️" : "🤍") :
+  /*#__PURE__*/
+  // Sin cuenta el corazón no puede guardar nada: se dice para qué sirve
+  // (el mail cuando baja) en vez de un ícono que termina en un login.
+  React.createElement("button", {
+    className: "card-btn fav ancho",
+    onClick: e => onFav(e, p.id),
+    title: "Te avisamos por mail cuando baje de precio"
+  }, "\uD83E\uDD0D", /*#__PURE__*/React.createElement("span", {
+    className: "card-btn-txt"
+  }, "Avisame si baja")), !llegaAcá ? /*#__PURE__*/React.createElement("a", {
+    className: "card-btn sec",
     href: p.url || undefined,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -8510,9 +9411,9 @@ const ProductCard = React.memo(function ProductCard({
     },
     title: `${p.supermercado} no vende en tu región: el precio va como referencia`
   }, "\uD83D\uDC40", /*#__PURE__*/React.createElement("span", {
-    className: "btn-label"
+    className: "card-btn-txt"
   }, "Referencia")) : p._sinIdPropio ? /*#__PURE__*/React.createElement("a", {
-    className: "card-btn primary buy",
+    className: "card-btn sec",
     href: p.url || undefined,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -8521,13 +9422,23 @@ const ProductCard = React.memo(function ProductCard({
     style: {
       textDecoration: "none"
     }
-  }, "Ver en ", p.supermercado, " \u2192") : /*#__PURE__*/React.createElement("button", {
-    className: `card-btn buy ${enCarrito ? "accent" : "primary"}`,
+  }, "\u2197", /*#__PURE__*/React.createElement("span", {
+    className: "card-btn-txt"
+  }, "Ver en ", p.supermercado)) : conCuenta ? /*#__PURE__*/React.createElement("button", {
+    className: `card-btn sec ${enCarrito ? "accent" : ""}`,
     onClick: e => onCarrito(e, p),
-    title: enCarrito ? "Quitar del carrito" : "Agregar al carrito"
+    title: enCarrito ? "Quitar del carrito" : "Agregar al carrito del súper"
   }, "\uD83D\uDED2", /*#__PURE__*/React.createElement("span", {
-    className: "btn-label"
-  }, enCarrito ? "En carrito" : "Agregar")))));
+    className: "card-btn-txt"
+  }, enCarrito ? "En carrito" : "Carrito")) : null, /*#__PURE__*/React.createElement("button", {
+    className: `card-btn lista ${enLista ? "en-lista" : "primary"}`,
+    onClick: e => onLista(e, p),
+    title: enLista ? "Quitar de mi lista" : "Agregar a mi lista para ver en qué súper sale menos"
+  }, enLista ? "✓ En tu lista" : /*#__PURE__*/React.createElement(React.Fragment, null, "\uD83D\uDCCB ", /*#__PURE__*/React.createElement("span", {
+    className: "txt-largo"
+  }, "Agregar a mi lista"), /*#__PURE__*/React.createElement("span", {
+    className: "txt-corto"
+  }, "A mi lista"))))));
 });
 
 // ---------------------------------------------------------------------------
@@ -9276,13 +10187,41 @@ function App() {
   // calcula el backend sobre SU lista (no sobre un promedio) y lo sube
   // ListaView; vive acá porque quien lo muestra es el modal, que cuelga de App.
   const [ahorroBloqueado, setAhorroBloqueado] = React.useState(0);
-  const [showWelcome, setShowWelcome] = React.useState(() => {
-    try {
-      return !localStorage.getItem("convi_welcome_v1");
-    } catch {
-      return false;
-    }
+  // La bienvenida YA NO SE ABRE SOLA (2026-09-23). Era un manual de cinco pasos
+  // tapando la pantalla entera en la primera visita, y con ella abriéndose sola
+  // el 65% de los visitantes se iba sin tocar nada. Cuánto de eso era culpa suya
+  // no se sabe: no hay eventos de si la leían o la cerraban. La reemplaza la
+  // tarjeta de la home ("¿En qué súper te sale más barata tu compra?"), que en
+  // vez de explicar invita a probar; cada paso de la guía aparece donde se usa,
+  // y la guía entera sigue a mano desde "¿Cómo funciona?" (tarjeta y pie).
+  const [showWelcome, setShowWelcome] = React.useState(false);
+  // Para qué se está pidiendo la cuenta (ver MOTIVOS_CUENTA). null = el botón
+  // "Ingresar" del header, que no necesita explicación.
+  const [motivoAuth, setMotivoAuth] = React.useState(null);
+  // Dónde compra hoy el usuario, si lo dijo. Es la referencia del ahorro en la
+  // lista y en las tarjetas. Vive en el navegador: es una preferencia de
+  // lectura, no un dato de la cuenta.
+  const [superHabitual, setSuperHabitualEstado] = React.useState(() => {
+    const s = leerLocal("convi_super_habitual");
+    return s && SUPER_TODOS.includes(s) ? s : null;
   });
+  const setSuperHabitual = React.useCallback(s => {
+    const v = s && SUPER_TODOS.includes(s) ? s : null;
+    setSuperHabitualEstado(v);
+    guardarLocal("convi_super_habitual", v);
+  }, []);
+  const [heroCerrado, setHeroCerrado] = React.useState(() => leerLocal("convi_hero_cerrado") === "1");
+  // La lista actual es la de ejemplo (y todavía no se la apropió): la pestaña
+  // Lista lo avisa y ofrece vaciarla.
+  const [ejemploActivo, setEjemploActivo] = React.useState(() => leerLocal("convi_lista_ejemplo") === "1");
+  const [cargandoEjemplo, setCargandoEjemplo] = React.useState(false);
+  // Sube cada vez que el usuario pide "Armar mi lista": el buscador de la
+  // pestaña Lista lo usa para tomar el foco (y abrir el teclado) sólo entonces.
+  const [focoBuscador, setFocoBuscador] = React.useState(0);
+  // Sube cuando App le cambia los items a la lista con cuenta por fuera de la
+  // pestaña (el ejemplo por items-batch): la comparación de ListaView no depende
+  // de los items y, con la pestaña abierta y la misma lista, no se enteraba.
+  const [versionLista, setVersionLista] = React.useState(0);
   const [legalTab, setLegalTab] = React.useState(null); // null = cerrado; "terminos"|"privacidad"|"descargos"
   // Buzón de sugerencias. Objeto y no booleano —igual criterio que showTicket—
   // porque lleva el contexto de apertura: null = cerrado, {tipoInicial, contexto}.
@@ -9644,6 +10583,40 @@ function App() {
     localStorage.setItem("convi_user", JSON.stringify(user));
     migrarListaInvitado(access_token);
     migrarPagosInvitado(access_token);
+    aplicarFavoritoPendiente(access_token);
+  }
+
+  // El producto con el que el invitado tocó "Avisame si baja". Queda en el
+  // navegador porque entre el pedido y la sesión puede haber un mail de
+  // confirmación de por medio: sin esto, el que se registró para que le avisen
+  // de ESE producto entraba y lo tenía que volver a buscar.
+  async function aplicarFavoritoPendiente(access_token) {
+    const id = Number(leerLocal("convi_fav_pendiente"));
+    if (!id) return;
+    guardarLocal("convi_fav_pendiente", null);
+    try {
+      const res = await fetch(`${API}/productos/${id}/favorito`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access_token}`
+        }
+      });
+      const d = await res.json().catch(() => ({}));
+      // El endpoint es un toggle: si ya lo tenía, lo acabamos de sacar.
+      if (d.favorito === false) {
+        await fetch(`${API}/productos/${id}/favorito`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${access_token}`
+          }
+        });
+      }
+      fetch(`${API}/stats`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`
+        }
+      }).then(r => r.json()).then(st => setStats(st)).catch(() => {});
+    } catch (e) {}
   }
 
   // Lo mismo para los medios de pago que tildó sin cuenta: sin esto, el que se
@@ -9996,6 +10969,138 @@ function App() {
       cargarListaItems(); // revertimos releyendo el estado real
     }
   }, [token, listaActivaId, listaEans, listaPids, listaInvitado]);
+
+  // Misma identidad que toggleLista: EAN si hay, producto_id si no.
+  const estaEnLista = React.useCallback(p => !!p && (p.ean && listaEans.has(p.ean) || listaPids.has(p.id)), [listaEans, listaPids]);
+
+  // Agregar/quitar desde fuera de una tarjeta (el buscador de la lista, la
+  // ficha). Si es un ALTA y la lista era la de ejemplo, deja de serlo: ya
+  // tiene algo del usuario y el cartel de "lista de ejemplo" mentiría.
+  const agregarProducto = React.useCallback(async p => {
+    if (!estaEnLista(p) && ejemploActivo) {
+      setEjemploActivo(false);
+      guardarLocal("convi_lista_ejemplo", null);
+    }
+    await toggleLista({
+      stopPropagation() {}
+    }, p);
+  }, [estaEnLista, ejemploActivo, toggleLista]);
+  const onListaTarjeta = React.useCallback((e, p) => {
+    if (!estaEnLista(p) && ejemploActivo) {
+      setEjemploActivo(false);
+      guardarLocal("convi_lista_ejemplo", null);
+    }
+    return toggleLista(e, p);
+  }, [estaEnLista, ejemploActivo, toggleLista]);
+  function salirEjemplo() {
+    setEjemploActivo(false);
+    guardarLocal("convi_lista_ejemplo", null);
+  }
+  function irALista() {
+    setTab("lista");
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+  function armarMiLista() {
+    irALista();
+    setFocoBuscador(n => n + 1);
+  }
+  function cerrarHero() {
+    setHeroCerrado(true);
+    guardarLocal("convi_hero_cerrado", "1");
+  }
+
+  // Carga la canasta de ejemplo y lleva a la comparación. Nunca pisa una lista
+  // con cosas: si ya hay algo, sólo lleva a la lista.
+  async function verEjemplo() {
+    if (cargandoEjemplo) return;
+    if (listaItems.length > 0) {
+      irALista();
+      return;
+    }
+    setCargandoEjemplo(true);
+    try {
+      const qs = regionId ? `?region_id=${regionId}` : "";
+      const fichas = await Promise.all(CANASTA_EJEMPLO.map(ean => fetch(`${API}/productos/por-ean/${ean}${qs}`).then(r => r.ok ? r.json() : null).catch(() => null)));
+      const encontrados = fichas.filter(f => f && f.id);
+      if (!encontrados.length) {
+        setCargandoEjemplo(false);
+        irALista();
+        return;
+      }
+      if (!token) {
+        setListaInvitado(encontrados.slice(0, MAX_LISTA_INVITADO).map(f => ({
+          id: f.id,
+          ean: f.ean || null,
+          producto_id: f.id,
+          cantidad: 1
+        })));
+      } else {
+        // Con cuenta va a la lista activa (o a una nueva) por items-batch, que
+        // respeta lo que ya hubiera y no hace un toggle por producto.
+        const auth = {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        };
+        let destino = listaActivaId;
+        if (!destino) {
+          const cr = await fetch(`${API}/listas`, {
+            method: "POST",
+            headers: auth,
+            body: JSON.stringify({
+              nombre: "Mi lista"
+            })
+          });
+          if (cr.ok) destino = (await cr.json()).id;
+        }
+        if (destino) {
+          await fetch(`${API}/listas/${destino}/items-batch`, {
+            method: "POST",
+            headers: auth,
+            body: JSON.stringify({
+              items: encontrados.map(f => ({
+                producto_id: f.id,
+                cantidad: 1
+              }))
+            })
+          });
+          setListaActivaId(destino);
+          cargarListas();
+          cargarListaItems();
+          setVersionLista(v => v + 1);
+        }
+      }
+      setEjemploActivo(true);
+      guardarLocal("convi_lista_ejemplo", "1");
+    } catch (e) {}
+    setCargandoEjemplo(false);
+    irALista();
+  }
+
+  // ENLACES DIRECTOS: ?tab=lista | favoritos | promos. Los usan los mails (el
+  // resumen de los jueves y el aviso de bajas) para que el botón lleve a la
+  // lista o a los favoritos y no a la home genérica. Se saca el parámetro de
+  // la barra apenas se lee, conservando el resto (los utm).
+  React.useEffect(() => {
+    let q;
+    try {
+      q = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    const destino = q.get("tab");
+    if (!destino) return;
+    if (destino === "lista") setTab("lista");else if (destino === "promos") setTab("cronograma");else if (destino === "favoritos") {
+      if (token) setTab("favoritos");else pedirCuenta("favoritos");
+    }
+    q.delete("tab");
+    const resto = q.toString();
+    try {
+      window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);
+    } catch {}
+  }, []);
   React.useEffect(() => {
     // Sin token se limpia lo que vive en la base, pero NO la lista del
     // invitado: es justo lo que tiene que sobrevivir al logout y al primer
@@ -10134,10 +11239,19 @@ function App() {
     // mismo del "+ Barato", superParam no cambia al prenderlo o apagarlo, pero el
     // parámetro `comparables` de la request sí.
   }, [tab, superParam, masBaratoEn, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
+
+  // Abre el alta diciendo para qué (ver MOTIVOS_CUENTA). Todo pedido de cuenta
+  // que nace de una función pasa por acá; el botón "Ingresar" del header no.
+  function pedirCuenta(motivo) {
+    setMotivoAuth(motivo || null);
+    setModoAuth("register");
+    setShowAuth(true);
+  }
   const toggleFav = React.useCallback(async (e, id) => {
     e.stopPropagation();
     if (!token) {
-      setShowAuth(true);
+      guardarLocal("convi_fav_pendiente", id);
+      pedirCuenta("favorito");
       return;
     }
     setProductos(prev => prev.map(p => p.id === id ? {
@@ -10164,7 +11278,7 @@ function App() {
   const toggleCarrito = React.useCallback(async (e, producto) => {
     e.stopPropagation();
     if (!token) {
-      setShowAuth(true);
+      pedirCuenta("carrito");
       return;
     }
     const yaEsta = carritoItems.some(i => i.producto_id === producto.id);
@@ -10301,7 +11415,10 @@ function App() {
       behavior: "smooth"
     });
   }
-  return /*#__PURE__*/React.createElement("div", null, showWelcome && /*#__PURE__*/React.createElement(WelcomeModal, {
+  const mostrarBarraLista = listaItems.length > 0 && tab !== "lista";
+  return /*#__PURE__*/React.createElement("div", {
+    className: mostrarBarraLista ? "con-barra-lista" : undefined
+  }, showWelcome && /*#__PURE__*/React.createElement(WelcomeModal, {
     onClose: cerrarWelcome
   }), legalTab && /*#__PURE__*/React.createElement(LegalModal, {
     initialTab: legalTab,
@@ -10317,9 +11434,11 @@ function App() {
     onClose: () => {
       setShowAuth(false);
       setModoAuth("login");
+      setMotivoAuth(null);
     },
     onLogin: handleLogin,
-    modoInicial: modoAuth
+    modoInicial: modoAuth,
+    motivo: motivoAuth
   }), recuperacion && /*#__PURE__*/React.createElement(NuevaPasswordModal, {
     tokens: recuperacion,
     onListo: (a, r, u) => {
@@ -10369,7 +11488,9 @@ function App() {
     producto: modalProducto,
     onClose: () => setModalProducto(null),
     supersFiltro: supersVisibles,
-    regionCodigo: regionCodigo
+    regionCodigo: regionCodigo,
+    enLista: estaEnLista(modalProducto),
+    onLista: agregarProducto
   }), showEscaner && /*#__PURE__*/React.createElement(EscanerModal, {
     token: token,
     regionId: regionId,
@@ -10430,9 +11551,10 @@ function App() {
     value: r.id
   }, "\uD83D\uDCCD ", r.nombre))), /*#__PURE__*/React.createElement("button", {
     className: `header-btn ${tab === "favoritos" ? "active" : ""}`,
+    title: "Favoritos: te avisamos cuando bajan",
     onClick: () => {
       if (!token) {
-        setShowAuth(true);
+        pedirCuenta("favoritos");
         return;
       }
       setTab("favoritos");
@@ -10442,21 +11564,15 @@ function App() {
   }, "Favoritos"), stats.favoritos > 0 && /*#__PURE__*/React.createElement("span", {
     className: "header-btn-badge pink"
   }, fmtNum(stats.favoritos))), /*#__PURE__*/React.createElement("button", {
-    className: `header-btn ${tab === "lista" ? "active" : ""}`,
-    onClick: () => setTab("lista")
+    className: `header-btn ${tab === "lista" ? "active" : ""} ${!token ? "con-label" : ""}`,
+    onClick: irALista
   }, "\uD83D\uDCCB", /*#__PURE__*/React.createElement("span", {
     className: "btn-label"
   }, "Mi lista"), listaItems.length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "header-btn-badge"
-  }, fmtNum(listaItems.length))), /*#__PURE__*/React.createElement("button", {
+  }, fmtNum(listaItems.length))), token && /*#__PURE__*/React.createElement("button", {
     className: `header-btn ${tab === "carrito" ? "active" : ""}`,
-    onClick: () => {
-      if (!token) {
-        setShowAuth(true);
-        return;
-      }
-      setTab("carrito");
-    }
+    onClick: () => setTab("carrito")
   }, "\uD83D\uDED2", /*#__PURE__*/React.createElement("span", {
     className: "btn-label"
   }, "Carrito"), totalCarrito > 0 && /*#__PURE__*/React.createElement("span", {
@@ -10488,8 +11604,12 @@ function App() {
     onClick: handleLogout
   }, "Salir")) : /*#__PURE__*/React.createElement("button", {
     className: "header-user-btn",
-    onClick: () => setShowAuth(true)
-  }, "Iniciar sesi\xF3n")))), /*#__PURE__*/React.createElement("div", {
+    onClick: () => {
+      setMotivoAuth(null);
+      setModoAuth("login");
+      setShowAuth(true);
+    }
+  }, "Ingresar")))), /*#__PURE__*/React.createElement("div", {
     className: "main"
   }, tab !== "carrito" && tab !== "cronograma" && /*#__PURE__*/React.createElement("aside", {
     className: `sidebar ${sidebarOpen ? "open" : ""} ${filtroSeccion === "cat" ? "solo-cat" : filtroSeccion === "super" ? "solo-super" : ""}`
@@ -10510,7 +11630,32 @@ function App() {
     regionCodigo: regionCodigo
   })), /*#__PURE__*/React.createElement("div", {
     className: "content"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, tab === "todos" && !heroCerrado && listaItems.length === 0 && !busqueda && catFiltro === "Todas" && !soloOfertas && !masBaratoEn && /*#__PURE__*/React.createElement("section", {
+    className: "hero-lista",
+    "aria-label": "Compar\xE1 tu compra"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "hero-cerrar",
+    onClick: cerrarHero,
+    "aria-label": "Cerrar"
+  }, "\u2715"), /*#__PURE__*/React.createElement("div", {
+    className: "hero-t"
+  }, "\xBFEn qu\xE9 s\xFAper te sale m\xE1s barata ", /*#__PURE__*/React.createElement("em", null, "tu"), " compra?"), /*#__PURE__*/React.createElement("div", {
+    className: "hero-d"
+  }, "Arm\xE1 tu lista y te mostramos cu\xE1nto sale completa en cada supermercado", regionCodigo && regiones.find(r => r.id === regionId) ? /*#__PURE__*/React.createElement(React.Fragment, null, " de ", /*#__PURE__*/React.createElement("strong", null, regiones.find(r => r.id === regionId).nombre)) : null, ". Gratis y sin crear cuenta."), /*#__PURE__*/React.createElement("div", {
+    className: "hero-acciones"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "hero-btn primario",
+    onClick: verEjemplo,
+    disabled: cargandoEjemplo
+  }, cargandoEjemplo ? "Armando el ejemplo…" : "▶ Ver un ejemplo"), /*#__PURE__*/React.createElement("button", {
+    className: "hero-btn",
+    onClick: armarMiLista
+  }, "\uD83D\uDD0E Armar mi lista")), /*#__PURE__*/React.createElement("div", {
+    className: "hero-pie"
+  }, stats.total_productos ? /*#__PURE__*/React.createElement(React.Fragment, null, fmtNum(stats.total_productos), " precios de ", SUPER_TODOS.length, " supermercados, actualizados todos los d\xEDas \xB7 ") : null, /*#__PURE__*/React.createElement("button", {
+    className: "hero-link",
+    onClick: () => setShowWelcome(true)
+  }, "\xBFC\xF3mo funciona?"))), /*#__PURE__*/React.createElement("div", {
     className: "brandbar"
   }, /*#__PURE__*/React.createElement("div", {
     className: "brandbar-top"
@@ -10530,7 +11675,7 @@ function App() {
     onClick: () => abrirFiltros(k)
   }, ico, " ", txt, /*#__PURE__*/React.createElement("span", {
     className: "mft-chev"
-  }, sidebarOpen && filtroSeccion === k ? "▴" : "▾"))))), /*#__PURE__*/React.createElement("div", {
+  }, sidebarOpen && filtroSeccion === k ? "▴" : "▾"))))), tab !== "lista" && /*#__PURE__*/React.createElement("div", {
     className: "logos-marquee"
   }, /*#__PURE__*/React.createElement("span", {
     className: "logos-label"
@@ -10558,7 +11703,7 @@ function App() {
   }))))))), tab === "cronograma" ? /*#__PURE__*/React.createElement(CronogramaView, {
     regionCodigo: regionCodigo,
     token: token,
-    onPedirCuenta: () => setShowAuth(true)
+    onPedirCuenta: irALista
   }) : tab === "carrito" ? /*#__PURE__*/React.createElement(CarritoView, {
     carritoItems: carritoItems,
     productosMap: productosMap,
@@ -10571,10 +11716,18 @@ function App() {
     token: token,
     listaInvitado: listaInvitado,
     setListaInvitado: setListaInvitado,
-    onPedirCuenta: () => {
-      setModoAuth("register");
-      setShowAuth(true);
-    },
+    onPedirCuenta: pedirCuenta,
+    onAgregarProducto: agregarProducto,
+    estaEnLista: estaEnLista,
+    onVerEjemplo: verEjemplo,
+    cargandoEjemplo: cargandoEjemplo,
+    ejemploActivo: ejemploActivo,
+    onSalirEjemplo: salirEjemplo,
+    habitual: superHabitual,
+    setHabitual: setSuperHabitual,
+    resumenActivo: !!stats.resumen_semanal,
+    focoBuscador: focoBuscador,
+    versionLista: versionLista,
     pagosVersion: pagosVersion,
     regionId: regionId,
     regionCodigo: regionCodigo,
@@ -10593,41 +11746,6 @@ function App() {
     onAhorroBloqueado: setAhorroBloqueado,
     onPlanCambio: cargarPlan
   }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "stats-bar"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stat-card",
-    onClick: resetFilters
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stat-value accent"
-  }, fmtNum(stats.total_productos)), /*#__PURE__*/React.createElement("div", {
-    className: "stat-label"
-  }, "Precios monitoreados")), /*#__PURE__*/React.createElement("div", {
-    className: "stat-card",
-    onClick: () => {
-      if (!token) {
-        setShowAuth(true);
-        return;
-      }
-      setTab("favoritos");
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stat-value success"
-  }, fmtNum(stats.favoritos)), /*#__PURE__*/React.createElement("div", {
-    className: "stat-label"
-  }, "En tu lista de favoritos")), /*#__PURE__*/React.createElement("div", {
-    className: "stat-card",
-    onClick: () => {
-      if (!token) {
-        setShowAuth(true);
-        return;
-      }
-      setTab("carrito");
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stat-value"
-  }, fmtNum(totalCarrito)), /*#__PURE__*/React.createElement("div", {
-    className: "stat-label"
-  }, "En tu carrito"))), /*#__PURE__*/React.createElement("div", {
     className: "sort-bar"
   }, /*#__PURE__*/React.createElement("span", {
     className: "sort-info"
@@ -10731,10 +11849,12 @@ function App() {
     enLista: p.ean && listaEans.has(p.ean) || listaPids.has(p.id),
     onFav: toggleFav,
     onCarrito: toggleCarrito,
-    onLista: toggleLista,
+    onLista: onListaTarjeta,
     onOpen: setModalProducto,
     supersVisibles: supersVisibles,
-    regionCodigo: regionCodigo
+    regionCodigo: regionCodigo,
+    conCuenta: !!token,
+    habitual: superHabitual
   }))), /*#__PURE__*/React.createElement(Paginacion, {
     paginaActual: pagina,
     totalPaginas: totalPaginas,
@@ -10743,7 +11863,7 @@ function App() {
     className: "footer"
   }, /*#__PURE__*/React.createElement("p", {
     className: "footer-text"
-  }, /*#__PURE__*/React.createElement("strong", null, "Actualizaci\xF3n autom\xE1tica:"), " todos los d\xEDas a las 06:00 y 18:00 hs.", /*#__PURE__*/React.createElement("br", null), "Agreg\xE1 productos a \u2764\uFE0F ", /*#__PURE__*/React.createElement("strong", null, "favoritos"), " para recibir alertas cuando bajen de precio.", /*#__PURE__*/React.createElement("br", null), "Us\xE1 \uD83D\uDED2 ", /*#__PURE__*/React.createElement("strong", null, "carrito"), " para armar tu compra y ejecutarla directo en el supermercado que elijas."), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("strong", null, "Precios actualizados todos los d\xEDas"), ", temprano a la ma\xF1ana.", /*#__PURE__*/React.createElement("br", null), "Sum\xE1 productos a tu \uD83D\uDCCB ", /*#__PURE__*/React.createElement("strong", null, "lista"), " y te decimos en qu\xE9 s\xFAper sale m\xE1s barata la compra completa.", /*#__PURE__*/React.createElement("br", null), "Con \u2764\uFE0F ", /*#__PURE__*/React.createElement("strong", null, "favoritos"), " te avisamos por mail cuando un producto baja de precio."), /*#__PURE__*/React.createElement("button", {
     className: "footer-link-btn",
     onClick: () => setShowWelcome(true)
   }, "\uD83D\uDCA1 \xBFC\xF3mo funciona? Ver la gu\xEDa r\xE1pida"))), /*#__PURE__*/React.createElement("div", {
@@ -10760,7 +11880,16 @@ function App() {
     onClick: () => setLegalTab("privacidad")
   }, "Pol\xEDtica de Privacidad"), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setLegalTab("descargos")
-  }, "Descargos y marcas")))));
+  }, "Descargos y marcas")))), mostrarBarraLista && /*#__PURE__*/React.createElement("button", {
+    className: "barra-lista",
+    onClick: irALista
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "barra-lista-n"
+  }, fmtNum(listaItems.length)), /*#__PURE__*/React.createElement("span", {
+    className: "barra-lista-t"
+  }, listaItems.length === 1 ? "en tu lista · sumá más" : "en tu lista"), /*#__PURE__*/React.createElement("span", {
+    className: "barra-lista-cta"
+  }, listaItems.length === 1 ? "Ver mi lista →" : "Ver dónde sale menos →")));
 }
 
 // Saca la pantalla de carga / contenido para buscadores del <body> y monta la
