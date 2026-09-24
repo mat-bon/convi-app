@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-23T23:41:30.547Z
+  Generado: 2026-09-24T15:49:45.026Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1557,6 +1557,7 @@
       font-size: 9.5px; font-weight: 800; color: var(--info);
       background: var(--info-light); padding: 1px 6px; border-radius: 8px; margin-left: 6px;
     }
+    .cart-item-region.promo { color: var(--accent-dark); background: var(--accent-soft); }
     .cart-item-swap { margin-top: 5px; }
 
     .qty-control { display: flex; align-items: center; gap: 2px; flex-shrink: 0; background: var(--surface-2); border: 1px solid var(--border-light); border-radius: 999px; padding: 2px; }
@@ -2327,6 +2328,11 @@
        o sea que el color decía lo contrario de lo que el clic iba a hacer. */
     .lg-cell.en-carrito .lg-cell-btn:hover { background: var(--accent); filter: brightness(0.94); }
     .lg-cell-tag { font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.75; }
+    /* El cartel de una promo por cantidad (3x2, "llevando 2") va en dos
+       renglones cortos —la promo y lo que sale cada una— para entrar en la
+       celda de 96 px del celular sin cortarse a la mitad de un precio. */
+    .lg-cell-tag.promo { opacity: 0.9; line-height: 1.25; white-space: normal; }
+    .lg-cell-tag.promo .promo-cu { display: block; font-weight: 700; }
     .lg-cell-add { font-size: 9.5px; font-weight: 800; opacity: 0; transition: opacity 0.14s; }
     .lg-cell-btn:hover .lg-cell-add { opacity: 0.6; }
     /* La celda que ya está en el carrito se vuelve a tocar para sacar el
@@ -3103,12 +3109,27 @@ function guardarLocal(clave, valor) {
 // la app. Armar una lista desde cero son diez búsquedas antes de ver un solo
 // resultado; con esto se ve en un toque.
 //
-// Son EAN de la Canasta Convi (contenido/canasta_semanal.sql), elegidos por
-// estar en los 12 súper con precio fresco y por ser marcas que se reconocen de
-// góndola. Se resuelven por EAN y no se guardan producto_id: los id son por
-// fila de súper y cambian con las desactivaciones, el EAN no. El que no se
-// encuentre se saltea, y la comparación ya sabe estimar lo que le falta a cada
-// súper.
+// Los doce primeros son EAN de la Canasta Convi (contenido/canasta_semanal.sql),
+// elegidos por estar en los 12 súper con precio fresco y por ser marcas que se
+// reconocen de góndola. Se resuelven por EAN y no se guardan producto_id: los
+// id son por fila de súper y cambian con las desactivaciones, el EAN no. El que
+// no se encuentre se saltea, y la comparación ya sabe estimar lo que le falta a
+// cada súper.
+//
+// LOS TRES DEL FINAL (24/09): café, jabón para la ropa y shampoo. Con los doce
+// solos la brecha era chica —8% en CABA ($2.726)—: en arroz, fideos o yerba los
+// súper casi no se diferencian. Donde sí se separan es en los rubros de promos
+// fuertes y rotativas (30-45% en una cadena, precio de lista en otra), que son
+// además de lo que más se vende. Con los tres, el 24/09 y cobrando suelta cada
+// unidad (ver promo_por_cantidad en database.py): 23% en CABA ($17.473), 24% en
+// Córdoba, 12% en Rosario, 18% en La Plata y 22% en Mendoza, sin dejar
+// incompleto a ningún súper en ninguna región. Si se cambian, dos cuidados:
+//   - Quién gana cada rubro rota con las promos. Lo que tiene que sostenerse es
+//     la brecha, no el ganador: se mide con los 15 días de historia de
+//     `precios`, no con la foto de un día.
+//   - Los que sólo ganan con una promo por cantidad (vinos en 3x2, Pepitos,
+//     Skarchitos) no suman nada: la lista lleva una unidad de cada uno y esa
+//     unidad se cobra suelta.
 const CANASTA_EJEMPLO = ["7790070433114",
 // Arroz Gallo Oro 500 g
 "7790070336385",
@@ -3131,7 +3152,13 @@ const CANASTA_EJEMPLO = ["7790070433114",
 // Detergente Magistral limón 450 ml
 "7790250016182",
 // Papel higiénico Higienol 4 u
-"7509546702605" // Crema dental Colgate Total 90 g
+"7509546702605",
+// Crema dental Colgate Total 90 g
+"7792360002062",
+// Café molido Bonafide Sensaciones Intenso 500 g
+"7791290795518",
+// Jabón líquido para diluir Skip Power Delux 500 ml
+"7791293047171" // Shampoo Dove Regeneración Extrema 400 ml
 ];
 
 // Para qué se pide la cuenta, dicho en el momento en que se pide. Antes el
@@ -3548,6 +3575,71 @@ function fmt(n) {
 // toda la app, así "100.756 precios" y "$3.490" se leen parejo.
 function fmtNum(n) {
   return (n != null ? n : 0).toLocaleString("es-AR");
+}
+
+// PROMOS POR CANTIDAD (3x2, 2x1, "2da al 70%", "llevando 2")
+//
+// Las celdas de la lista y los productos del carrito traen `promo_cantidad`
+// cuando el precio tiene una promo que pide llevar más de una unidad (ver
+// promo_por_cantidad en database.py): lo que sale una suelta, lo que sale cada
+// una llevando la promo y cuántas pide. Antes la lista cobraba el precio de la
+// promo aunque se llevara una sola, y la cadena que la tenía parecía más barata
+// de lo que era. Esta cuenta es la misma que la del backend (precio_llevando):
+// está repetida para que la celda cambie apenas se toca el "+", sin esperar a
+// que vuelva la comparación.
+function precioLlevando(obj, cantidad) {
+  const pc = obj && obj.promo_cantidad;
+  if (!pc) return obj ? obj.precio : null;
+  const n = pc.n,
+    p1 = pc.precio_unidad,
+    pn = pc.precio_promo;
+  if (pn == null || !n || n < 2) return p1;
+  const q = Math.max(1, cantidad || 1);
+  if (pc.desde) return q >= n ? pn : p1;
+  const grupos = Math.floor(q / n),
+    sueltas = q % n;
+  return (grupos * n * pn + sueltas * p1) / q;
+}
+function promoAplicada(pc, cantidad) {
+  return !!(pc && pc.n && pc.precio_promo != null && Math.max(1, cantidad || 1) >= pc.n);
+}
+
+// El detalle, para el title: qué pide la promo y cuánto sale suelta.
+function tituloPromo(pc) {
+  if (!pc) return "";
+  if (!pc.n || pc.precio_promo == null) {
+    return "Tiene precio especial llevando varias unidades; el súper no dice cuántas.";
+  }
+  const cuantas = pc.desde ? `${pc.n} o más` : pc.n;
+  return `${pc.mecanica ? pc.mecanica + " — llevando" : "Llevando"} ${cuantas}: ${fmt(pc.precio_promo)} c/u. ` + `Por unidad suelta: ${fmt(pc.precio_unidad)}.`;
+}
+
+// El cartel va donde iba "📍 tu región". Si la cantidad todavía no alcanza,
+// dice la promo y lo que saldría cada una; si ya alcanza, que está aplicada.
+// En la celda (96 px en el celular) va en dos renglones cortos; en el carrito,
+// que tiene lugar, en uno (`enLinea`).
+function CartelPromo({
+  pc,
+  cantidad,
+  className,
+  enLinea = false
+}) {
+  if (!pc) return null;
+  const nombre = pc.mecanica || (pc.n ? `Llevando ${pc.n}${pc.desde ? "+" : ""}` : "Promo llevando varias");
+  let texto,
+    cu = null;
+  if (promoAplicada(pc, cantidad)) {
+    texto = pc.mecanica ? `${pc.mecanica} aplicado` : `Precio llevando ${pc.n}${pc.desde ? "+" : ""}`;
+  } else {
+    texto = nombre;
+    if (pc.precio_promo != null) cu = `${fmt(pc.precio_promo)} c/u`;
+  }
+  return /*#__PURE__*/React.createElement("span", {
+    className: className,
+    title: tituloPromo(pc)
+  }, "\uD83C\uDFF7\uFE0F ", texto, cu && (enLinea ? `: ${cu}` : /*#__PURE__*/React.createElement("span", {
+    className: "promo-cu"
+  }, cu)));
 }
 
 // `scrapeado_en` viaja SIN zona horaria ("2026-09-16T06:26:47.565664") y es
@@ -5754,7 +5846,9 @@ function CarritoView({
       bg: "#888",
       text: "#fff"
     };
-    const total = items.reduce((acc, i) => acc + (i.producto.precio || 0) * (i.cantidad || 1), 0);
+    // Con la promo por cantidad resuelta por ítem: un 3x2 con una sola
+    // unidad suma el precio suelto (ver precioLlevando).
+    const total = items.reduce((acc, i) => acc + (precioLlevando(i.producto, i.cantidad || 1) || 0) * (i.cantidad || 1), 0);
     const esVtex = SUPER_VTEX.includes(superNombre);
     const esDino = superNombre === "Dino";
     const esCoto = superNombre === "Coto";
@@ -5831,6 +5925,7 @@ function CarritoView({
     }, conSku.length === 0 ? "Sin SKUs — esperá el próximo scrape" : `${conSku.length}/${items.length} con SKU`) : null), items.map(item => {
       const p = item.producto;
       const cantidad = item.cantidad || 1;
+      const unidad = precioLlevando(p, cantidad);
       return /*#__PURE__*/React.createElement("div", {
         key: item.producto_id,
         className: "cart-item"
@@ -5855,9 +5950,14 @@ function CarritoView({
         })
       }, p.nombre), /*#__PURE__*/React.createElement("div", {
         className: "cart-item-price"
-      }, fmt(p.precio * cantidad), cantidad > 1 && /*#__PURE__*/React.createElement("span", {
+      }, fmt(unidad * cantidad), cantidad > 1 && /*#__PURE__*/React.createElement("span", {
         className: "unit"
-      }, fmt(p.precio), " c/u"), p.precio_regional && /*#__PURE__*/React.createElement("span", {
+      }, fmt(unidad), " c/u"), p.promo_cantidad ? /*#__PURE__*/React.createElement(CartelPromo, {
+        pc: p.promo_cantidad,
+        cantidad: cantidad,
+        className: "cart-item-region promo",
+        enLinea: true
+      }) : p.precio_regional && /*#__PURE__*/React.createElement("span", {
         className: "cart-item-region",
         title: sucursalDelPrecio(p.supermercado, regionCodigo) ? `Precio de la sucursal ${sucursalDelPrecio(p.supermercado, regionCodigo)}` : "Precio de tu región"
       }, "\uD83D\uDCCD tu regi\xF3n")), p.otros_supers && p.otros_supers.length > 0 && /*#__PURE__*/React.createElement("button", {
@@ -8343,7 +8443,7 @@ function ListaView({
   }
 
   // Vaciar sirve sobre todo para la lista de ejemplo: quien la probó y quiere
-  // armar la suya no tiene por qué borrar doce productos a mano.
+  // armar la suya no tiene por qué borrar quince productos a mano.
   async function vaciarLista() {
     if (!token) {
       setListaInvitado([]);
@@ -9186,6 +9286,11 @@ function ListaView({
     // no se puede tocar: agregarla armaría un carrito que después
     // no hay dónde cerrar.
     const llega = superLlegaA(s.supermercado, regionCodigo);
+    // Promo por cantidad (3x2, "llevando 2"): la celda cobra lo
+    // que sale llevando la cantidad de la fila, y el cartel dice
+    // la promo en el lugar de "📍 tu región", que pasa al title.
+    const promo = celda && celda.promo_cantidad;
+    const accion = !celda ? `${s.supermercado} no tiene este producto` : !llega ? `${s.supermercado} no vende en tu región: el precio va como referencia` : enCarrito ? `Quitar del carrito` : `Agregar al carrito desde ${s.supermercado}`;
     return /*#__PURE__*/React.createElement("td", {
       key: s.supermercado,
       className: `lg-cell ${esMejor ? "mejor" : ""} ${enCarrito ? "en-carrito" : ""}`
@@ -9193,8 +9298,8 @@ function ListaView({
       className: "lg-cell-btn",
       disabled: !celda || !llega || ocupado === `c${fila.id}`,
       onClick: () => toggleCelda(fila, celda, enCarrito),
-      title: !celda ? `${s.supermercado} no tiene este producto` : !llega ? `${s.supermercado} no vende en tu región: el precio va como referencia` : enCarrito ? `Quitar del carrito` : `Agregar al carrito desde ${s.supermercado}`
-    }, celda ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, fmt(celda.precio * fila.cantidad)), !llega ? /*#__PURE__*/React.createElement("span", {
+      title: promo && llega ? `${accion}. ${tituloPromo(promo)}${celda.precio_regional ? " Precio de tu región." : ""}` : accion
+    }, celda ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, fmt(precioLlevando(celda, fila.cantidad) * fila.cantidad)), !llega ? /*#__PURE__*/React.createElement("span", {
       className: "lg-cell-tag"
     }, "\uD83D\uDC40 referencia") : enCarrito ? /*#__PURE__*/React.createElement("span", {
       className: "lg-cell-swap"
@@ -9202,7 +9307,11 @@ function ListaView({
       className: "lg-cell-tag lg-swap-puesto"
     }, "\u2713 en carrito"), /*#__PURE__*/React.createElement("span", {
       className: "lg-cell-tag lg-swap-quitar"
-    }, "\u2212 quitar")) : celda.precio_regional ? /*#__PURE__*/React.createElement("span", {
+    }, "\u2212 quitar")) : promo ? /*#__PURE__*/React.createElement(CartelPromo, {
+      pc: promo,
+      cantidad: fila.cantidad,
+      className: "lg-cell-tag promo"
+    }) : celda.precio_regional ? /*#__PURE__*/React.createElement("span", {
       className: "lg-cell-tag",
       title: sucursalDelPrecio(s.supermercado, regionCodigo) ? `Precio de la sucursal ${sucursalDelPrecio(s.supermercado, regionCodigo)}` : "Precio de tu región"
     }, "\uD83D\uDCCD tu regi\xF3n") : /*#__PURE__*/React.createElement("span", {
