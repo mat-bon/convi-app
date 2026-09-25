@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-24T15:49:45.026Z
+  Generado: 2026-09-24T20:21:14.254Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1426,6 +1426,17 @@
     .auth-listo-ico { font-size: 44px; line-height: 1; margin-bottom: 10px; }
     .auth-listo p { font-size: 14px; line-height: 1.55; color: var(--text-primary); }
     .auth-listo .auth-listo-nota { font-size: 12.5px; color: var(--text-secondary); margin-top: 10px; }
+
+    /* Qué hacer con la lista armada sin cuenta al entrar (ListaInvitadoModal).
+       Las opciones son .sug-chip: el mismo lenguaje de elegir-uno del buzón. */
+    .inv-intro { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin: 0 0 14px; }
+    .inv-intro strong { color: var(--text-primary); }
+    /* El campo de la opción elegida va con sangría y rótulo: sin eso, el
+       "Mi lista 2" se leía como una tercera opción más. */
+    .inv-detalle { display: block; margin: 0 0 2px 14px; }
+    .inv-etiqueta { display: block; font-size: 11.5px; font-weight: 800; color: var(--text-muted); margin: 0 0 4px 2px; }
+    .inv-control { margin-bottom: 0; }
+    .inv-nota { font-size: 12px; line-height: 1.45; color: var(--text-muted); font-weight: 600; margin: 6px 2px 0; }
 
     /* "Agregar a mi lista" en la ficha del producto. */
     .modal-lista-btn {
@@ -5250,6 +5261,184 @@ function AuthModal({
     className: "auth-link suave",
     onClick: onClose
   }, "Ahora no, seguir sin cuenta")))));
+}
+
+// ---------------------------------------------------------------------------
+// ListaInvitadoModal — qué hacer con la lista armada sin cuenta
+// ---------------------------------------------------------------------------
+// Se abre al entrar a una cuenta que YA tiene listas, cuando en este navegador
+// quedó una lista armada sin sesión (ver revisarListaInvitado en App). Antes
+// esa lista se sumaba sola a la primera de la cuenta: al que había armado otra
+// compra le mezclaba las dos sin preguntar, y separarlas era sacar producto
+// por producto.
+//
+// Cerrarlo NO descarta nada: la lista sigue en el navegador y se vuelve a
+// preguntar la próxima vez que se abra la app con sesión. Descartar es un botón
+// aparte y con confirmación, porque es lo único de acá que no tiene vuelta.
+//
+// El pase lo hace App (`onGuardar`, que devuelve lo de items-batch o {error});
+// el modal sólo elige el destino y cuenta cómo salió.
+function ListaInvitadoModal({
+  total,
+  ejemplo,
+  listas,
+  listaSugerida,
+  onGuardar,
+  onDescartar,
+  onCerrar,
+  onVerLista
+}) {
+  // Nombre sugerido que no repita uno que ya tiene: el selector mostraría dos
+  // renglones "Mi lista" iguales (los nombres no son únicos en la base).
+  const nombreLibre = React.useMemo(() => {
+    const usados = new Set(listas.map(l => l.nombre));
+    if (!usados.has("Mi lista")) return "Mi lista";
+    let n = 2;
+    while (usados.has(`Mi lista ${n}`)) n++;
+    return `Mi lista ${n}`;
+  }, [listas]);
+  // Arranca en "lista nueva" porque es la que se deshace sola (se borra la
+  // lista); sumar a una existente mezcla productos y no se separan de un toque.
+  const [opcion, setOpcion] = React.useState("nueva");
+  const [nombre, setNombre] = React.useState(nombreLibre);
+  const [destino, setDestino] = React.useState(listas.some(l => l.id === listaSugerida) ? listaSugerida : listas[0].id);
+  const [guardando, setGuardando] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [listo, setListo] = React.useState(null);
+  async function guardar() {
+    if (guardando) return;
+    const limpio = nombre.trim().slice(0, 60);
+    if (opcion === "nueva" && !limpio) {
+      setError("Ponele un nombre a la lista.");
+      return;
+    }
+    setGuardando(true);
+    setError("");
+    const r = await onGuardar(opcion === "nueva" ? {
+      nombre: limpio
+    } : {
+      listaId: destino
+    });
+    setGuardando(false);
+    if (r.error) {
+      // Sin lugar para otra lista (el plan gratis con el paywall prendido, o
+      // el tope de 20): la salida que queda es sumarla a una que ya tiene.
+      if (r.sinLugarParaLista) {
+        setOpcion("existente");
+        setError(`${r.error} Podés sumar los productos a una que ya tenés.`);
+      } else setError(r.error);
+      return;
+    }
+    const nombreDestino = opcion === "nueva" ? limpio : (listas.find(l => l.id === destino) || {}).nombre;
+    setListo({
+      ...r,
+      nombre: nombreDestino
+    });
+  }
+  function descartar() {
+    const pregunta = ejemplo ? "¿Descartar la lista de ejemplo?" : `¿Descartar ${total === 1 ? "el producto" : `los ${total} productos`}? Se borran de este navegador.`;
+    if (window.confirm(pregunta)) onDescartar();
+  }
+  const unaSola = listas.length === 1;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: onCerrar,
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": "inv-titulo",
+    onKeyDown: e => e.key === "Escape" && onCerrar()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    style: {
+      maxWidth: 420
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-title",
+    id: "inv-titulo"
+  }, listo ? "Lista guardada" : ejemplo ? "La lista de ejemplo" : "Tu lista sin cuenta"), /*#__PURE__*/React.createElement("button", {
+    className: "modal-close",
+    onClick: onCerrar,
+    "aria-label": "Cerrar"
+  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+    className: "modal-body"
+  }, listo ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "auth-listo"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-listo-ico"
+  }, "\u2705"), /*#__PURE__*/React.createElement("p", null, listo.nueva ? /*#__PURE__*/React.createElement(React.Fragment, null, "Guardamos ", listo.agregados, " producto", listo.agregados !== 1 ? "s" : "", " en ", /*#__PURE__*/React.createElement("strong", null, listo.nombre), ".") : listo.agregados ? /*#__PURE__*/React.createElement(React.Fragment, null, "Sumamos ", listo.agregados, " producto", listo.agregados !== 1 ? "s" : "", " a ", /*#__PURE__*/React.createElement("strong", null, listo.nombre), ".") : /*#__PURE__*/React.createElement(React.Fragment, null, "Ya estaban todos en ", /*#__PURE__*/React.createElement("strong", null, listo.nombre), ".")), (listo.actualizados > 0 || listo.sin_lugar > 0) && /*#__PURE__*/React.createElement("p", {
+    className: "auth-listo-nota"
+  }, listo.actualizados > 0 && (listo.actualizados === 1 ? "A 1 que ya estaba le subimos la cantidad. " : `A ${listo.actualizados} que ya estaban les subimos la cantidad. `), listo.sin_lugar > 0 && (listo.sin_lugar === 1 ? "1 no entró: la lista está llena." : `${listo.sin_lugar} no entraron: la lista está llena.`))), /*#__PURE__*/React.createElement("button", {
+    className: "auth-btn",
+    onClick: onVerLista
+  }, "Ver la lista"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "auth-link suave",
+    onClick: onCerrar
+  }, "Seguir donde estaba"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "inv-intro"
+  }, ejemplo ? /*#__PURE__*/React.createElement(React.Fragment, null, "En este navegador qued\xF3 cargada la ", /*#__PURE__*/React.createElement("strong", null, "lista de ejemplo"), ", con ", total, " productos. \xBFQu\xE9 hacemos con ella?") : /*#__PURE__*/React.createElement(React.Fragment, null, "En este navegador ten\xEDas una lista armada sin cuenta, con ", /*#__PURE__*/React.createElement("strong", null, total, " producto", total !== 1 ? "s" : ""), ". \xBFQu\xE9 hacemos con ella?")), error && /*#__PURE__*/React.createElement("div", {
+    className: "auth-alert error"
+  }, error), /*#__PURE__*/React.createElement("div", {
+    className: "sug-chips",
+    role: "radiogroup",
+    "aria-label": "D\xF3nde guardarla"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    role: "radio",
+    "aria-checked": opcion === "nueva",
+    className: `sug-chip ${opcion === "nueva" ? "on" : ""}`,
+    onClick: () => setOpcion("nueva")
+  }, "\uD83C\uDD95 Guardarla como lista nueva"), opcion === "nueva" && /*#__PURE__*/React.createElement("label", {
+    className: "inv-detalle"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inv-etiqueta"
+  }, "Nombre"), /*#__PURE__*/React.createElement("input", {
+    className: "auth-input inv-control",
+    value: nombre,
+    maxLength: 60,
+    placeholder: "Nombre de la lista",
+    onChange: e => setNombre(e.target.value),
+    onKeyDown: e => e.key === "Enter" && guardar()
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    role: "radio",
+    "aria-checked": opcion === "existente",
+    className: `sug-chip ${opcion === "existente" ? "on" : ""}`,
+    onClick: () => setOpcion("existente")
+  }, "\u2795 ", unaSola ? `Sumar los productos a "${listas[0].nombre}"` : "Sumar los productos a una de tus listas"), opcion === "existente" && /*#__PURE__*/React.createElement("div", {
+    className: "inv-detalle"
+  }, !unaSola && /*#__PURE__*/React.createElement("label", null, /*#__PURE__*/React.createElement("span", {
+    className: "inv-etiqueta"
+  }, "\xBFA cu\xE1l?"), /*#__PURE__*/React.createElement("select", {
+    className: "auth-input inv-control",
+    value: destino,
+    onChange: e => setDestino(Number(e.target.value))
+  }, listas.map(l => /*#__PURE__*/React.createElement("option", {
+    key: l.id,
+    value: l.id
+  }, l.nombre, " (", l.total_items, ")")))), /*#__PURE__*/React.createElement("div", {
+    className: "inv-nota"
+  }, "Los que ya est\xE9n en esa lista no se repiten."))), /*#__PURE__*/React.createElement("button", {
+    className: "auth-btn",
+    onClick: guardar,
+    disabled: guardando
+  }, guardando ? "Guardando…" : "Guardar"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "auth-link suave",
+    onClick: descartar,
+    disabled: guardando
+  }, "No guardarla"))))));
 }
 
 // ---------------------------------------------------------------------------
@@ -10355,7 +10544,8 @@ function App() {
   //
   // No se sincroniza con nada: si el usuario limpia el navegador, se pierde.
   // Por eso la pestaña Lista avisa, con la lista ya armada, que hay que crear
-  // cuenta para guardarla; y por eso handleLogin la sube apenas hay sesión.
+  // cuenta para guardarla; y por eso se pasa a la cuenta apenas hay sesión
+  // (ver revisarListaInvitado: si la cuenta ya tiene listas, pregunta adónde).
   //
   // Misma forma que los items que devuelve /listas/{id}/items, para que
   // listaEans/listaPids y el badge del header no tengan que distinguir.
@@ -10372,6 +10562,9 @@ function App() {
       localStorage.setItem("convi_lista_invitado", JSON.stringify(listaInvitado));
     } catch {}
   }, [listaInvitado]);
+  // La pregunta de adónde va esa lista al entrar: null = nada que preguntar;
+  // {listas} = ListaInvitadoModal abierto, con las listas que ya tiene la cuenta.
+  const [decisionInvitado, setDecisionInvitado] = React.useState(null);
   // Sube cuando migrarPagosInvitado deja en la cuenta los medios de pago que se
   // tildaron sin cuenta: ListaView los vuelve a pedir y rehace la comparación.
   const [pagosVersion, setPagosVersion] = React.useState(0);
@@ -10690,7 +10883,10 @@ function App() {
     localStorage.setItem("convi_token", access_token);
     localStorage.setItem("convi_refresh", refresh_token || "");
     localStorage.setItem("convi_user", JSON.stringify(user));
-    migrarListaInvitado(access_token);
+    // La lista del invitado no se pasa desde acá sino desde el efecto del token
+    // (ver revisarListaInvitado). Soltar el ref hace que ese efecto pregunte de
+    // nuevo aunque ya hubiera otra sesión: puede ser otra cuenta.
+    revisadoInvitadoRef.current = false;
     migrarPagosInvitado(access_token);
     aplicarFavoritoPendiente(access_token);
   }
@@ -10772,45 +10968,97 @@ function App() {
     } catch (e) {}
   }
 
-  // Sube al servidor la lista que el invitado venía armando en el navegador.
+  // LA LISTA DEL INVITADO AL ENTRAR
   //
   // Sin esto el usuario hace exactamente lo que le pedimos —crear la cuenta
   // para no perder la lista— y la pierde igual: entra con sesión, la app lee
   // /listas y la lista local queda huérfana en el localStorage.
   //
-  // Usa /items-batch y no el toggle en loop porque el toggle BORRA lo que ya
-  // está: alguien que ya tenía lista y vuelve a entrar desde otro navegador
-  // perdería lo que tuviera en común. items-batch respeta lo existente y sólo
-  // sube la cantidad si la del invitado es mayor.
-  async function migrarListaInvitado(access_token) {
-    const pendientes = listaInvitado;
-    if (!pendientes.length) return;
-    const auth = {
-      Authorization: `Bearer ${access_token}`,
-      "Content-Type": "application/json"
-    };
+  // Si la cuenta no tiene ninguna lista no hay nada que elegir, y se guarda
+  // sola como "Mi lista" (el caso de quien se acaba de registrar). Si ya tiene,
+  // se pregunta: lista nueva o sumarla a una de las suyas (ListaInvitadoModal).
+  //
+  // Corre desde un efecto sobre el token y no desde handleLogin para cubrir
+  // también el modal que se cerró sin decidir: la lista sigue en el navegador y
+  // se vuelve a preguntar al abrir la app con sesión. El ref evita preguntar
+  // con cada refresco del token (cambia cada hora) y se suelta al salir, al
+  // entrar de nuevo, o si /listas no contestó —para que el próximo token (el
+  // refresco de uno vencido, por ejemplo) lo reintente—.
+  const revisadoInvitadoRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!token) {
+      revisadoInvitadoRef.current = false;
+      return;
+    }
+    if (revisadoInvitadoRef.current || !listaInvitado.length) return;
+    revisadoInvitadoRef.current = true;
+    revisarListaInvitado(token);
+  }, [token]);
+  async function revisarListaInvitado(access_token) {
+    let ls;
     try {
-      // Se reusa la lista que ya tenga; sólo se crea una si no tiene ninguna.
-      let destino = null;
       const res = await fetch(`${API}/listas`, {
         headers: {
           Authorization: `Bearer ${access_token}`
         }
       });
-      if (res.ok) {
-        const ls = await res.json();
-        if (Array.isArray(ls) && ls.length) destino = ls[0].id;
-      }
+      ls = res.ok ? await res.json() : null;
+    } catch (e) {
+      ls = null;
+    }
+    if (!Array.isArray(ls)) {
+      revisadoInvitadoRef.current = false;
+      return;
+    }
+    if (ls.length) {
+      setDecisionInvitado({
+        listas: ls
+      });
+      return;
+    }
+    const r = await pasarListaInvitado(access_token, {
+      nombre: "Mi lista"
+    });
+    if (r.error) revisadoInvitadoRef.current = false;
+  }
+
+  // El pase en sí: a una lista nueva ({nombre}) o a una que ya existe
+  // ({listaId}). Devuelve lo que contestó items-batch ({agregados,
+  // actualizados, sin_lugar}) más `nueva`, o {error} con el texto para el modal.
+  //
+  // Usa /items-batch y no el toggle en loop porque el toggle BORRA lo que ya
+  // está: sumarla a una lista con productos en común le sacaría esos.
+  // items-batch respeta lo existente y sólo sube la cantidad si la del
+  // invitado es mayor. Si algo falla, el localStorage se queda como estaba:
+  // mejor volver a preguntar que perder la lista.
+  async function pasarListaInvitado(access_token, {
+    listaId,
+    nombre
+  }) {
+    const pendientes = listaInvitado;
+    const auth = {
+      Authorization: `Bearer ${access_token}`,
+      "Content-Type": "application/json"
+    };
+    let destino = listaId || null,
+      creada = false;
+    try {
       if (!destino) {
         const cr = await fetch(`${API}/listas`, {
           method: "POST",
           headers: auth,
           body: JSON.stringify({
-            nombre: "Mi lista"
+            nombre
           })
         });
-        if (!cr.ok) return;
-        destino = (await cr.json()).id;
+        const d = await cr.json().catch(() => ({}));
+        // 402 = el plan gratis ya no deja otra lista; 400 = el tope de 20.
+        if (!cr.ok) return {
+          error: mensajeDeError(d, cr.status),
+          sinLugarParaLista: cr.status === 402 || cr.status === 400
+        };
+        destino = d.id;
+        creada = true;
       }
       const r = await fetch(`${API}/listas/${destino}/items-batch`, {
         method: "POST",
@@ -10822,13 +11070,45 @@ function App() {
           }))
         })
       });
-      if (!r.ok) return; // se conserva el localStorage: mejor duplicar que perder
+      if (!r.ok) throw new Error();
+      const res = await r.json().catch(() => ({}));
       setListaInvitado([]);
       setListaActivaId(destino);
       cargarListas();
+      // Si fue a la lista que ya estaba abierta, la comparación no se entera
+      // sola: no depende de los items (ver versionLista).
+      setVersionLista(v => v + 1);
+      return {
+        agregados: res.agregados || 0,
+        actualizados: res.actualizados || 0,
+        sin_lugar: res.sin_lugar || 0,
+        nueva: creada
+      };
     } catch (e) {
-      // Igual que arriba: si falló, la lista local se queda donde estaba.
+      // La lista recién creada quedaría vacía y el reintento crearía otra.
+      if (creada) fetch(`${API}/listas/${destino}`, {
+        method: "DELETE",
+        headers: auth
+      }).catch(() => {});
+      return {
+        error: e instanceof TypeError ? "No hay conexión. Revisá tu internet y probá de nuevo." : "No pudimos guardar la lista. Probá de nuevo en un rato."
+      };
     }
+  }
+
+  // Elegir qué hacer con la lista (guardarla o descartarla) es apropiársela:
+  // deja de ser "la de ejemplo" y el aviso de la pestaña Lista —que ofrece
+  // vaciarla— ya no corresponde. Sumada a otra lista, además, "vaciar" se
+  // llevaría los productos que ya eran del usuario.
+  async function guardarListaInvitado(destino) {
+    const r = await pasarListaInvitado(token, destino);
+    if (!r.error) salirEjemplo();
+    return r;
+  }
+  function descartarListaInvitado() {
+    setListaInvitado([]);
+    salirEjemplo();
+    setDecisionInvitado(null);
   }
   function handleLogout() {
     setToken(null);
@@ -10837,6 +11117,7 @@ function App() {
     setProductosMap({});
     setListas([]);
     setListaItems([]);
+    setDecisionInvitado(null);
     localStorage.removeItem("convi_token");
     localStorage.removeItem("convi_refresh");
     localStorage.removeItem("convi_user");
@@ -11555,6 +11836,18 @@ function App() {
       handleLogin(a, r, u);
     },
     onCancelar: () => setRecuperacion(null)
+  }), decisionInvitado && /*#__PURE__*/React.createElement(ListaInvitadoModal, {
+    total: listaInvitado.length,
+    ejemplo: ejemploActivo,
+    listas: decisionInvitado.listas,
+    listaSugerida: listaActivaId,
+    onGuardar: guardarListaInvitado,
+    onDescartar: descartarListaInvitado,
+    onCerrar: () => setDecisionInvitado(null),
+    onVerLista: () => {
+      setDecisionInvitado(null);
+      irALista();
+    }
   }), avisoAuth && /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
     onClick: () => setAvisoAuth(null)
