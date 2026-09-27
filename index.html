@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-24T20:21:14.254Z
+  Generado: 2026-09-27T19:54:44.242Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -10435,6 +10435,17 @@ function PlanModal({
     className: "plan-nota"
   }, "Se paga por Mercado Pago. Los datos de tu tarjeta no pasan por Convi. Pod\xE9s dar de baja cuando quieras desde ac\xE1 o desde tu cuenta de Mercado Pago."))))));
 }
+
+// window.scrollTo sin animación. El <html> tiene `scroll-behavior: smooth`, que
+// vuelve suave también al scroll "auto"; se lo apaga sólo durante la llamada.
+// No va con `behavior: "instant"` porque no todos los Safari lo aceptan.
+function scrollSinAnimacion(top) {
+  const html = document.documentElement;
+  const antes = html.style.scrollBehavior;
+  html.style.scrollBehavior = "auto";
+  window.scrollTo(0, top);
+  html.style.scrollBehavior = antes;
+}
 function App() {
   const [productos, setProductos] = React.useState([]);
   const [stats, setStats] = React.useState({});
@@ -10654,12 +10665,21 @@ function App() {
   }, [supersVisibles, masBaratoEn]);
 
   // Multi-selección de supermercados: si hay exactamente uno visible lo filtramos en el
-  // servidor (paginación correcta); con un subconjunto filtramos en cliente sobre lo traído.
-  // El filtro "+ Barato" también va al servidor, y por el mismo parámetro: la matview
-  // productos_mejor_precio tiene UNA fila por producto —la del súper más barato— así que
-  // pedirle supermercado=X es exactamente "los productos que están más baratos en X".
-  // Filtrarlo en cliente traería páginas de 30 con 4 cards, y el total y el paginador mintiendo.
+  // servidor (paginación correcta). El filtro "+ Barato" también va al servidor, y por el
+  // mismo parámetro: la matview productos_mejor_precio tiene UNA fila por producto —la del
+  // súper más barato— así que pedirle supermercado=X es exactamente "los productos que
+  // están más baratos en X".
   const superParam = masBaratoEn || (supersVisibles.length === 1 ? supersVisibles[0] : "");
+  // Con un subconjunto de cadenas, o con "+ Barato", productosVisibles descarta cards de
+  // lo que llega (las que no vende ninguna tildada; las que con precios de la región ya no
+  // están más baratas en X). Mientras ese filtro era sólo de acá, las páginas de 30 salían
+  // de 22-26 (2 de 30 en "Precio ↑"). Por eso se le manda al servidor la lista tildada: él
+  // aplica la misma regla y completa la página. Ordenada, para que la URL (y su caché) no
+  // cambie por el orden en que se tildaron.
+  const supersParam = React.useMemo(() => {
+    const haceFalta = masBaratoEn || supersVisibles.length > 1 && supersVisibles.length < SUPER_TODOS.length;
+    return haceFalta ? [...supersVisibles].sort().join(",") : "";
+  }, [supersVisibles, masBaratoEn]);
   // Reproyectamos cada producto sobre los supers visibles: si el super principal quedó
   // destildado pero el producto existe en otro super visible, promovemos el más barato
   // visible como principal (así la card no desaparece). Se oculta solo si ningún super visible lo tiene.
@@ -11570,6 +11590,15 @@ function App() {
     }
   }, [productos]);
   const cargarRef = React.useRef(null);
+  // Dónde arranca cada página en el listado del servidor cuando es él quien la
+  // completa (supersParam). La página N ya no empieza en la fila (N-1)·30
+  // —depende de cuántas se descartaron antes—, así que cada respuesta dice dónde
+  // sigue (`siguiente`) y se lo devolvemos como `desde`. Vale para UN listado:
+  // con cualquier filtro distinto se empieza de nuevo.
+  const cursoresRef = React.useRef({
+    clave: null,
+    paginas: {}
+  });
   async function cargar(paginaOverride) {
     if (cargarRef.current) cargarRef.current.abort();
     const controller = new AbortController();
@@ -11593,6 +11622,25 @@ function App() {
     params.append("por_pagina", porPagina);
     params.append("orden", orden);
     if (regionId) params.append("region_id", regionId);
+    // El cursor: la página conocida más cercana hacia atrás y cuántos productos
+    // saltar desde ahí. La siguiente página sale exacta; un salto largo lo estima
+    // el servidor. Un backend que no los conoce ignora los tres parámetros.
+    const clave = supersParam && [supersParam, superParam, catFiltro, subcatFiltro, soloOfertas, tab, busqueda, orden, porPagina, regionId, usuario && usuario.email].join("|");
+    if (clave) {
+      const c = cursoresRef.current;
+      if (c.clave !== clave) {
+        c.clave = clave;
+        c.paginas = {
+          1: 0
+        };
+        c.total = undefined;
+      }
+      let k = paginaActual;
+      while (k > 1 && c.paginas[k] === undefined) k--;
+      params.append("supermercados", supersParam);
+      params.append("desde", c.paginas[k] || 0);
+      if (paginaActual > k) params.append("saltar", (paginaActual - k) * porPagina);
+    }
     try {
       const headers = token ? {
         Authorization: `Bearer ${token}`
@@ -11603,10 +11651,48 @@ function App() {
       }).then(r => r.json());
       if (signal.aborted) return;
       const prods = resp.productos || [];
+      let total = resp.total || 0,
+        paginasTotal = resp.total_paginas || 1;
+      if (clave && typeof resp.siguiente === "number" && cursoresRef.current.clave === clave) {
+        const c = cursoresRef.current;
+        // Una página que quedó más allá del final (el paginador mostraba un
+        // total estimado de más): se va a la última que existe.
+        if (resp.final && !prods.length && paginaActual > (resp.total_paginas || 1)) {
+          c.total = total;
+          c.totalPaginas = paginasTotal;
+          setPagina(paginasTotal);
+          cargar(paginasTotal);
+          return;
+        }
+        if (typeof resp.desde === "number") c.paginas[paginaActual] = resp.desde;
+        if (prods.length >= porPagina) c.paginas[paginaActual + 1] = resp.siguiente;
+        // Hasta llegar al final el total es una estimación que se corrige un poco
+        // en cada página: queda fijo el primero, para que "N productos" no baile
+        // al paginar, y al final se cambia por el real.
+        if (resp.final) {
+          c.totalPaginas = paginasTotal;
+          // Al final llegando por un salto estimado, el total sigue siendo estimado.
+          if (resp.exacta || c.total === undefined) c.total = total;
+        } else if (c.total === undefined) {
+          c.total = total;
+          c.totalPaginas = paginasTotal;
+        } else {
+          c.total = Math.max(c.total, (paginaActual - 1) * porPagina + prods.length);
+          c.totalPaginas = Math.max(c.totalPaginas, paginaActual + 1);
+        }
+        total = c.total;
+        paginasTotal = c.totalPaginas;
+      }
       setProductos(Array.isArray(prods) ? prods : []);
-      setTotalProductos(resp.total || 0);
-      setTotalPaginas(resp.total_paginas || 1);
-      setBusquedaRelajada(resp.busqueda_relajada ? busqueda : null);
+      setTotalProductos(total);
+      setTotalPaginas(paginasTotal);
+      // usada/omitida vienen cuando la API sacó una palabra que no tiene ningún
+      // producto ("cafe tim hortons" → café); una API vieja no las manda.
+      setBusquedaRelajada(resp.busqueda_relajada ? {
+        texto: busqueda,
+        usada: resp.busqueda_usada || null,
+        omitida: resp.busqueda_omitida || null
+      } : null);
     } catch (e) {
       if (e.name === "AbortError") return;
     }
@@ -11620,15 +11706,23 @@ function App() {
       headers
     }).then(r => r.json()).then(st => setStats(st)).catch(() => {});
   }, [token]);
+
+  // Tildar varias cadenas seguidas no tiene que disparar un pedido por cada una:
+  // mientras tanto productosVisibles ya filtra lo que hay en pantalla. Se mira la
+  // lista y no supersParam, que cambia también con el "+ Barato" (y ése, igual
+  // que el logo, tiene que abortar enseguida el pedido anterior).
+  const supersVisiblesPrevio = React.useRef(supersVisibles);
   React.useEffect(() => {
     if (tab === "carrito" || tab === "lista" || tab === "cronograma") return;
     setPagina(1);
-    const t = setTimeout(() => cargar(1), busqueda ? 400 : 0);
+    const porSupers = supersVisiblesPrevio.current !== supersVisibles;
+    supersVisiblesPrevio.current = supersVisibles;
+    const t = setTimeout(() => cargar(1), busqueda || porSupers ? 400 : 0);
     return () => clearTimeout(t);
     // masBaratoEn va aparte de superParam: cuando hay UN solo súper tildado y es el
     // mismo del "+ Barato", superParam no cambia al prenderlo o apagarlo, pero el
     // parámetro `comparables` de la request sí.
-  }, [tab, superParam, masBaratoEn, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId]);
+  }, [tab, superParam, masBaratoEn, catFiltro, subcatFiltro, soloOfertas, busqueda, token, orden, porPagina, regionId, supersParam]);
 
   // Abre el alta diciendo para qué (ver MOTIVOS_CUENTA). Todo pedido de cuenta
   // que nace de una función pasa por acá; el botón "Ingresar" del header no.
@@ -11758,13 +11852,29 @@ function App() {
       setCarritoItems(anterior);
     }
   }
+
+  // Al cambiar de página, la grilla desde el principio: la barra de orden
+  // ("página 2 de N") justo abajo del header, que es sticky y la taparía.
+  // SIN animación y ANTES de pedir la página, a propósito. Con el scroll suave
+  // la grilla se achicaba a los 8 esqueletos con la animación en curso, el
+  // navegador recortaba la posición al nuevo alto del documento y Safari de
+  // iPhone cortaba ahí la animación: la página nueva quedaba mirándose desde la
+  // segunda o tercera fila. Un salto a un punto que existe también con la
+  // grilla achicada no tiene nada que cortar.
+  function irAlPrincipioDeLaGrilla() {
+    const barra = document.querySelector(".sort-bar");
+    if (!barra) {
+      scrollSinAnimacion(0);
+      return;
+    }
+    const header = document.querySelector(".header");
+    const margen = (header ? header.getBoundingClientRect().height : 0) + 8;
+    scrollSinAnimacion(Math.max(0, barra.getBoundingClientRect().top + window.scrollY - margen));
+  }
   function cambiarPagina(p) {
+    irAlPrincipioDeLaGrilla();
     setPagina(p);
     cargar(p);
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
   }
   function cambiarPorPagina(val) {
     setPorPagina(val);
@@ -11800,10 +11910,9 @@ function App() {
       setPagina(1);
       cargar(1);
     }
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+    // Sin animación por lo mismo que en irAlPrincipioDeLaGrilla: si se recarga,
+    // la grilla se achica y Safari de iPhone cortaba el scroll suave a mitad.
+    scrollSinAnimacion(0);
   }
   const mostrarBarraLista = listaItems.length > 0 && tab !== "lista";
   return /*#__PURE__*/React.createElement("div", {
@@ -12183,7 +12292,7 @@ function App() {
     className: "search-notice"
   }, /*#__PURE__*/React.createElement("span", {
     className: "search-notice-icon"
-  }, "\uD83D\uDCA1"), /*#__PURE__*/React.createElement("span", null, "No encontramos productos con todas las palabras de ", /*#__PURE__*/React.createElement("strong", null, "\u201C", busquedaRelajada, "\u201D"), ". Estos son los m\xE1s parecidos, as\xED que puede faltarles alguna.")), supersVisibles.length === 0 && !loading ? /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCA1"), busquedaRelajada.usada ? /*#__PURE__*/React.createElement("span", null, "No encontramos ", /*#__PURE__*/React.createElement("strong", null, "\u201C", busquedaRelajada.omitida || busquedaRelajada.texto, "\u201D"), ". Te mostramos lo que hay de ", /*#__PURE__*/React.createElement("strong", null, "\u201C", busquedaRelajada.usada, "\u201D"), ".") : /*#__PURE__*/React.createElement("span", null, "No encontramos productos con todas las palabras de ", /*#__PURE__*/React.createElement("strong", null, "\u201C", busquedaRelajada.texto, "\u201D"), ". Estos son los m\xE1s parecidos, as\xED que puede faltarles alguna.")), supersVisibles.length === 0 && !loading ? /*#__PURE__*/React.createElement("div", {
     className: "empty-state"
   }, /*#__PURE__*/React.createElement("div", {
     className: "empty-state-icon"
