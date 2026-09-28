@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-27T19:54:44.242Z
+  Generado: 2026-09-28T11:35:11.695Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -10446,7 +10446,78 @@ function scrollSinAnimacion(top) {
   window.scrollTo(0, top);
   html.style.scrollBehavior = antes;
 }
+
+// Tirar hacia abajo desde el tope para recargar. Sólo cuando la app corre como
+// acceso directo del home screen (standalone / minimal-ui): ahí iOS no tiene
+// barra de Safari ni el gesto nativo de recarga, y la app queda sin ninguna forma
+// de actualizarse. En una pestaña normal Safari ya lo hace solo y duplicarlo
+// mostraría dos indicadores. Recarga la página entera (no sólo la grilla), que
+// es también la forma de traer una versión nueva de la app.
+function usePullToRefresh() {
+  React.useEffect(() => {
+    const instalada = window.navigator.standalone === true || ["standalone", "minimal-ui"].some(m => window.matchMedia("(display-mode: " + m + ")").matches);
+    if (!instalada) return;
+    const UMBRAL = 80;
+    let y0 = null,
+      dy = 0;
+    const chip = document.createElement("div");
+    chip.setAttribute("aria-hidden", "true");
+    chip.style.cssText = "position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 8px);z-index:9999;" + "transform:translate(-50%,-70px);padding:8px 14px;border-radius:999px;background:#2C3A31;color:#F7F2EA;" + "font:600 13px Inter,system-ui,sans-serif;pointer-events:none;opacity:0;white-space:nowrap;";
+    document.body.appendChild(chip);
+    const pintar = d => {
+      const k = Math.min(d / UMBRAL, 1);
+      chip.textContent = k >= 1 ? "Soltá para actualizar" : "Tirá para actualizar";
+      chip.style.opacity = String(k);
+      chip.style.transform = "translate(-50%," + (Math.min(d, UMBRAL * 1.5) * 0.6 - 60) + "px)";
+    };
+    const onStart = e => {
+      const modal = document.body.style.overflow === "hidden";
+      y0 = window.scrollY <= 0 && !modal && e.touches.length === 1 ? e.touches[0].clientY : null;
+      dy = 0;
+    };
+    const onMove = e => {
+      if (y0 === null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0 || window.scrollY > 0) {
+        y0 = null;
+        chip.style.opacity = "0";
+        return;
+      }
+      pintar(dy);
+    };
+    const onEnd = () => {
+      const listo = y0 !== null && dy >= UMBRAL;
+      y0 = null;
+      dy = 0;
+      chip.style.opacity = "0";
+      if (listo) {
+        chip.textContent = "Actualizando…";
+        window.location.reload();
+      }
+    };
+    window.addEventListener("touchstart", onStart, {
+      passive: true
+    });
+    window.addEventListener("touchmove", onMove, {
+      passive: true
+    });
+    window.addEventListener("touchend", onEnd, {
+      passive: true
+    });
+    window.addEventListener("touchcancel", onEnd, {
+      passive: true
+    });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+      chip.remove();
+    };
+  }, []);
+}
 function App() {
+  usePullToRefresh();
   const [productos, setProductos] = React.useState([]);
   const [stats, setStats] = React.useState({});
   const [loading, setLoading] = React.useState(true);
@@ -11887,6 +11958,16 @@ function App() {
     } catch {}
     setShowWelcome(false);
   }
+
+  // El clic en el logo es también el "actualizar" del acceso directo del home
+  // screen, que no tiene barra de Safari ni botón de recarga. Si ya estás en el
+  // estado limpio (sin filtros, página 1, arriba de todo) no hay nada que
+  // resetear —los setState escriben lo mismo y no pasa nada visible—, así que
+  // recarga la app. Si hay algo que limpiar, hace lo de siempre.
+  function clickLogo() {
+    const limpio = tab === "todos" && catFiltro === "Todas" && subcatFiltro === "Todas" && !masBaratoEn && !busqueda && !soloOfertas && pagina === 1 && window.scrollY < 40;
+    if (limpio) window.location.reload();else resetFilters();
+  }
   function resetFilters() {
     // No reseteamos supersVisibles: es una preferencia persistente del usuario, no un filtro transitorio.
     // El "+ Barato" sí se limpia: eso es un filtro del momento, y de los que más esconden.
@@ -12015,7 +12096,7 @@ function App() {
     className: "header-inner"
   }, /*#__PURE__*/React.createElement("a", {
     className: "header-brand",
-    onClick: resetFilters
+    onClick: clickLogo
   }, /*#__PURE__*/React.createElement(ConviIsotipo, {
     size: 40,
     className: "header-brand-icon"
