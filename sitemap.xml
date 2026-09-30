@@ -2,7 +2,15 @@
 <!--
   Sitemap de convi.ar. Antes daba 404.
 
-  UNA SOLA URL, y no es un descuido: la app es una sola pantalla con estado.
+  ACTUALIZACIÓN 30/09/2026: además de la home están las páginas de promos
+  bancarias (índice + 7 días + 1 por súper). No las sirve este repo: las
+  genera la API de Railway y el rewrite de vercel.json las publica acá. Si se
+  suma o se va un súper con promos, hay que agregar o sacar su renglón a mano
+  (la ruta es /promos-bancarias/<nombre en minúscula, sin tildes, con guiones>).
+  Una URL de súper que ya no existe da 404, que es inofensivo pero ensucia
+  el informe de Search Console.
+
+  LA APP en sí sigue siendo UNA SOLA URL, y no es un descuido: es una sola pantalla con estado.
   No hay router ni cambios de URL —el propio comentario del pixel de Meta en el
   index.html lo dice—, así que no existe ninguna otra ruta que ofrecer. Un
   sitemap con URL inventadas sería peor que este: cada una daría el mismo HTML y
@@ -24,8 +32,102 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.convi.ar/</loc>
-    <lastmod>2026-08-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/lunes</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/martes</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/miercoles</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/jueves</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/viernes</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/sabado</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/domingo</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/carrefour</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/cordiez</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/coto</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/dia</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/dino</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/disco</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/jumbo</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/la-anonima</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/la-gallega</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/masonline</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.convi.ar/promos-bancarias/vea</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

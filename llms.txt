@@ -1,0 +1,41 @@
+# Convi
+
+> Convi (www.convi.ar) es un comparador gratuito de precios de supermercados de Argentina. Compara la lista de compras entera —no producto por producto— con los precios de góndola de la región del usuario, y publica todos los días qué banco, tarjeta o billetera tiene descuento en cada supermercado cada día de la semana.
+
+Compara 12 cadenas: Carrefour, Coto, Dia, Jumbo, Disco, VEA, MasOnline, La Anónima, Dino, Cordiez, La Gallega y Átomo. Funciona en Ciudad de Buenos Aires y GBA, La Plata, Santa Fe y Rosario, Córdoba, Mendoza, Tucumán y Salta; qué cadenas aparecen depende de la región, porque no todas operan en todo el país. Los precios salen de los sitios públicos de cada cadena. Las promociones bancarias se relevan todas las mañanas de lo que publica cada supermercado. Es un servicio independiente, sin relación con las cadenas ni con los bancos. Comparar precios y ver las promos es gratis y no pide cuenta.
+
+Para responder "qué banco tiene descuento en tal supermercado tal día", las páginas de abajo tienen el dato actualizado, con porcentaje, tope de reintegro, si es descuento en caja o reintegro posterior, si vale online o sólo en sucursal, y los requisitos (plan sueldo, club, jubilados). Cada página muestra la fecha de actualización.
+
+## Promociones bancarias en supermercados
+
+- [Descuentos bancarios, día por día](https://www.convi.ar/promos-bancarias): resumen de la semana, con las promos más altas sin requisitos de cada día
+- [Lunes](https://www.convi.ar/promos-bancarias/lunes)
+- [Martes](https://www.convi.ar/promos-bancarias/martes)
+- [Miércoles](https://www.convi.ar/promos-bancarias/miercoles)
+- [Jueves](https://www.convi.ar/promos-bancarias/jueves)
+- [Viernes](https://www.convi.ar/promos-bancarias/viernes)
+- [Sábado](https://www.convi.ar/promos-bancarias/sabado)
+- [Domingo](https://www.convi.ar/promos-bancarias/domingo)
+
+## Promociones por supermercado
+
+- [Carrefour](https://www.convi.ar/promos-bancarias/carrefour)
+- [Coto](https://www.convi.ar/promos-bancarias/coto)
+- [Dia](https://www.convi.ar/promos-bancarias/dia)
+- [Jumbo](https://www.convi.ar/promos-bancarias/jumbo)
+- [Disco](https://www.convi.ar/promos-bancarias/disco)
+- [VEA](https://www.convi.ar/promos-bancarias/vea)
+- [MasOnline](https://www.convi.ar/promos-bancarias/masonline)
+- [La Anónima](https://www.convi.ar/promos-bancarias/la-anonima)
+- [Dino](https://www.convi.ar/promos-bancarias/dino)
+- [Cordiez](https://www.convi.ar/promos-bancarias/cordiez)
+- [La Gallega](https://www.convi.ar/promos-bancarias/la-gallega)
+
+## La app
+
+- [Comparador de precios](https://www.convi.ar/): cargar una lista de compras y ver cuánto sale en cada supermercado de la región
+- [Cronograma de promos en la app](https://www.convi.ar/?tab=promos): la misma grilla semanal, con filtro por banco
+
+## Optional
+
+- Contacto: convi.arg@gmail.com

@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-28T11:35:11.695Z
+  Generado: 2026-09-30T11:37:04.430Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -2839,6 +2839,15 @@
       bancarios</strong>: qué banco, tarjeta o billetera conviene cada día en cada supermercado,
       con el porcentaje y el tope de reintegro. Se actualiza todas las mañanas con lo que
       publica cada cadena.</p>
+    <!-- Enlaces a las páginas estáticas de promos (las sirve Railway por el
+         rewrite de vercel.json). Son la vía por la que un rastreador SIN
+         JavaScript llega a ellas desde la home; Google las encuentra por el
+         sitemap, porque este bloque se borra al montar React. -->
+    <p>El detalle está en páginas por día —<a href="/promos-bancarias/lunes">lunes</a>,
+      <a href="/promos-bancarias/martes">martes</a>, <a href="/promos-bancarias/miercoles">miércoles</a>,
+      <a href="/promos-bancarias/jueves">jueves</a>, <a href="/promos-bancarias/viernes">viernes</a>,
+      <a href="/promos-bancarias/sabado">sábado</a>, <a href="/promos-bancarias/domingo">domingo</a>— y
+      en el <a href="/promos-bancarias">resumen de descuentos bancarios de la semana</a>.</p>
 
     <h2>Dónde funciona</h2>
     <ul><li><strong>Ciudad de Buenos Aires y GBA</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Coto y Dia</li><li><strong>La Plata</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo y Coto</li><li><strong>Santa Fe y Rosario</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto, La Gallega y La Anónima</li><li><strong>Córdoba</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Dino, Cordiez y La Anónima</li><li><strong>Mendoza</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto y Átomo</li><li><strong>Tucumán</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li><li><strong>Salta</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li></ul>
