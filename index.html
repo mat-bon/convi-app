@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-09-30T11:37:04.430Z
+  Generado: 2026-10-01T11:51:19.743Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1630,6 +1630,14 @@
     .lista-guardar-txt { flex: 1 1 260px; min-width: 0; }
     .lista-guardar-t { font-size: 13.5px; font-weight: 800; color: var(--text-primary); }
     .lista-guardar-d { font-size: 12.5px; margin-top: 3px; line-height: 1.55; color: var(--text-secondary); }
+    .lista-guardar-error { font-size: 12.5px; margin-top: 5px; font-weight: 700; color: var(--danger); }
+    .lista-guardar-form { display: flex; gap: 8px; flex: 1 1 260px; min-width: 0; position: relative; }
+    .lista-guardar-input {
+      flex: 1 1 0; min-width: 0; padding: 9px 12px; border-radius: var(--radius);
+      border: 1.5px solid var(--border); background: var(--surface); color: var(--text-primary);
+      font-family: inherit; font-size: 16px;   /* 16px: con menos, Safari de iPhone hace zoom al enfocar */
+    }
+    .lista-guardar-input:focus { outline: none; border-color: var(--accent); }
 
     /* La lista de ejemplo. */
     .lista-ejemplo {
@@ -3012,7 +3020,7 @@ const LEGAL = {
   responsable: "Convi S.A.S.",
   email: "convi.arg@gmail.com",
   jurisdiccion: "la Ciudad de Córdoba, Provincia de Córdoba, Argentina",
-  actualizacion: "18/08/2026"
+  actualizacion: "01/10/2026"
 };
 const SUPER_COLORS = {
   VEA: {
@@ -3120,6 +3128,168 @@ function guardarLocal(clave, valor) {
   try {
     if (valor === null || valor === undefined || valor === "") localStorage.removeItem(clave);else localStorage.setItem(clave, String(valor));
   } catch {}
+}
+
+// DE DÓNDE VIENE CADA VISITA (2026-10-01)
+// El 80% del tráfico es "directo" para Vercel y sus UTM son pagos, así que no
+// había forma de saber si un canal trae gente que compara y vuelve o gente que
+// rebota. Esto manda a la API (/visita, migración 041) un identificador al azar
+// de este navegador y por dónde llegó. No es una cuenta ni identifica a nadie:
+// sirve para contar "este navegador volvió otro día".
+//
+// CÓMO SE ETIQUETA UN LINK: agregándole ?o=<etiqueta> (letras, números, guiones)
+//   convi.ar/?o=ig            la bio de Instagram
+//   convi.ar/?o=wa-vecinos    un grupo de WhatsApp
+// Sin etiqueta se usa utm_source, después el sitio de donde vino (referrer), y
+// si no hay nada, "directo". El PRIMER origen de un navegador queda guardado
+// (convi_origen): es por dónde conoció la app, aunque después vuelva directo.
+//
+// PARA NO CONTARSE A UNO MISMO: abrir una vez convi.ar/?medir=no en cada
+// navegador propio (se revierte con ?medir=si). El pane de la app de escritorio
+// de Claude y los navegadores automatizados se excluyen solos.
+function etiquetaOrigen(v) {
+  return String(v || "").toLowerCase().replace(/[^a-z0-9_.\-]/g, "").slice(0, 40) || null;
+}
+function origenDeEstaVisita() {
+  let q = null;
+  try {
+    q = new URLSearchParams(window.location.search);
+  } catch {}
+  const param = q && (q.get("o") || q.get("utm_source"));
+  if (param && etiquetaOrigen(param)) return etiquetaOrigen(param);
+  let host = "";
+  try {
+    host = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : "";
+  } catch {}
+  const propio = window.location.hostname.replace(/^www\./, "");
+  if (host && host !== propio) {
+    // El orden importa: la app de Gmail manda "com.google.android.gm".
+    const conocidos = [["android.gm", "gmail"], ["mail.google", "gmail"], ["instagram", "ig"], ["facebook", "fb"], ["whatsapp", "wa"], ["chatgpt", "chatgpt"], ["openai", "chatgpt"], ["google", "google"], ["bing", "bing"], ["duckduckgo", "duckduckgo"], ["t.co", "x"], ["twitter", "x"], ["x.com", "x"]];
+    for (const [parte, etiqueta] of conocidos) if (host.includes(parte)) return etiqueta;
+    return etiquetaOrigen(host) || "directo";
+  }
+  // Los navegadores internos de Instagram y Facebook a veces no mandan referrer.
+  const ua = navigator.userAgent || "";
+  if (/Instagram/.test(ua)) return "ig";
+  if (/FBAN|FBAV/.test(ua)) return "fb";
+  return "directo";
+}
+function hoyLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// null = este navegador no se mide (lo pidió, es un robot, o no deja usar
+// localStorage: sin dónde guardar el identificador cada carga sería "uno nuevo").
+const MEDIR = (() => {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("medir") === "no") localStorage.setItem("convi_no_medir", "1");
+    if (q.get("medir") === "si") localStorage.removeItem("convi_no_medir");
+    if (localStorage.getItem("convi_no_medir") === "1") return null;
+    const ua = navigator.userAgent || "";
+    if (/Claude\//.test(ua) || navigator.webdriver) return null;
+    let vid = localStorage.getItem("convi_vid");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(vid || "")) {
+      if (window.crypto && crypto.randomUUID) vid = crypto.randomUUID();else {
+        const b = crypto.getRandomValues(new Uint8Array(16));
+        b[6] = b[6] & 0x0f | 0x40;
+        b[8] = b[8] & 0x3f | 0x80;
+        const h = Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+        vid = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+      }
+      localStorage.setItem("convi_vid", vid);
+      localStorage.setItem("convi_vid_desde", hoyLocal());
+    }
+    const o = origenDeEstaVisita();
+    let o1 = localStorage.getItem("convi_origen");
+    if (!o1) {
+      o1 = o;
+      localStorage.setItem("convi_origen", o1);
+    }
+    return {
+      vid,
+      o,
+      o1,
+      desde: localStorage.getItem("convi_vid_desde") || hoyLocal(),
+      movil: /iPhone|iPad|Android|Mobile/.test(ua)
+    };
+  } catch {
+    return null;
+  }
+})();
+// Los eventos esperan a que /stats diga que esta API tiene /visita (`medir`):
+// un index.html nuevo contra una API vieja no dispara 404 en cada carga.
+let __medirListo = false;
+const __medirCola = [];
+function medir(ev, token) {
+  if (!MEDIR) return;
+  // "comparo", "ejemplo", etc. se anotan una vez por día: la comparación se
+  // pide de nuevo con cada producto que se agrega.
+  if (ev !== "carga") {
+    const hoy = hoyLocal();
+    const [dia, lista] = (leerLocal("convi_ev", "") || "").split(":");
+    const hechos = dia === hoy ? (lista || "").split(",").filter(Boolean) : [];
+    if (hechos.includes(ev)) return;
+    guardarLocal("convi_ev", `${hoy}:${[...hechos, ev].join(",")}`);
+  }
+  if (!__medirListo) {
+    __medirCola.push([ev, token]);
+    return;
+  }
+  try {
+    fetch(`${API}/visita`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? {
+          Authorization: `Bearer ${token}`
+        } : {})
+      },
+      body: JSON.stringify({
+        vid: MEDIR.vid,
+        ev,
+        o: MEDIR.o,
+        o1: MEDIR.o1,
+        desde: MEDIR.desde,
+        movil: MEDIR.movil
+      })
+    }).catch(() => {});
+  } catch {}
+}
+function activarMedicion() {
+  if (__medirListo) return;
+  __medirListo = true;
+  __medirCola.splice(0).forEach(([ev, token]) => medir(ev, token));
+}
+
+// LA LISTA POR MAIL DEL INVITADO (2026-10-01, migración 041)
+// El que comparó sin cuenta deja el mail y recibe su lista cada jueves. Acá se
+// guarda lo que este navegador necesita para mantenerla al día:
+//   token      el de la fila (null si ese mail ya estaba confirmado desde otro
+//              navegador: ahí la lista nueva se aplica con el clic del mail)
+//   email      a quién se manda, para mostrarlo
+//   confirmado si ya tocó el botón del mail
+//   firma      la última lista que se subió, para no subirla de nuevo igual
+const CLAVE_LISTA_MAIL = "convi_lista_mail";
+const MIN_LISTA_POR_MAIL = 3;
+function leerListaMail() {
+  try {
+    const s = JSON.parse(localStorage.getItem(CLAVE_LISTA_MAIL));
+    return s && typeof s === "object" && s.email ? s : null;
+  } catch {
+    return null;
+  }
+}
+function firmaLista(items, regionId, supers) {
+  return JSON.stringify([items.map(i => [i.producto_id, i.cantidad || 1]), regionId || null, supers || null]);
+}
+function itemsParaMail(items) {
+  return items.map(i => ({
+    producto_id: i.producto_id,
+    cantidad: i.cantidad || 1,
+    ean: i.ean || null
+  }));
 }
 
 // LA CANASTA DE EJEMPLO
@@ -5101,6 +5271,7 @@ function AuthModal({
         setMsg(data.message || "Si el email está registrado, vas a recibir un correo en breve");
       } else {
         setRegistrado(true);
+        medir("registro");
       }
     } catch (e) {
       // Un fetch que ni sale (sin señal) llega acá con el TypeError del navegador.
@@ -8422,7 +8593,11 @@ function ListaView({
   setHabitual,
   resumenActivo,
   focoBuscador,
-  versionLista
+  versionLista,
+  listaPorMailActiva,
+  listaMail,
+  setListaMail,
+  mailRecienConfirmado
 }) {
   // ¿Hay que hablar del abono en esta pantalla? Con el paywall apagado, no
   // existe. `sinAcceso` es el que ya se quedó afuera; el de prueba tiene todo.
@@ -8568,6 +8743,7 @@ function ListaView({
       }).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
         setData(d);
         setError(null);
+        if ((d.supers || []).length) medir("comparo");
       }).catch(e => {
         if (e && e.name !== "AbortError") setError("No pudimos cargar la comparación de la lista");
       }).finally(() => {
@@ -8583,6 +8759,7 @@ function ListaView({
     }).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
       setData(d);
       setError(null);
+      if ((d.supers || []).length) medir("comparo", token);
       // Si el conteo del selector no coincide con lo que acaba de devolver la
       // comparación, el /listas que lo trajo quedó viejo (falló y se descartó
       // en silencio). Se espera un momento antes de pedirlo de nuevo porque el
@@ -9124,7 +9301,152 @@ function ListaView({
   // cuenta después de mostrar para qué sirve—, sólo con una lista propia (la de
   // ejemplo no es suya) y ofreciendo lo que la cuenta suma de verdad: la lista
   // en cualquier dispositivo y, si el backend lo tiene, el resumen de los jueves.
-  const invitacionCuenta = !token && listaInvitado.length > 0 && !ejemploActivo && /*#__PURE__*/React.createElement("div", {
+  //
+  // LA LISTA POR MAIL (2026-10-01). 23 de los 25 que compararon una lista en la
+  // semana del 24/09 no tenían cuenta, y 5% de los visitantes llega a tocar el
+  // formulario de alta. Así que con 3 productos o más lo primero que se ofrece
+  // ya no es la cuenta sino dejar el mail: sin contraseña, y el primer mail ya
+  // trae la comparación. La cuenta queda como enlace secundario. Sólo si la API
+  // lo anuncia (/stats): si no, sigue saliendo la invitación de siempre.
+  const [mailForm, setMailForm] = React.useState("");
+  const [mailHp, setMailHp] = React.useState("");
+  const [mailEstado, setMailEstado] = React.useState(null); // null | "enviando" | texto de error
+
+  async function dejarMail(e) {
+    e.preventDefault();
+    const email = mailForm.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMailEstado("Revisá el mail: parece que le falta algo.");
+      return;
+    }
+    setMailEstado("enviando");
+    const elegidos = supersKey ? supersKey.split(",") : [];
+    const supers = elegidos.length && elegidos.length < SUPER_TODOS.length ? elegidos : null;
+    try {
+      const res = await fetch(`${API}/lista-por-mail`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          items: itemsParaMail(listaInvitado),
+          region_id: regionId || null,
+          supermercados: supers,
+          vid: MEDIR ? MEDIR.vid : null,
+          origen: MEDIR ? MEDIR.o1 : null,
+          hp: mailHp || null
+        })
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMailEstado(res.status === 429 ? "Hiciste varios intentos seguidos. Probá de nuevo en un rato." : res.status === 422 ? "Revisá el mail: parece que le falta algo." : typeof d.detail === "string" ? d.detail : "No pudimos guardarla. Probá de nuevo en un rato.");
+        return;
+      }
+      setListaMail({
+        token: d.token || null,
+        email,
+        confirmado: false,
+        firma: firmaLista(listaInvitado, regionId, supers)
+      });
+      setMailEstado(null);
+      setMailForm("");
+      medir("mail");
+    } catch (err) {
+      setMailEstado("No hay conexión. Revisá tu internet y probá de nuevo.");
+    }
+  }
+  async function noMandarMas() {
+    if (!listaMail) return;
+    if (listaMail.token) {
+      try {
+        const res = await fetch(`${API}/lista-por-mail/${listaMail.token}`, {
+          method: "DELETE"
+        });
+        // 404 = esa lista ya no existe: no queda nada que apagar.
+        if (!res.ok && res.status !== 404) throw new Error();
+      } catch (e) {
+        setAviso("No pudimos apagarlo. Probá de nuevo, o usá el enlace de baja del mail.");
+        setTimeout(() => setAviso(null), 6000);
+        return;
+      }
+    }
+    setListaMail(null);
+  }
+  const enlaceCuenta = /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: () => onPedirCuenta(resumenActivo ? "resumen" : "lista")
+  }, "crear una cuenta gratis");
+  const bloqueMail = !token && !ejemploActivo && listaPorMailActiva && (listaMail ? /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-txt"
+  }, listaMail.confirmado ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-t"
+  }, mailRecienConfirmado ? "✅ Listo, confirmaste tu mail" : "📬 Esta lista te llega por mail cada jueves"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, "Te mandamos a ", /*#__PURE__*/React.createElement("strong", null, listaMail.email), " cu\xE1nto sale esa semana y d\xF3nde conviene. Lo que cambies ac\xE1 sale en el pr\xF3ximo mail.", " ", /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: noMandarMas
+  }, "No mandar m\xE1s"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-t"
+  }, "\uD83D\uDCEC Revis\xE1 tu mail"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, "Te mandamos la comparaci\xF3n a ", /*#__PURE__*/React.createElement("strong", null, listaMail.email), ". Toc\xE1 el bot\xF3n de ese mail para recibirla cada jueves; si no lo ves, fijate en correo no deseado.", " ", /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: () => setListaMail(null)
+  }, "Usar otro mail"))), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, "Para tenerla tambi\xE9n en otro dispositivo pod\xE9s ", enlaceCuenta, "."))) : listaInvitado.length >= MIN_LISTA_POR_MAIL ? /*#__PURE__*/React.createElement("form", {
+    className: "lista-guardar",
+    onSubmit: dejarMail
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-txt"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-t"
+  }, "\uD83D\uDCEC Recib\xED esta lista por mail cada jueves"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, "Te mandamos cu\xE1nto sale esa semana y en qu\xE9 s\xFAper conviene. Sin contrase\xF1a, y te das de baja con un clic."), mailEstado && mailEstado !== "enviando" && /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-error",
+    role: "alert"
+  }, mailEstado), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-d"
+  }, "Tambi\xE9n pod\xE9s ", enlaceCuenta, " y tenerla en todos tus dispositivos.")), /*#__PURE__*/React.createElement("div", {
+    className: "lista-guardar-form"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "lista-guardar-input",
+    type: "email",
+    inputMode: "email",
+    autoComplete: "email",
+    required: true,
+    placeholder: "tu@mail.com",
+    "aria-label": "Tu mail",
+    value: mailForm,
+    onChange: e => {
+      setMailForm(e.target.value);
+      if (mailEstado && mailEstado !== "enviando") setMailEstado(null);
+    }
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    name: "empresa",
+    tabIndex: -1,
+    autoComplete: "off",
+    "aria-hidden": "true",
+    value: mailHp,
+    onChange: e => setMailHp(e.target.value),
+    style: {
+      position: "absolute",
+      left: "-9999px",
+      width: 1,
+      height: 1,
+      opacity: 0
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "lista-btn fuerte",
+    type: "submit",
+    disabled: mailEstado === "enviando"
+  }, mailEstado === "enviando" ? "Enviando…" : "Mandármela"))) : null);
+  const invitacionCuenta = bloqueMail || !token && listaInvitado.length > 0 && !ejemploActivo && /*#__PURE__*/React.createElement("div", {
     className: "lista-guardar"
   }, /*#__PURE__*/React.createElement("div", {
     className: "lista-guardar-txt"
@@ -9950,7 +10272,7 @@ function LegalModal({
     onClick: () => setTab(k)
   }, l))), /*#__PURE__*/React.createElement("div", {
     className: "legal-body"
-  }, tab === "terminos" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h4", null, "1. Aceptaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Al acceder y usar Convi (el \"Servicio\") acept\xE1s estos T\xE9rminos y Condiciones. Si no est\xE1s de acuerdo, no utilices el Servicio."), /*#__PURE__*/React.createElement("h4", null, "2. Descripci\xF3n del Servicio"), /*#__PURE__*/React.createElement("p", null, "Convi es una herramienta informativa que compara precios de productos publicados por distintos supermercados en Argentina, a partir de informaci\xF3n de fuentes p\xFAblicas. El Servicio no vende productos ni interviene en las compras."), /*#__PURE__*/React.createElement("h4", null, "3. Uso permitido"), /*#__PURE__*/React.createElement("p", null, "Te compromet\xE9s a usar el Servicio de buena fe y conforme a la ley. No pod\xE9s usarlo con fines il\xEDcitos, intentar vulnerar su seguridad, ni extraer masivamente sus datos de forma automatizada sin autorizaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "4. Cuenta de usuario"), /*#__PURE__*/React.createElement("p", null, "Algunas funciones requieren registro. Sos responsable de la confidencialidad de tus credenciales y de la actividad de tu cuenta, y deb\xE9s brindar informaci\xF3n veraz."), /*#__PURE__*/React.createElement("h4", null, "5. Precios orientativos"), /*#__PURE__*/React.createElement("p", null, "Los precios y promociones son orientativos, provienen de fuentes p\xFAblicas y pueden contener errores, demoras o diferencias con el precio real vigente en cada supermercado. Verific\xE1 siempre el precio final en el sitio oficial del comercio antes de comprar (ver \"Descargos y marcas\")."), /*#__PURE__*/React.createElement("h4", null, "6. Plan gratuito y abono"), /*#__PURE__*/React.createElement("p", null, "El Servicio tiene un plan gratuito y un abono pago. La comparaci\xF3n de precios de g\xF3ndola, el buscador y el cronograma de promociones bancarias son y seguir\xE1n siendo gratuitos. El abono habilita funciones adicionales, entre ellas el cruce de tu lista con tus medios de pago y la carga de la lista en el sitio del supermercado."), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s probar las funciones del abono sin costo y sin cargar ning\xFAn medio de pago, por el plazo y la cantidad de usos que se te informan dentro de la aplicaci\xF3n. Terminada la prueba no se genera ning\xFAn cargo autom\xE1tico: simplemente dej\xE1s de acceder a esas funciones hasta que contrates el abono."), /*#__PURE__*/React.createElement("h4", null, "7. Precio, cobro y renovaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "El abono es mensual, se informa en pesos argentinos con impuestos incluidos y se renueva autom\xE1ticamente cada mes hasta que lo des de baja. El cobro lo procesa Mercado Pago mediante una autorizaci\xF3n de d\xE9bito autom\xE1tico que otorg\xE1s en su plataforma: ", LEGAL.responsable, " no accede ni almacena los datos de tu tarjeta."), /*#__PURE__*/React.createElement("p", null, "Podemos modificar el precio del abono. La modificaci\xF3n rige \xFAnicamente para las suscripciones nuevas: si ya est\xE1s suscripto, conserv\xE1s el precio vigente al momento de tu alta mientras no des de baja el abono. Si en el futuro fuera necesario modificar el precio de una suscripci\xF3n en curso, te lo notificaremos previamente y por medio fehaciente, y podr\xE1s darte de baja sin cargo antes de que rija el nuevo importe."), /*#__PURE__*/React.createElement("p", null, "Si un cobro no pudiera efectuarse, Mercado Pago puede reintentarlo durante algunos d\xEDas. Conserv\xE1s el acceso hasta el final del per\xEDodo efectivamente abonado."), /*#__PURE__*/React.createElement("h4", null, "8. Baja y derecho de revocaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s dar de baja el abono en cualquier momento y sin expresi\xF3n de causa, desde la propia aplicaci\xF3n \u2014en la secci\xF3n de tu plan, accesible desde el encabezado\u2014 o desde tu cuenta de Mercado Pago. La baja interrumpe las renovaciones futuras: conserv\xE1s el acceso hasta el final del per\xEDodo que ya abonaste y no se generan cargos posteriores."), /*#__PURE__*/React.createElement("p", null, "Conforme al art\xEDculo 34 de la Ley N.\xB0 24.240, ten\xE9s derecho a revocar la contrataci\xF3n dentro de los diez (10) d\xEDas corridos contados desde la fecha de alta, sin responsabilidad alguna y con reintegro de lo abonado. Para ejercerlo, escribinos a ", LEGAL.email, " desde el correo asociado a tu cuenta."), /*#__PURE__*/React.createElement("h4", null, "9. Propiedad intelectual"), /*#__PURE__*/React.createElement("p", null, "El Servicio, su dise\xF1o y su c\xF3digo pertenecen a ", LEGAL.responsable, " o sus licenciantes. Las marcas y logos de los supermercados pertenecen a sus respectivos titulares; su uso es meramente identificatorio y no implica afiliaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "10. Limitaci\xF3n de responsabilidad"), /*#__PURE__*/React.createElement("p", null, "El Servicio se ofrece \"tal cual\" y \"seg\xFAn disponibilidad\", sin garant\xEDas de exactitud, disponibilidad o adecuaci\xF3n a un fin. En la m\xE1xima medida permitida por la ley, ", LEGAL.responsable, " no ser\xE1 responsable por da\xF1os derivados del uso o la imposibilidad de uso del Servicio, ni por decisiones de compra basadas en la informaci\xF3n provista."), /*#__PURE__*/React.createElement("h4", null, "11. Enlaces de terceros"), /*#__PURE__*/React.createElement("p", null, "El Servicio puede enlazar a sitios de supermercados u otros terceros. No controlamos ni respondemos por su contenido, disponibilidad o pol\xEDticas."), /*#__PURE__*/React.createElement("h4", null, "12. Modificaciones"), /*#__PURE__*/React.createElement("p", null, "Podemos modificar el Servicio o estos T\xE9rminos en cualquier momento. Los cambios rigen desde su publicaci\xF3n y el uso continuado implica su aceptaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "13. Ley aplicable y jurisdicci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Estos T\xE9rminos se rigen por las leyes de la Rep\xFAblica Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de ", LEGAL.jurisdiccion, ", sin perjuicio de las normas de orden p\xFAblico aplicables a consumidores."), /*#__PURE__*/React.createElement("h4", null, "14. Contacto"), /*#__PURE__*/React.createElement("p", null, "Consultas: ", LEGAL.email, ".")), tab === "privacidad" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", null, "Esta Pol\xEDtica explica qu\xE9 datos personales tratamos y c\xF3mo, conforme a la Ley N.\xB0 25.326 de Protecci\xF3n de los Datos Personales de la Rep\xFAblica Argentina."), /*#__PURE__*/React.createElement("h4", null, "1. Responsable del tratamiento"), /*#__PURE__*/React.createElement("p", null, LEGAL.responsable, ". Contacto: ", LEGAL.email, "."), /*#__PURE__*/React.createElement("h4", null, "2. Datos que recolectamos"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Datos de cuenta: email y contrase\xF1a (gestionada de forma segura por nuestro proveedor de autenticaci\xF3n; no se almacena en texto plano)."), /*#__PURE__*/React.createElement("li", null, "Preferencias: regi\xF3n, supermercados elegidos, productos favoritos y carrito."), /*#__PURE__*/React.createElement("li", null, "Datos t\xE9cnicos b\xE1sicos necesarios para el funcionamiento (por ejemplo, registros del servidor)."), /*#__PURE__*/React.createElement("li", null, "Datos de uso y medici\xF3n: p\xE1ginas vistas y acciones dentro del Servicio, recolectados mediante herramientas de anal\xEDtica y de medici\xF3n publicitaria (entre ellas el p\xEDxel de Meta), que pueden usar cookies o identificadores similares en tu dispositivo.")), /*#__PURE__*/React.createElement("h4", null, "3. Finalidades"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Prestar y personalizar el Servicio."), /*#__PURE__*/React.createElement("li", null, "Autenticarte y mantener tu sesi\xF3n."), /*#__PURE__*/React.createElement("li", null, "Enviarte alertas de baja de precio de tus favoritos por email, si ten\xE9s cuenta."), /*#__PURE__*/React.createElement("li", null, "Medir el uso del Servicio y la efectividad de nuestras campa\xF1as de difusi\xF3n.")), /*#__PURE__*/React.createElement("h4", null, "4. Base del tratamiento"), /*#__PURE__*/React.createElement("p", null, "Tratamos tus datos con tu consentimiento y para la ejecuci\xF3n del Servicio que solicit\xE1s."), /*#__PURE__*/React.createElement("h4", null, "5. Con qui\xE9n los compartimos"), /*#__PURE__*/React.createElement("p", null, "No vendemos tus datos personales. Podemos utilizar proveedores que act\xFAan por nuestra cuenta (infraestructura, base de datos y env\xEDo de emails). No compartimos tus datos con los supermercados."), /*#__PURE__*/React.createElement("p", null, "Usamos adem\xE1s herramientas de anal\xEDtica y medici\xF3n publicitaria de terceros \u2014Vercel Analytics y el p\xEDxel de Meta (Meta Platforms, Inc.)\u2014, que reciben datos de tu navegaci\xF3n por el Servicio y los tratan conforme a sus propias pol\xEDticas. Esto implica una transferencia internacional de datos. Pod\xE9s limitarlo desde la configuraci\xF3n de anuncios de tu cuenta de Meta, con la configuraci\xF3n de cookies de tu navegador o con un bloqueador de rastreadores."), /*#__PURE__*/React.createElement("h4", null, "6. Conservaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Conservamos tus datos mientras mantengas tu cuenta o sean necesarios para las finalidades descriptas. Pod\xE9s solicitar su supresi\xF3n."), /*#__PURE__*/React.createElement("h4", null, "7. Tus derechos"), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s ejercer tus derechos de acceso, rectificaci\xF3n, actualizaci\xF3n, supresi\xF3n y oposici\xF3n escribiendo a ", LEGAL.email, ". El titular puede solicitar y obtener informaci\xF3n de sus datos personales incluidos en bancos de datos (art. 14, Ley 25.326). La Agencia de Acceso a la Informaci\xF3n P\xFAblica (AAIP) es el \xF3rgano de control y ante ella pod\xE9s presentar reclamos."), /*#__PURE__*/React.createElement("h4", null, "8. Seguridad"), /*#__PURE__*/React.createElement("p", null, "Adoptamos medidas razonables para proteger tus datos. Ning\xFAn sistema es completamente seguro."), /*#__PURE__*/React.createElement("h4", null, "9. Menores"), /*#__PURE__*/React.createElement("p", null, "El Servicio est\xE1 dirigido a personas mayores de edad. No recolectamos conscientemente datos de menores."), /*#__PURE__*/React.createElement("h4", null, "10. Cambios"), /*#__PURE__*/React.createElement("p", null, "Podemos actualizar esta Pol\xEDtica; publicaremos la versi\xF3n vigente con su fecha."), /*#__PURE__*/React.createElement("h4", null, "11. Contacto"), /*#__PURE__*/React.createElement("p", null, LEGAL.email, ".")), tab === "descargos" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, tab === "terminos" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h4", null, "1. Aceptaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Al acceder y usar Convi (el \"Servicio\") acept\xE1s estos T\xE9rminos y Condiciones. Si no est\xE1s de acuerdo, no utilices el Servicio."), /*#__PURE__*/React.createElement("h4", null, "2. Descripci\xF3n del Servicio"), /*#__PURE__*/React.createElement("p", null, "Convi es una herramienta informativa que compara precios de productos publicados por distintos supermercados en Argentina, a partir de informaci\xF3n de fuentes p\xFAblicas. El Servicio no vende productos ni interviene en las compras."), /*#__PURE__*/React.createElement("h4", null, "3. Uso permitido"), /*#__PURE__*/React.createElement("p", null, "Te compromet\xE9s a usar el Servicio de buena fe y conforme a la ley. No pod\xE9s usarlo con fines il\xEDcitos, intentar vulnerar su seguridad, ni extraer masivamente sus datos de forma automatizada sin autorizaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "4. Cuenta de usuario"), /*#__PURE__*/React.createElement("p", null, "Algunas funciones requieren registro. Sos responsable de la confidencialidad de tus credenciales y de la actividad de tu cuenta, y deb\xE9s brindar informaci\xF3n veraz."), /*#__PURE__*/React.createElement("h4", null, "5. Precios orientativos"), /*#__PURE__*/React.createElement("p", null, "Los precios y promociones son orientativos, provienen de fuentes p\xFAblicas y pueden contener errores, demoras o diferencias con el precio real vigente en cada supermercado. Verific\xE1 siempre el precio final en el sitio oficial del comercio antes de comprar (ver \"Descargos y marcas\")."), /*#__PURE__*/React.createElement("h4", null, "6. Plan gratuito y abono"), /*#__PURE__*/React.createElement("p", null, "El Servicio tiene un plan gratuito y un abono pago. La comparaci\xF3n de precios de g\xF3ndola, el buscador y el cronograma de promociones bancarias son y seguir\xE1n siendo gratuitos. El abono habilita funciones adicionales, entre ellas el cruce de tu lista con tus medios de pago y la carga de la lista en el sitio del supermercado."), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s probar las funciones del abono sin costo y sin cargar ning\xFAn medio de pago, por el plazo y la cantidad de usos que se te informan dentro de la aplicaci\xF3n. Terminada la prueba no se genera ning\xFAn cargo autom\xE1tico: simplemente dej\xE1s de acceder a esas funciones hasta que contrates el abono."), /*#__PURE__*/React.createElement("h4", null, "7. Precio, cobro y renovaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "El abono es mensual, se informa en pesos argentinos con impuestos incluidos y se renueva autom\xE1ticamente cada mes hasta que lo des de baja. El cobro lo procesa Mercado Pago mediante una autorizaci\xF3n de d\xE9bito autom\xE1tico que otorg\xE1s en su plataforma: ", LEGAL.responsable, " no accede ni almacena los datos de tu tarjeta."), /*#__PURE__*/React.createElement("p", null, "Podemos modificar el precio del abono. La modificaci\xF3n rige \xFAnicamente para las suscripciones nuevas: si ya est\xE1s suscripto, conserv\xE1s el precio vigente al momento de tu alta mientras no des de baja el abono. Si en el futuro fuera necesario modificar el precio de una suscripci\xF3n en curso, te lo notificaremos previamente y por medio fehaciente, y podr\xE1s darte de baja sin cargo antes de que rija el nuevo importe."), /*#__PURE__*/React.createElement("p", null, "Si un cobro no pudiera efectuarse, Mercado Pago puede reintentarlo durante algunos d\xEDas. Conserv\xE1s el acceso hasta el final del per\xEDodo efectivamente abonado."), /*#__PURE__*/React.createElement("h4", null, "8. Baja y derecho de revocaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s dar de baja el abono en cualquier momento y sin expresi\xF3n de causa, desde la propia aplicaci\xF3n \u2014en la secci\xF3n de tu plan, accesible desde el encabezado\u2014 o desde tu cuenta de Mercado Pago. La baja interrumpe las renovaciones futuras: conserv\xE1s el acceso hasta el final del per\xEDodo que ya abonaste y no se generan cargos posteriores."), /*#__PURE__*/React.createElement("p", null, "Conforme al art\xEDculo 34 de la Ley N.\xB0 24.240, ten\xE9s derecho a revocar la contrataci\xF3n dentro de los diez (10) d\xEDas corridos contados desde la fecha de alta, sin responsabilidad alguna y con reintegro de lo abonado. Para ejercerlo, escribinos a ", LEGAL.email, " desde el correo asociado a tu cuenta."), /*#__PURE__*/React.createElement("h4", null, "9. Propiedad intelectual"), /*#__PURE__*/React.createElement("p", null, "El Servicio, su dise\xF1o y su c\xF3digo pertenecen a ", LEGAL.responsable, " o sus licenciantes. Las marcas y logos de los supermercados pertenecen a sus respectivos titulares; su uso es meramente identificatorio y no implica afiliaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "10. Limitaci\xF3n de responsabilidad"), /*#__PURE__*/React.createElement("p", null, "El Servicio se ofrece \"tal cual\" y \"seg\xFAn disponibilidad\", sin garant\xEDas de exactitud, disponibilidad o adecuaci\xF3n a un fin. En la m\xE1xima medida permitida por la ley, ", LEGAL.responsable, " no ser\xE1 responsable por da\xF1os derivados del uso o la imposibilidad de uso del Servicio, ni por decisiones de compra basadas en la informaci\xF3n provista."), /*#__PURE__*/React.createElement("h4", null, "11. Enlaces de terceros"), /*#__PURE__*/React.createElement("p", null, "El Servicio puede enlazar a sitios de supermercados u otros terceros. No controlamos ni respondemos por su contenido, disponibilidad o pol\xEDticas."), /*#__PURE__*/React.createElement("h4", null, "12. Modificaciones"), /*#__PURE__*/React.createElement("p", null, "Podemos modificar el Servicio o estos T\xE9rminos en cualquier momento. Los cambios rigen desde su publicaci\xF3n y el uso continuado implica su aceptaci\xF3n."), /*#__PURE__*/React.createElement("h4", null, "13. Ley aplicable y jurisdicci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Estos T\xE9rminos se rigen por las leyes de la Rep\xFAblica Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de ", LEGAL.jurisdiccion, ", sin perjuicio de las normas de orden p\xFAblico aplicables a consumidores."), /*#__PURE__*/React.createElement("h4", null, "14. Contacto"), /*#__PURE__*/React.createElement("p", null, "Consultas: ", LEGAL.email, ".")), tab === "privacidad" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", null, "Esta Pol\xEDtica explica qu\xE9 datos personales tratamos y c\xF3mo, conforme a la Ley N.\xB0 25.326 de Protecci\xF3n de los Datos Personales de la Rep\xFAblica Argentina."), /*#__PURE__*/React.createElement("h4", null, "1. Responsable del tratamiento"), /*#__PURE__*/React.createElement("p", null, LEGAL.responsable, ". Contacto: ", LEGAL.email, "."), /*#__PURE__*/React.createElement("h4", null, "2. Datos que recolectamos"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Datos de cuenta: email y contrase\xF1a (gestionada de forma segura por nuestro proveedor de autenticaci\xF3n; no se almacena en texto plano)."), /*#__PURE__*/React.createElement("li", null, "Preferencias: regi\xF3n, supermercados elegidos, productos favoritos y carrito."), /*#__PURE__*/React.createElement("li", null, "Si dej\xE1s tu mail para recibir tu lista sin crear una cuenta: ese email y los productos de la lista."), /*#__PURE__*/React.createElement("li", null, "Datos t\xE9cnicos b\xE1sicos necesarios para el funcionamiento (por ejemplo, registros del servidor)."), /*#__PURE__*/React.createElement("li", null, "Datos de uso y medici\xF3n: p\xE1ginas vistas y acciones dentro del Servicio, recolectados mediante herramientas de anal\xEDtica y de medici\xF3n publicitaria (entre ellas el p\xEDxel de Meta), que pueden usar cookies o identificadores similares en tu dispositivo. Entre ellos, un identificador an\xF3nimo que guardamos en tu navegador para saber, sin identificarte, por qu\xE9 canal llegaste y si volv\xE9s a usar el Servicio.")), /*#__PURE__*/React.createElement("h4", null, "3. Finalidades"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Prestar y personalizar el Servicio."), /*#__PURE__*/React.createElement("li", null, "Autenticarte y mantener tu sesi\xF3n."), /*#__PURE__*/React.createElement("li", null, "Enviarte alertas de baja de precio de tus favoritos por email, si ten\xE9s cuenta."), /*#__PURE__*/React.createElement("li", null, "Enviarte por email el resumen semanal de tu lista, si ten\xE9s cuenta o dejaste tu mail para eso. Cada env\xEDo trae un enlace para dejar de recibirlo."), /*#__PURE__*/React.createElement("li", null, "Medir el uso del Servicio y la efectividad de nuestras campa\xF1as de difusi\xF3n.")), /*#__PURE__*/React.createElement("h4", null, "4. Base del tratamiento"), /*#__PURE__*/React.createElement("p", null, "Tratamos tus datos con tu consentimiento y para la ejecuci\xF3n del Servicio que solicit\xE1s."), /*#__PURE__*/React.createElement("h4", null, "5. Con qui\xE9n los compartimos"), /*#__PURE__*/React.createElement("p", null, "No vendemos tus datos personales. Podemos utilizar proveedores que act\xFAan por nuestra cuenta (infraestructura, base de datos y env\xEDo de emails). No compartimos tus datos con los supermercados."), /*#__PURE__*/React.createElement("p", null, "Usamos adem\xE1s herramientas de anal\xEDtica y medici\xF3n publicitaria de terceros \u2014Vercel Analytics y el p\xEDxel de Meta (Meta Platforms, Inc.)\u2014, que reciben datos de tu navegaci\xF3n por el Servicio y los tratan conforme a sus propias pol\xEDticas. Esto implica una transferencia internacional de datos. Pod\xE9s limitarlo desde la configuraci\xF3n de anuncios de tu cuenta de Meta, con la configuraci\xF3n de cookies de tu navegador o con un bloqueador de rastreadores."), /*#__PURE__*/React.createElement("h4", null, "6. Conservaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Conservamos tus datos mientras mantengas tu cuenta o sean necesarios para las finalidades descriptas. Pod\xE9s solicitar su supresi\xF3n."), /*#__PURE__*/React.createElement("h4", null, "7. Tus derechos"), /*#__PURE__*/React.createElement("p", null, "Pod\xE9s ejercer tus derechos de acceso, rectificaci\xF3n, actualizaci\xF3n, supresi\xF3n y oposici\xF3n escribiendo a ", LEGAL.email, ". El titular puede solicitar y obtener informaci\xF3n de sus datos personales incluidos en bancos de datos (art. 14, Ley 25.326). La Agencia de Acceso a la Informaci\xF3n P\xFAblica (AAIP) es el \xF3rgano de control y ante ella pod\xE9s presentar reclamos."), /*#__PURE__*/React.createElement("h4", null, "8. Seguridad"), /*#__PURE__*/React.createElement("p", null, "Adoptamos medidas razonables para proteger tus datos. Ning\xFAn sistema es completamente seguro."), /*#__PURE__*/React.createElement("h4", null, "9. Menores"), /*#__PURE__*/React.createElement("p", null, "El Servicio est\xE1 dirigido a personas mayores de edad. No recolectamos conscientemente datos de menores."), /*#__PURE__*/React.createElement("h4", null, "10. Cambios"), /*#__PURE__*/React.createElement("p", null, "Podemos actualizar esta Pol\xEDtica; publicaremos la versi\xF3n vigente con su fecha."), /*#__PURE__*/React.createElement("h4", null, "11. Contacto"), /*#__PURE__*/React.createElement("p", null, LEGAL.email, ".")), tab === "descargos" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "legal-note"
   }, "Los precios que ves son ", /*#__PURE__*/React.createElement("strong", null, "orientativos"), ", provienen de fuentes p\xFAblicas y pueden diferir del precio real vigente en cada supermercado. Verific\xE1 siempre el precio final en el sitio oficial antes de comprar."), /*#__PURE__*/React.createElement("h4", null, "Sobre los datos de precios"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Se obtienen de informaci\xF3n de acceso p\xFAblico y se actualizan peri\xF3dicamente; pueden existir errores, demoras o faltantes."), /*#__PURE__*/React.createElement("li", null, "Convi no garantiza la exactitud, integridad ni disponibilidad de la informaci\xF3n."), /*#__PURE__*/React.createElement("li", null, "Es una herramienta de comparaci\xF3n informativa: no vende productos ni participa en las transacciones.")), /*#__PURE__*/React.createElement("h4", null, "No afiliaci\xF3n"), /*#__PURE__*/React.createElement("p", null, "Convi no est\xE1 asociado, afiliado, patrocinado ni avalado por ", SUPERS, ", ni por ning\xFAn otro comercio mencionado."), /*#__PURE__*/React.createElement("h4", null, "Marcas de terceros"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Las marcas, nombres comerciales, logos e im\xE1genes de productos pertenecen a sus respectivos titulares."), /*#__PURE__*/React.createElement("li", null, "Su uso en el Servicio es meramente identificatorio (uso nominativo) para permitir la comparaci\xF3n, y no implica titularidad ni relaci\xF3n comercial."), /*#__PURE__*/React.createElement("li", null, "Si sos titular de una marca y consider\xE1s que su uso es indebido, escribinos a ", LEGAL.email, ".")))), /*#__PURE__*/React.createElement("div", {
     className: "legal-foot"
@@ -10653,6 +10975,18 @@ function App() {
       localStorage.setItem("convi_lista_invitado", JSON.stringify(listaInvitado));
     } catch {}
   }, [listaInvitado]);
+  // La lista por mail del invitado (ver leerListaMail). Se mantiene al día
+  // sola: cuando cambia la lista, la región o los súper tildados, y la firma
+  // no es la última que se subió, se vuelve a subir (con una pausa, para no
+  // pegarle a la API con cada producto que se agrega).
+  const [listaMail, setListaMailEstado] = React.useState(leerListaMail);
+  const setListaMail = React.useCallback(v => {
+    setListaMailEstado(v);
+    try {
+      if (v) localStorage.setItem(CLAVE_LISTA_MAIL, JSON.stringify(v));else localStorage.removeItem(CLAVE_LISTA_MAIL);
+    } catch {}
+  }, []);
+  const [mailRecienConfirmado, setMailRecienConfirmado] = React.useState(false);
   // La pregunta de adónde va esa lista al entrar: null = nada que preguntar;
   // {listas} = ListaInvitadoModal abierto, con las listas que ya tiene la cuenta.
   const [decisionInvitado, setDecisionInvitado] = React.useState(null);
@@ -11564,10 +11898,73 @@ function App() {
       }
       setEjemploActivo(true);
       guardarLocal("convi_lista_ejemplo", "1");
+      medir("ejemplo", token);
     } catch (e) {}
     setCargandoEjemplo(false);
     irALista();
   }
+
+  // EL LINK DEL MAIL DE LA LISTA: ?l=<token> (y &ok=1 cuando viene del botón
+  // de confirmar). El visor de mails no comparte el localStorage con el
+  // navegador donde se armó la lista, así que la lista se trae de la API. Si
+  // este navegador ya tiene una armada, se queda la de acá —es la más nueva— y
+  // el efecto de más abajo la sube.
+  React.useEffect(() => {
+    let q;
+    try {
+      q = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    const t = q.get("l");
+    if (!t) return;
+    const veniaDeConfirmar = q.get("ok") === "1";
+    q.delete("l");
+    q.delete("ok");
+    const resto = q.toString();
+    try {
+      window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);
+    } catch {}
+    setTab("lista");
+    if (!/^[0-9a-f-]{36}$/i.test(t)) return;
+    fetch(`${API}/lista-por-mail/${t}`).then(r => r.ok ? r.json() : Promise.reject(r)).then(d => {
+      const items = (d.items || []).filter(i => i && i.producto_id).map(i => ({
+        id: i.producto_id,
+        ean: i.ean || null,
+        producto_id: i.producto_id,
+        cantidad: i.cantidad || 1
+      }));
+      // `listaInvitado` acá es la del arranque (el efecto corre una vez).
+      const navegadorNuevo = !listaInvitado.length;
+      const supers = Array.isArray(d.supermercados) ? d.supermercados.filter(x => SUPER_TODOS.includes(x)) : [];
+      if (navegadorNuevo && items.length) {
+        setListaInvitado(items);
+        setEjemploActivo(false);
+        guardarLocal("convi_lista_ejemplo", null);
+        // Con la lista vienen la región y los súper con los que se comparó:
+        // sin eso este navegador mostraría (y después subiría) otra cosa que
+        // la que salió en el mail. No pisan lo que ya estuviera elegido acá.
+        if (d.region_id && !leerLocal("convi_region")) {
+          setRegionId(d.region_id);
+          guardarLocal("convi_region", d.region_id);
+        }
+        if (supers.length && supersVisibles.length === SUPER_TODOS.length) setSupersVisibles(supers);
+      }
+      if (d.activo) {
+        // La firma es la de lo que vino del servidor: si acá había otra lista
+        // (u otra región), no coincide y el efecto de más abajo la sube.
+        setListaMail({
+          token: t.toLowerCase(),
+          email: d.email,
+          confirmado: !!d.confirmado,
+          firma: firmaLista(items, d.region_id, supers.length ? supers : null)
+        });
+        if (veniaDeConfirmar && d.confirmado) setMailRecienConfirmado(true);
+      } else {
+        setListaMail(null);
+      }
+    }).catch(() => {});
+  }, []);
 
   // ENLACES DIRECTOS: ?tab=lista | favoritos | promos. Los usan los mails (el
   // resumen de los jueves y el aviso de bajas) para que el botón lleve a la
@@ -11784,8 +12181,44 @@ function App() {
     } : {};
     fetch(`${API}/stats`, {
       headers
-    }).then(r => r.json()).then(st => setStats(st)).catch(() => {});
+    }).then(r => r.json()).then(st => {
+      setStats(st);
+      if (st && st.medir) activarMedicion();
+    }).catch(() => {});
   }, [token]);
+
+  // Una carga de la app. Queda en cola hasta que /stats confirma que la API mide.
+  React.useEffect(() => {
+    medir("carga", token);
+  }, []);
+
+  // Mantener al día la lista por mail (ver el estado listaMail). Sólo sin
+  // sesión: con cuenta la lista vive en la base y el resumen sale de ahí.
+  React.useEffect(() => {
+    if (token || !listaMail || !listaMail.token) return;
+    const supers = supersVisibles.length && supersVisibles.length < SUPER_TODOS.length ? supersVisibles : null;
+    const firma = firmaLista(listaInvitado, regionId, supers);
+    if (firma === listaMail.firma) return;
+    const t = setTimeout(() => {
+      fetch(`${API}/lista-por-mail/${listaMail.token}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: itemsParaMail(listaInvitado),
+          region_id: regionId || null,
+          supermercados: supers
+        })
+      }).then(r => {
+        if (r.ok) setListaMail({
+          ...listaMail,
+          firma
+        });else if (r.status === 404) setListaMail(null); // la lista ya no existe en la base
+      }).catch(() => {});
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [token, listaMail, listaInvitado, regionId, supersVisibles]);
 
   // Tildar varias cadenas seguidas no tiene que disparar un pedido por cada una:
   // mientras tanto productosVisibles ya filtra lo que hay en pantalla. Se mira la
@@ -12327,6 +12760,10 @@ function App() {
     habitual: superHabitual,
     setHabitual: setSuperHabitual,
     resumenActivo: !!stats.resumen_semanal,
+    listaPorMailActiva: !!stats.lista_por_mail,
+    listaMail: listaMail,
+    setListaMail: setListaMail,
+    mailRecienConfirmado: mailRecienConfirmado,
     focoBuscador: focoBuscador,
     versionLista: versionLista,
     pagosVersion: pagosVersion,
