@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-10-01T11:51:19.743Z
+  Generado: 2026-10-05T11:53:49.628Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -11983,6 +11983,30 @@ function App() {
       if (token) setTab("favoritos");else pedirCuenta("favoritos");
     }
     q.delete("tab");
+    const resto = q.toString();
+    try {
+      window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);
+    } catch {}
+  }, []);
+
+  // BÚSQUEDA POR ENLACE: ?q=aceite abre el listado ya buscando eso. Lo usan las
+  // páginas públicas de precios (cada producto de la tabla enlaza acá) y es lo que
+  // se le ofrece a un asistente con IA en llms.txt: quien pregunta "cuánto sale la
+  // yerba" llega al resultado y no a una home en la que tiene que empezar de cero.
+  // Se saca de la barra apenas se lee, conservando el resto (?o=, los utm).
+  // Tope de 80 caracteres: es lo que cabe en el buscador y lo que se manda a la API.
+  React.useEffect(() => {
+    let q;
+    try {
+      q = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    const texto = (q.get("q") || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!texto) return;
+    setTab("todos");
+    setBusqueda(texto);
+    q.delete("q");
     const resto = q.toString();
     try {
       window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);

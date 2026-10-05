@@ -38,6 +38,15 @@
           "value": "1"
         }
       ]
+    },
+    {
+      "source": "/precios-supermercados/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "1"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -48,6 +57,14 @@
     {
       "source": "/promos-bancarias/:clave",
       "destination": "https://web-production-32c3f.up.railway.app/seo/promos-bancarias/:clave"
+    },
+    {
+      "source": "/precios-supermercados",
+      "destination": "https://web-production-32c3f.up.railway.app/seo/precios-supermercados"
+    },
+    {
+      "source": "/precios-supermercados/:clave",
+      "destination": "https://web-production-32c3f.up.railway.app/seo/precios-supermercados/:clave"
     }
   ]
 }

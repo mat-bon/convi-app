@@ -6,6 +6,21 @@ Compara 12 cadenas: Carrefour, Coto, Dia, Jumbo, Disco, VEA, MasOnline, La Anón
 
 Para responder "qué banco tiene descuento en tal supermercado tal día", las páginas de abajo tienen el dato actualizado, con porcentaje, tope de reintegro, si es descuento en caja o reintegro posterior, si vale online o sólo en sucursal, y los requisitos (plan sueldo, club, jubilados). Cada página muestra la fecha de actualización.
 
+## Precios: qué supermercado es más barato
+
+Para responder "qué supermercado es más barato en tal ciudad", cada región tiene una página con la misma compra (una canasta de productos de marca de uso diario) comparada supermercado por supermercado, con el total de cada uno, cuánto más cuesta el más caro y el precio de cada producto. Precios de góndola online de cada cadena, con sus ofertas y sin descuentos bancarios. Cada página muestra la fecha de actualización.
+
+- [Precios por región](https://www.convi.ar/precios-supermercados): el más barato y el más caro de cada región
+- [CABA y GBA](https://www.convi.ar/precios-supermercados/caba-gba)
+- [La Plata](https://www.convi.ar/precios-supermercados/la-plata)
+- [Rosario y Santa Fe](https://www.convi.ar/precios-supermercados/rosario-santa-fe)
+- [Córdoba](https://www.convi.ar/precios-supermercados/cordoba)
+- [Mendoza](https://www.convi.ar/precios-supermercados/mendoza)
+- [Tucumán](https://www.convi.ar/precios-supermercados/tucuman)
+- [Salta](https://www.convi.ar/precios-supermercados/salta)
+
+Para el precio de un producto puntual, el enlace `https://www.convi.ar/?q=<producto>` abre la app ya buscándolo (por ejemplo `https://www.convi.ar/?q=yerba%20mate`) y muestra su precio en cada supermercado de la región elegida.
+
 ## Promociones bancarias en supermercados
 
 - [Descuentos bancarios, día por día](https://www.convi.ar/promos-bancarias): resumen de la semana, con las promos más altas sin requisitos de cada día
@@ -34,6 +49,7 @@ Para responder "qué banco tiene descuento en tal supermercado tal día", las p�
 ## La app
 
 - [Comparador de precios](https://www.convi.ar/): cargar una lista de compras y ver cuánto sale en cada supermercado de la región
+- [Buscar un producto](https://www.convi.ar/?q=aceite): el parámetro `q` abre el buscador con ese texto
 - [Cronograma de promos en la app](https://www.convi.ar/?tab=promos): la misma grilla semanal, con filtro por banco
 
 ## Optional
