@@ -24,6 +24,7 @@ Para el precio de un producto puntual, el enlace `https://www.convi.ar/?q=<produ
 ## Promociones bancarias en supermercados
 
 - [Descuentos bancarios, día por día](https://www.convi.ar/promos-bancarias): resumen de la semana, con las promos más altas sin requisitos de cada día
+- [Promos de hoy](https://www.convi.ar/promos-bancarias/hoy): todas las promos del día en todas las cadenas, de mayor a menor
 - [Lunes](https://www.convi.ar/promos-bancarias/lunes)
 - [Martes](https://www.convi.ar/promos-bancarias/martes)
 - [Miércoles](https://www.convi.ar/promos-bancarias/miercoles)
@@ -45,6 +46,22 @@ Para el precio de un producto puntual, el enlace `https://www.convi.ar/?q=<produ
 - [Dino](https://www.convi.ar/promos-bancarias/dino)
 - [Cordiez](https://www.convi.ar/promos-bancarias/cordiez)
 - [La Gallega](https://www.convi.ar/promos-bancarias/la-gallega)
+
+## Promociones por banco o billetera
+
+Cada banco o billetera con promos en supermercados tiene su página: `https://www.convi.ar/promos-bancarias/<nombre en minúscula, sin tildes, con guiones>`. La lista completa está en el índice de promos. Las más consultadas:
+
+- [Banco Nación](https://www.convi.ar/promos-bancarias/banco-nacion)
+- [Cuenta DNI](https://www.convi.ar/promos-bancarias/cuenta-dni)
+- [Mercado Pago](https://www.convi.ar/promos-bancarias/mercado-pago)
+- [MODO](https://www.convi.ar/promos-bancarias/modo)
+- [NaranjaX](https://www.convi.ar/promos-bancarias/naranjax)
+- [Banco Galicia](https://www.convi.ar/promos-bancarias/banco-galicia)
+- [Banco Patagonia](https://www.convi.ar/promos-bancarias/banco-patagonia)
+- [Banco Credicoop](https://www.convi.ar/promos-bancarias/banco-credicoop)
+- [ICBC](https://www.convi.ar/promos-bancarias/icbc)
+- [Beneficios ANSES](https://www.convi.ar/promos-bancarias/beneficios-anses)
+- [Jubilados y pensionados](https://www.convi.ar/promos-bancarias/jubilados-y-pensionados)
 
 ## La app
 

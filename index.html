@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-10-12T13:00:50.208Z
+  Generado: 2026-10-14T11:51:55.248Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -2125,6 +2125,8 @@
     }
 
     .cr-nota { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .cr-nota + .cr-nota { margin-top: 6px; }
+    .cr-nota a { color: var(--text-primary); font-weight: 700; }
     .cr-link {
       background: none; border: none; padding: 0; cursor: pointer;
       color: var(--text-primary); font-weight: 800; text-decoration: underline;
@@ -2870,7 +2872,15 @@
       <a href="/promos-bancarias/martes">martes</a>, <a href="/promos-bancarias/miercoles">miércoles</a>,
       <a href="/promos-bancarias/jueves">jueves</a>, <a href="/promos-bancarias/viernes">viernes</a>,
       <a href="/promos-bancarias/sabado">sábado</a>, <a href="/promos-bancarias/domingo">domingo</a>— y
-      en el <a href="/promos-bancarias">resumen de descuentos bancarios de la semana</a>.</p>
+      en el <a href="/promos-bancarias">resumen de descuentos bancarios de la semana</a>.
+      También <a href="/promos-bancarias/hoy">las promos de hoy</a> y una página por banco o
+      billetera: <a href="/promos-bancarias/banco-nacion">Banco Nación</a>,
+      <a href="/promos-bancarias/cuenta-dni">Cuenta DNI</a>,
+      <a href="/promos-bancarias/mercado-pago">Mercado Pago</a>,
+      <a href="/promos-bancarias/modo">MODO</a>,
+      <a href="/promos-bancarias/naranjax">NaranjaX</a>,
+      <a href="/promos-bancarias/beneficios-anses">ANSES</a>,
+      <a href="/promos-bancarias/jubilados-y-pensionados">jubilados</a>.</p>
 
     <h2>Dónde funciona</h2>
     <ul><li><strong>Ciudad de Buenos Aires y GBA</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Coto y Dia</li><li><strong>La Plata</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo y Coto</li><li><strong>Santa Fe y Rosario</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto, La Gallega y La Anónima</li><li><strong>Córdoba</strong> — Carrefour, MasOnline, VEA, Disco, Jumbo, Dino, Cordiez y La Anónima</li><li><strong>Mendoza</strong> — Carrefour, MasOnline, VEA, Jumbo, Coto y Átomo</li><li><strong>Tucumán</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li><li><strong>Salta</strong> — Carrefour, MasOnline, VEA, Jumbo y La Anónima</li></ul>
@@ -6839,7 +6849,25 @@ function CronogramaView({
   }, "Los porcentajes son los que publica cada cadena. El tope, las exclusiones y si es descuento o reintegro est\xE1n en el detalle de cada celda \u2014 tocala para verlo.", " ", "Si ", /*#__PURE__*/React.createElement("button", {
     className: "cr-link",
     onClick: onPedirCuenta
-  }, "arm\xE1s tu lista"), " y marc\xE1s tus tarjetas, calculamos cu\xE1nto ahorr\xE1s sobre tu compra real."), detalle && /*#__PURE__*/React.createElement("div", {
+  }, "arm\xE1s tu lista"), " y marc\xE1s tus tarjetas, calculamos cu\xE1nto ahorr\xE1s sobre tu compra real."), /*#__PURE__*/React.createElement("p", {
+    className: "cr-nota"
+  }, "Tambi\xE9n por separado: ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/hoy"
+  }, "las promos de hoy"), ",", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias"
+  }, "por d\xEDa y por supermercado"), ", y por banco \u2014", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/banco-nacion"
+  }, "Naci\xF3n"), ",", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/cuenta-dni"
+  }, "Cuenta DNI"), ",", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/mercado-pago"
+  }, "Mercado Pago"), ",", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/modo"
+  }, "MODO"), ",", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias/naranjax"
+  }, "NaranjaX"), " y", " ", /*#__PURE__*/React.createElement("a", {
+    href: "/promos-bancarias"
+  }, "el resto"), "."), detalle && /*#__PURE__*/React.createElement("div", {
     className: "modal-overlay",
     onClick: () => setDetalle(null)
   }, /*#__PURE__*/React.createElement("div", {
