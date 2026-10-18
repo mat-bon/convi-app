@@ -5,7 +5,7 @@
   Lo produce build.js a partir de index.src.html, que es el archivo que se
   edita. Cualquier cambio hecho acá lo pisa el próximo `node build.js`.
 
-  Generado: 2026-10-14T12:14:06.404Z
+  Generado: 2026-10-17T19:44:02.724Z
   Babel:    7.24.0 (compilado en build, no en el navegador)
 -->
 <html lang="es-AR">
@@ -1881,6 +1881,20 @@
     }
     .lista-resumen-linea.lista-semanal { color: var(--info); }
     .lista-resumen-linea.mixta { color: var(--success, #2F7D4F); }
+    /* Qué va a cada súper en la compra en dos: dos columnas, una abajo de la
+       otra en el celular. */
+    .lista-dos-detalle {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 16px;
+      margin-top: 8px; color: var(--text-secondary); font-weight: 600;
+    }
+    .lista-dos-t { font-weight: 900; color: var(--text-primary); margin-bottom: 2px; }
+    .lista-dos-col ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; }
+    .lista-dos-cargar { margin-top: 8px; }
+    /* El de la grilla es chico porque vive en la esquina de la tabla; acá es
+       la acción de la línea. */
+    .lista-dos-cargar .lg-total-btn {
+      width: auto; margin-top: 0; padding: 8px 14px; font-size: 13px; white-space: normal;
+    }
     .lista-resumen-linea.pago { color: #6B4E7D; }
     /* La aclaración del tope no es decorativa: sin ella prometemos un ahorro que
        el usuario puede no tener si ya consumió el tope del mes. */
@@ -8957,6 +8971,8 @@ function ListaView({
   // porque el fallback a portapapeles no abre ninguna hoja del sistema: sin un
   // cambio visible, al usuario le parece que el botón no hizo nada.
   const [compartido, setCompartido] = React.useState(null);
+  // Si está abierto el detalle de qué va a cada súper en la compra en dos.
+  const [verDos, setVerDos] = React.useState(false);
 
   // Ficha del producto de una fila de la lista, con la MISMA forma que espera
   // <Modal> en la pestaña de productos. Se arma con lo que ya trajo /comparar
@@ -8969,19 +8985,35 @@ function ListaView({
   // categoría) queda afuera: el modal ya los renderiza condicionalmente, así
   // que simplemente no aparecen. El historial sí funciona, que es lo que más
   // se busca al abrir la ficha, porque va por producto_id.
+  // El súper más barato de la fila entre los que venden en la región. El
+  // `mas_barato` del backend elige entre TODAS las columnas, también las que el
+  // usuario tildó como referencia (ver SUPER_POR_REGION), y una cadena que no
+  // llega no puede ser "donde conviene comprar". A igual precio gana la
+  // primera, igual que el min() del backend. Sin región filtra nada.
+  const mejorEnRegion = fila => {
+    let mejor = null;
+    for (const [s, c] of Object.entries(fila.precios || {})) {
+      if (!superLlegaA(s, regionCodigo)) continue;
+      if (!mejor || c.precio < fila.precios[mejor].precio) mejor = s;
+    }
+    return mejor;
+  };
   const fichaDe = fila => {
-    const principal = fila.mas_barato && fila.precios[fila.mas_barato];
+    // Sin ninguna cadena de la región con precio, la ficha igual se abre con
+    // la de referencia: muestra precios, no recomienda dónde comprar.
+    const ppal = mejorEnRegion(fila) || fila.mas_barato;
+    const principal = ppal && fila.precios[ppal];
     if (!principal) return null; // fila sin precio en ningún súper
     return {
       id: principal.producto_id,
       nombre: fila.nombre,
       imagen_url: fila.imagen_url,
-      supermercado: fila.mas_barato,
+      supermercado: ppal,
       precio: principal.precio,
       precio_regional: principal.precio_regional,
       url: principal.url,
       sku_id: principal.sku_id,
-      otros_supers: Object.entries(fila.precios).filter(([nombre]) => nombre !== fila.mas_barato).map(([nombre, c]) => ({
+      otros_supers: Object.entries(fila.precios).filter(([nombre]) => nombre !== ppal).map(([nombre, c]) => ({
         supermercado: nombre,
         precio: c.precio,
         id: c.producto_id,
@@ -9353,7 +9385,10 @@ function ListaView({
     await onCarritoChange();
     setOcupado(null);
   }
-  async function volcar(supermercado) {
+
+  // `reparto` = {id de la fila: súper} carga la compra en dos súper en UN pedido
+  // (ver lista_al_carrito): cargarla en dos borraría la primera parte.
+  async function volcar(supermercado, reparto = null) {
     // Mismo caso que toggleCelda: sin cuenta esto era un POST a
     // /listas/null/al-carrito que terminaba en "No se pudo cargar el carrito".
     if (!token) {
@@ -9367,17 +9402,21 @@ function ListaView({
       onPedirPlan && onPedirPlan();
       return;
     }
-    setOcupado(supermercado || "mixta");
+    setOcupado(reparto ? "dos" : supermercado || "mixta");
     try {
       const res = await fetch(`${API}/listas/${listaActivaId}/al-carrito`, {
         method: "POST",
         headers: authJson,
         body: JSON.stringify({
           supermercado: supermercado || null,
+          reparto,
           region_id: regionId || null,
-          // El mismo universo de columnas que se usó para la comparación, para
-          // que la compra mixta cargue exactamente el total que se está viendo.
-          supermercados: supersVisibles
+          // El mismo universo con el que el front calcula la compra mixta (las
+          // columnas que se ven, menos las de referencia), para que cargue
+          // exactamente el total que se está viendo. Si no quedara ninguna, el
+          // backend tomaría `[]` como "todas": no puede pasar, porque sin
+          // cadenas de la región no hay compra mixta y el botón no se muestra.
+          supermercados: supersVisibles.filter(n => superLlegaA(n, regionCodigo))
         })
       });
       const d = await res.json();
@@ -9849,10 +9888,33 @@ function ListaView({
 
   // Resumen: como las columnas se ordenan por cobertura, el más barato puede
   // quedar fuera de pantalla. Acá se nombra siempre, scrollee o no el usuario.
-  const completos = supers.filter(s => s.faltantes === 0);
+  //
+  // Todo lo que RECOMIENDA (el más barato, la brecha, la compra mixta) se
+  // elige sólo entre las cadenas que venden en la región. Las columnas de
+  // referencia —tildadas a propósito, ver SUPER_POR_REGION— siguen en la
+  // grilla con su precio, pero "Más barato: X" con una X que no llega es una
+  // recomendación imposible de seguir.
+  const enRegion = supers.filter(s => superLlegaA(s.supermercado, regionCodigo));
+  const completos = enRegion.filter(s => s.faltantes === 0);
   const mejorComp = completos[0] || null; // ya vienen ordenados por precio
-  const masBarato = supers.reduce((a, b) => !a || b.total_estimado < a.total_estimado ? b : a, null);
-  const mixta = data.compra_mixta;
+  const masBarato = enRegion.reduce((a, b) => !a || b.total_estimado < a.total_estimado ? b : a, null);
+  // La compra mixta se recalcula acá por el mismo motivo: `compra_mixta` del
+  // backend reparte entre todas las columnas. Es la misma cuenta (paso 7 de
+  // _comparar_grilla) y, sin referencias, el mismo número. El botón que la
+  // carga le manda al backend sólo estas cadenas, así que carga este total.
+  const mixta = (() => {
+    let total = 0,
+      alguna = false;
+    for (const f of items) {
+      const s = mejorEnRegion(f);
+      if (!s) continue;
+      total += f.precios[s].precio * f.cantidad;
+      alguna = true;
+    }
+    return alguna ? {
+      total: Math.round(total * 100) / 100
+    } : null;
+  })();
   const ahorroMixta = mejorComp && mixta ? mejorComp.total_estimado - mixta.total : 0;
   // Columnas que están sólo como referencia: la cadena no vende en la región.
   const referencias = supers.map(s => s.supermercado).filter(n => !superLlegaA(n, regionCodigo));
@@ -9865,6 +9927,25 @@ function ListaView({
   const mejorPago = completos.reduce((a, b) => !a || costoFinal(b) < costoFinal(a) ? b : a, null);
   const ahorroPago = mejorComp && mejorPago ? mejorComp.total_estimado - costoFinal(mejorPago) : 0;
   const hayTope = supers.some(s => (s.promo_bancaria?.promos || []).some(p => p.motivo?.includes("tope")));
+
+  // ---- La compra en dos súper ---------------------------------------------
+  // `compra_mixta` reparte entre todos los que hagan falta (con 12 cadenas,
+  // seis pedidos): es el piso, no una compra que alguien haga. Dos pedidos sí.
+  // El backend manda TODAS las parejas ordenadas porque no sabe qué cadenas
+  // venden en la región (eso es SUPER_POR_REGION): acá se toma la primera que
+  // se pueda comprar entera. Se compara contra el mejor súper único de la
+  // región con el MISMO número, `costo_final`, que ya trae las promos
+  // bancarias de cada parte (ver _compra_en_dos en database.py).
+  // Se muestra sólo si el ahorro justifica el segundo pedido: con menos de
+  // $1.000 o del 2% no vale la pena hacer dos compras.
+  const dos = (data.compra_dos || []).find(p => p.faltantes === 0 && p.supers.every(n => superLlegaA(n, regionCodigo)));
+  const unoReg = mejorPago; // `completos` ya es sólo de la región
+  const ahorroDos = dos && unoReg ? costoFinal(unoReg) - dos.costo_final : 0;
+  const mostrarDos = ahorroDos >= Math.max(1000, 0.02 * (unoReg ? costoFinal(unoReg) : 0));
+  const promosDos = dos ? dos.supers.flatMap(n => (dos.por_super[n].promos || []).map(p => `${p.entidad} ${p.pct}% en ${n}`)) : [];
+  // {id de la fila: súper} para cargar la pareja al carrito, sacado del mismo
+  // `reparto` que arma el detalle de abajo: se carga lo que se ve.
+  const repartoDos = dos ? Object.fromEntries(items.map((it, i) => [String(it.id), dos.supers[Number(dos.reparto[i])]]).filter(([, s]) => s)) : null;
 
   // ---- Compartir el resultado -------------------------------------------
   // La comparación es el momento en que el usuario tiene algo para contar, y
@@ -9882,7 +9963,7 @@ function ListaView({
   // producto (ver el paso 6 de comparar_lista en database.py), justamente para
   // que al que no tiene todo no le quede un total más bajo por tener menos
   // cosas. Lo que se pierde es precisión, no comparabilidad.
-  const baseComp = completos.length >= 2 ? completos : supers;
+  const baseComp = completos.length >= 2 ? completos : enRegion;
   const compBarato = baseComp.length ? baseComp.reduce((a, b) => b.total_estimado < a.total_estimado ? b : a) : null;
   const compCaro = baseComp.length ? baseComp.reduce((a, b) => b.total_estimado > a.total_estimado ? b : a) : null;
   const puedeCompartir = !!(compBarato && compCaro && compCaro.total_estimado > compBarato.total_estimado);
@@ -10032,7 +10113,31 @@ function ListaView({
       fontSize: 12
     },
     onClick: () => setShowPagos(true)
-  }, "Carg\xE1 tus medios de pago"), " ", "y te decimos cu\xE1nto te sale con tus descuentos bancarios."), mixta && ahorroMixta > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Carg\xE1 tus medios de pago"), " ", "y te decimos cu\xE1nto te sale con tus descuentos bancarios."), mostrarDos && /*#__PURE__*/React.createElement("div", {
+    className: "lista-resumen-linea mixta"
+  }, "\uD83D\uDED2 En dos s\xFAper: ", /*#__PURE__*/React.createElement("strong", null, dos.supers[0]), " (", dos.por_super[dos.supers[0]].productos, ")", " ", "+ ", /*#__PURE__*/React.createElement("strong", null, dos.supers[1]), " (", dos.por_super[dos.supers[1]].productos, "),", " ", /*#__PURE__*/React.createElement("strong", null, fmt(dos.costo_final)), " \u2014 ", fmt(ahorroDos), " menos que todo en ", unoReg.supermercado, promosDos.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " (pagando con ", promosDos.join(" y "), ")"), ".", " ", /*#__PURE__*/React.createElement("button", {
+    className: "lista-link",
+    onClick: () => setVerDos(v => !v)
+  }, verDos ? "Ocultar" : "Qué va en cada uno"), /*#__PURE__*/React.createElement("div", {
+    className: "lista-dos-cargar"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "lg-total-btn",
+    disabled: ocupado === "dos",
+    style: {
+      background: sinAcceso ? "var(--accent)" : "#2F7D4F"
+    },
+    title: sinAcceso ? "Cargar la compra repartida es una función del abono" : undefined,
+    onClick: () => volcar(null, repartoDos)
+  }, ocupado === "dos" ? "…" : /*#__PURE__*/React.createElement(React.Fragment, null, sinAcceso ? "🔒" : "🛒", " Cargar las dos compras al carrito"))), verDos && /*#__PURE__*/React.createElement("div", {
+    className: "lista-dos-detalle"
+  }, dos.supers.map((n, lado) => /*#__PURE__*/React.createElement("div", {
+    key: n,
+    className: "lista-dos-col"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lista-dos-t"
+  }, n, " \xB7 ", fmt(dos.por_super[n].costo_final)), /*#__PURE__*/React.createElement("ul", null, items.filter((_, i) => dos.reparto[i] === String(lado)).map(it => /*#__PURE__*/React.createElement("li", {
+    key: it.id
+  }, it.cantidad > 1 ? `${it.cantidad} × ` : "", it.nombre))))))), mixta && ahorroMixta > 0 && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea mixta"
   }, "\uD83E\uDDFA Si repart\xEDs la compra entre varios s\xFAper: ", /*#__PURE__*/React.createElement("strong", null, fmt(mixta.total)), " ", "(", fmt(ahorroMixta), " menos que todo en ", mejorComp.supermercado, ")"), hayReferencia && /*#__PURE__*/React.createElement("div", {
     className: "lista-resumen-linea"
@@ -10139,7 +10244,7 @@ function ListaView({
     className: "lg-prod-nocomp"
   }, "sin c\xF3digo de barras \u2014 no comparable")))), supers.map(s => {
     const celda = fila.precios[s.supermercado];
-    const esMejor = celda && fila.mas_barato === s.supermercado;
+    const esMejor = celda && mejorEnRegion(fila) === s.supermercado;
     const enCarrito = celda && carritoIds.has(celda.producto_id);
     // La celda de una cadena que no llega muestra el precio pero
     // no se puede tocar: agregarla armaría un carrito que después
@@ -10188,18 +10293,17 @@ function ListaView({
     }
   }, "Total de la lista"), mixta &&
   /*#__PURE__*/
-  // La compra mixta reparte la lista entre las columnas que se
-  // están viendo. Si alguna es una cadena que no vende en la
-  // región (tildada a propósito, como referencia), el total de
-  // arriba incluye precios que no se pueden comprar y el
-  // volcado cargaría otra cosa: se desactiva hasta destildarla.
+  // La compra mixta reparte la lista entre las columnas de la
+  // región: las de referencia no entran ni en el total ni en el
+  // volcado (volcar() manda sólo las cadenas que llegan). Antes
+  // el botón se desactivaba hasta destildarlas.
   React.createElement("button", {
     className: "lg-total-btn",
-    disabled: ocupado === "mixta" || hayReferencia,
+    disabled: ocupado === "mixta",
     style: {
-      background: hayReferencia ? "var(--text-muted)" : sinAcceso ? "var(--accent)" : "#2F7D4F"
+      background: sinAcceso ? "var(--accent)" : "#2F7D4F"
     },
-    title: hayReferencia ? `Destildá ${referencias.join(", ")} para poder repartir la compra: no vende${referencias.length > 1 ? "n" : ""} en tu región.` : sinAcceso ? "Cargar la compra repartida es una función del abono" : undefined,
+    title: sinAcceso ? "Cargar la compra repartida es una función del abono" : hayReferencia ? `Sin ${referencias.join(", ")}: no vende${referencias.length > 1 ? "n" : ""} en tu región.` : undefined,
     onClick: () => volcar(null)
   }, ocupado === "mixta" ? "…" : sinAcceso ? /*#__PURE__*/React.createElement(React.Fragment, null, "\uD83D\uDD12", /*#__PURE__*/React.createElement("span", {
     className: "btn-label"
