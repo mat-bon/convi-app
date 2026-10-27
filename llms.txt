@@ -63,6 +63,8 @@ Cada banco o billetera con promos en supermercados tiene su página: `https://ww
 - [Beneficios ANSES](https://www.convi.ar/promos-bancarias/beneficios-anses)
 - [Jubilados y pensionados](https://www.convi.ar/promos-bancarias/jubilados-y-pensionados)
 
+Un banco o billetera que tiene promos en dos o más supermercados también tiene una página por supermercado, con las promos de ese banco en esa cadena día por día: `https://www.convi.ar/promos-bancarias/<banco>/<supermercado>`. Por ejemplo, [Mercado Pago en Carrefour](https://www.convi.ar/promos-bancarias/mercado-pago/carrefour) o [descuentos para jubilados en Coto](https://www.convi.ar/promos-bancarias/jubilados-y-pensionados/coto). La página de cada banco y de cada supermercado enlaza a esas combinaciones.
+
 ## La app
 
 - [Comparador de precios](https://www.convi.ar/): cargar una lista de compras y ver cuánto sale en cada supermercado de la región

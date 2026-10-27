@@ -68,6 +68,10 @@
       "destination": "https://web-production-32c3f.up.railway.app/seo/promos-bancarias/:clave"
     },
     {
+      "source": "/promos-bancarias/:clave/:sub",
+      "destination": "https://web-production-32c3f.up.railway.app/seo/promos-bancarias/:clave/:sub"
+    },
+    {
       "source": "/precios-supermercados",
       "destination": "https://web-production-32c3f.up.railway.app/seo/precios-supermercados"
     },
